@@ -4,44 +4,59 @@ A modern web application for news management, editing, and publishing based on M
 
 ---
 
-## 🚀 Installation & Getting Started
+## 🚀 Quick Start (Docker - Recommended)
 
 ### Prerequisites:
-- **Node.js** (v18 or newer)
-- **Docker Desktop** (for running MongoDB in an isolated container)
+- **Docker Desktop**
 
-### 1. Start the Database (MongoDB via Docker):
+### 1. Launch Everything (App + MongoDB):
 ```bash
-docker compose up -d
+docker compose up -d --build
 ```
-This starts a MongoDB container on default port `27017` with persistent volume storage (`mongo_data`).
+This single command:
+1. Builds and starts the Express application container on port `3000`.
+2. Starts the MongoDB container on port `27017` with persistent volume storage.
+3. Automatically mounts your local `./src`, `./views`, and `./public` folders for live hot updates.
 
-### 2. Install Dependencies:
+Access the application at: **`http://localhost:3000`**  
+Access the interactive test lab at: **`http://localhost:3000/test.html`**
+
+### 2. View Logs & Status:
 ```bash
-npm install
+docker compose logs -f app
 ```
 
-### 3. Environment Configuration:
-Copy the `.env.example` file to `.env`:
+### 3. Stop Containers:
 ```bash
-cp .env.example .env
+docker compose down
 ```
 
-### 4. Run the Application:
-- **Development Mode (with auto-reload):**
-  ```bash
-  npm run dev
-  ```
-- **Standard Mode:**
-  ```bash
-  npm start
-  ```
-The server will be available at: `http://localhost:3000`
+---
 
-### 5. Run Automated Tests:
-```bash
-npm test
-```
+## 💻 Alternative: Local Node.js Development
+
+If you prefer running Node.js directly on your host machine:
+
+1. **Start only the MongoDB container:**
+   ```bash
+   docker compose up -d mongodb
+   ```
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+3. **Configure environment:**
+   ```bash
+   cp .env.example .env
+   ```
+4. **Run the server:**
+   ```bash
+   npm run dev
+   ```
+5. **Run tests:**
+   ```bash
+   npm test
+   ```
 
 ---
 
@@ -49,7 +64,9 @@ npm test
 
 ```text
 the-daily-web/
-├── docker-compose.yml          # MongoDB container service configuration
+├── Dockerfile                 # Node.js Alpine container definition
+├── docker-compose.yml          # Multi-container setup (Express App + MongoDB)
+├── .dockerignore              # Prevents unnecessary files from container builds
 ├── package.json               # Project manifest and allowed dependencies
 ├── .gitignore                 # Excludes secrets (.env), logs, and node_modules
 ├── .env.example               # Environment variable template
