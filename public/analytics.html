@@ -594,6 +594,21 @@
                     const urlParams = new URLSearchParams(window.location.search);
                     const queryArticleId = urlParams.get('articleId');
                     if (queryArticleId) {
+                        const exists = Array.from(selectEl.options).some(o => o.value === queryArticleId);
+                        if (!exists) {
+                            try {
+                                const artRes = await fetch(`/api/articles/public/${queryArticleId}`);
+                                const artData = await artRes.json();
+                                if (artData.success && artData.article) {
+                                    const opt = document.createElement('option');
+                                    opt.value = artData.article._id;
+                                    opt.textContent = `[${artData.article.category}] ${artData.article.title} (כתבת דגל)`;
+                                    selectEl.prepend(opt);
+                                }
+                            } catch (e) {
+                                console.warn('Could not fetch custom articleId:', e);
+                            }
+                        }
                         selectEl.value = queryArticleId;
                     }
 
