@@ -1,142 +1,395 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="he" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Daily Web - Article Logic & Auto-Save Test Lab</title>
+    <title>The Daily Web — מעבדת ניהול תוכן ועריכה (Member 2 Workflow Lab)</title>
+
+    <!-- Google Fonts: Frank Ruhl Libre (Classic Editorial Serif) + Assistant (Clean Modern Hebrew) + Inter (Numbers & Code) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@400;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&family=Frank+Ruhl+Libre:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 RTL CSS & Icons (Approved course technology via CDN) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', 'Assistant', system-ui, -apple-system, sans-serif; }
-        body { background: #0b0f19; color: #f1f5f9; padding: 28px 20px; line-height: 1.6; }
-        .container { max-width: 1140px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
-        header { background: #131b2e; padding: 24px 28px; border-radius: 12px; border: 1px solid #1e293b; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); }
-        header h1 { font-size: 24px; font-weight: 800; color: #38bdf8; margin-bottom: 6px; letter-spacing: -0.5px; }
-        header p { font-size: 14px; color: #94a3b8; }
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-        @media (max-width: 850px) { .grid { grid-template-columns: 1fr; } }
-        .card { background: #131b2e; border-radius: 12px; padding: 22px; border: 1px solid #1e293b; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15); display: flex; flex-direction: column; gap: 14px; }
-        .card h2 { font-size: 16px; font-weight: 700; border-bottom: 1px solid #1e293b; padding-bottom: 10px; color: #e2e8f0; display: flex; align-items: center; justify-content: space-between; }
-        .status-badge { display: inline-flex; align-items: center; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
-        .status-draft { background: #334155; color: #e2e8f0; }
-        .status-pending { background: #78350f; color: #fef3c7; }
-        .status-published { background: #064e3b; color: #6ee7b7; }
-        .status-revision { background: #7f1d1d; color: #fecaca; }
-        input, select, textarea { width: 100%; padding: 11px 14px; background: #080d1a; border: 1px solid #334155; border-radius: 8px; font-size: 14px; color: #f8fafc; transition: all 0.2s; }
-        input:focus, select:focus, textarea:focus { outline: none; border-color: #38bdf8; box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.15); }
-        textarea { resize: vertical; min-height: 110px; }
-        button { cursor: pointer; padding: 10px 18px; border: none; border-radius: 8px; font-size: 13px; font-weight: 600; transition: all 0.2s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
-        button:hover { filter: brightness(1.1); transform: translateY(-1px); }
-        button:active { transform: translateY(0); }
-        button.primary { background: #2563eb; color: white; box-shadow: 0 2px 4px rgba(37, 99, 235, 0.3); }
-        button.success { background: #10b981; color: white; box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3); }
-        button.danger { background: #ef4444; color: white; }
-        button.warning { background: #f59e0b; color: #0f172a; font-weight: 700; }
-        button.secondary { background: #1e293b; color: #cbd5e1; border: 1px solid #334155; }
-        .btn-group { display: flex; flex-wrap: wrap; gap: 10px; }
-        .log-box { background: #050811; color: #38bdf8; font-family: 'JetBrains Mono', Consolas, monospace; font-size: 12px; padding: 16px; border-radius: 8px; max-height: 250px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; border: 1px solid #1e293b; }
-        .autosave-indicator { font-size: 12px; color: #38bdf8; font-style: italic; }
-        .user-indicator { font-size: 12px; padding: 5px 12px; background: #0284c7; color: white; border-radius: 20px; font-weight: 700; letter-spacing: 0.5px; }
+        :root {
+            --font-editorial: 'Frank Ruhl Libre', serif;
+            --font-sans: 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-num: 'Inter', monospace;
+            
+            --news-dark: #121212;
+            --news-ink: #1f2937;
+            --news-muted: #64748b;
+            --news-border: #e2e8f0;
+            --news-bg-subtle: #f8fafc;
+            --news-red: #dc2626;
+            --news-blue: #2563eb;
+            --news-gold: #d97706;
+            --news-green: #16a34a;
+            
+            --shadow-sm: 0 1px 3px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            --radius-lg: 12px;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: var(--news-bg-subtle);
+            color: var(--news-ink);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .font-editorial { font-family: var(--font-editorial); }
+        .font-num { font-family: var(--font-num); }
+
+        /* Top Masthead & Utility Bar */
+        .masthead {
+            background-color: #ffffff;
+            border-bottom: 1px solid var(--news-border);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .masthead-brand {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--news-dark);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .brand-badge {
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            color: #ffffff;
+            font-size: 0.7rem;
+            font-weight: 700;
+            padding: 3px 8px;
+            border-radius: 6px;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        /* Clean Editorial Cards */
+        .editorial-card {
+            background: #ffffff;
+            border: 1px solid var(--news-border);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow 0.2s ease;
+        }
+
+        .editorial-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-header-clean {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--news-border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #ffffff;
+            border-top-left-radius: var(--radius-lg);
+            border-top-right-radius: var(--radius-lg);
+        }
+
+        .card-header-clean h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--news-dark);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Status Badges */
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+        }
+
+        .status-draft { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
+        .status-pending, .status-pending_approval { background-color: #fffbeb; color: #b45309; border: 1px solid #fde68a; }
+        .status-published { background-color: #f0fdf4; color: #15803d; border: 1px solid #bbf7d0; }
+        .status-revision, .status-revision_requested { background-color: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+        /* Form elements */
+        .form-control, .form-select {
+            border: 1px solid var(--news-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            font-size: 0.95rem;
+            transition: border-color 0.15s, box-shadow 0.15s;
+        }
+
+        .form-control:focus, .form-select:focus {
+            border-color: var(--news-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+        }
+
+        .autosave-indicator {
+            font-size: 0.82rem;
+            color: var(--news-blue);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-weight: 600;
+        }
+
+        /* Pending List */
+        .pending-item {
+            padding: 12px 14px;
+            border-bottom: 1px solid var(--news-border);
+            cursor: pointer;
+            transition: background-color 0.15s;
+            border-radius: 6px;
+        }
+
+        .pending-item:hover {
+            background-color: #f8fafc;
+        }
+
+        .pending-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Public Live Preview Box */
+        .public-preview-box {
+            background: #fdfefe;
+            border: 1px dashed #cbd5e1;
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 0.92rem;
+        }
+
+        /* Console Stream */
+        .console-stream {
+            background: #0f172a;
+            color: #38bdf8;
+            font-family: var(--font-num);
+            font-size: 0.82rem;
+            padding: 16px;
+            border-radius: 8px;
+            max-height: 260px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            direction: ltr;
+            text-align: left;
+        }
     </style>
 </head>
 <body>
-    <div class="container">
-        <header style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-            <div>
-                <h1>The Daily Web - Article Logic & Auto-Save Test Lab</h1>
-                <p>Team Project Test Workbench: Articles (Member 2), Comments & Analytics (Member 5)</p>
+
+    <!-- 1. Editorial Header Bar -->
+    <header class="masthead sticky-top py-3 mb-4">
+        <div class="container d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <a href="/" class="masthead-brand">
+                    <i class="bi bi-newspaper text-danger fs-3"></i>
+                    <span>The Daily Web</span>
+                    <span class="brand-badge">Workflow & Auto-Save</span>
+                </a>
+                <span class="badge bg-light text-secondary border d-none d-md-inline-block">
+                    מעבדת עריכה וניהול כתבות (חבר צוות 2)
+                </span>
             </div>
-            <div>
-                <a href="/analytics.html" style="display: inline-block; background: #0284c7; color: white; text-decoration: none; padding: 10px 18px; border-radius: 6px; font-weight: 700; font-size: 14px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);">
-                    📊 Go to Member 5: Impact Analytics & Comments Lab ➔
+
+            <!-- Global Navigation Links across all views -->
+            <div class="d-flex align-items-center gap-2">
+                <a href="/" class="btn btn-outline-dark btn-sm px-3 fw-bold">
+                    <i class="bi bi-house-door me-1"></i> עיתון ראשי
+                </a>
+                <a href="/analytics.html" class="btn btn-outline-primary btn-sm px-3 fw-bold">
+                    <i class="bi bi-graph-up-arrow me-1"></i> דשבורד אנליטיקות (Member 5)
                 </a>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <div class="card" style="flex-direction: row; justify-content: space-between; align-items: center;">
-            <div style="display: flex; align-items: center; gap: 10px;">
-                <span>Active Role:</span>
-                <span id="currentRoleDisplay" class="user-indicator">REPORTER</span>
+    <main class="container mb-5">
+
+        <!-- 2. Active Session & Role Switcher Bar -->
+        <div class="editorial-card p-3 mb-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <span class="fw-bold text-dark">
+                    <i class="bi bi-person-circle text-primary me-1"></i> משתמש פעיל במערכת:
+                </span>
+                <span id="currentRoleDisplay" class="badge bg-primary text-white py-2 px-3 fw-bold font-num" style="font-size: 0.85rem;">
+                    REPORTER (טוען...)
+                </span>
             </div>
-            <div class="btn-group">
-                <button class="primary" onclick="loginAs('reporter')">Login as Reporter</button>
-                <button class="warning" onclick="loginAs('editor')">Login as Editor</button>
-                <a href="/analytics.html" style="background: #334155; color: #38bdf8; text-decoration: none; padding: 9px 16px; border-radius: 6px; font-size: 13px; font-weight: 600;">Analytics & Comments</a>
+
+            <div class="d-flex align-items-center gap-2 flex-wrap">
+                <span class="text-muted small">החלף תפקיד להדגמה:</span>
+                <button class="btn btn-primary btn-sm fw-bold px-3" onclick="loginAs('reporter')">
+                    <i class="bi bi-pen me-1"></i> התחבר ככתב (Reporter)
+                </button>
+                <button class="btn btn-warning btn-sm fw-bold px-3 text-dark" onclick="loginAs('editor')">
+                    <i class="bi bi-check2-circle me-1"></i> התחבר כעורך (Editor)
+                </button>
             </div>
         </div>
 
-        <div class="grid">
-            <div class="card">
-                <h2>1. Reporter Workspace (Auto-Save Enabled)</h2>
-                <div>
-                    <label>Article ID:</label>
-                    <input type="text" id="articleId" placeholder="New article (auto-generated on first keystroke)" readonly style="background: #1e293b; color: #94a3b8;">
-                </div>
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <label>Status:</label>
-                    <span id="articleStatusBadge" class="status-badge status-draft">DRAFT</span>
-                </div>
-                <div>
-                    <label>Title:</label>
-                    <input type="text" id="articleTitle" placeholder="Enter article title...">
-                </div>
-                <div>
-                    <label>Category:</label>
-                    <select id="articleCategory">
-                        <option value="טכנולוגיה">Technology (טכנולוגיה)</option>
-                        <option value="חדשות">News (חדשות)</option>
-                        <option value="כלכלה">Economy (כלכלה)</option>
-                        <option value="ספורט">Sports (ספורט)</option>
-                    </select>
-                </div>
-                <div>
-                    <label>Content:</label>
-                    <textarea id="articleContent" placeholder="Type here... Auto-save triggers automatically 600ms after you stop typing."></textarea>
-                </div>
-                <div id="autosaveStatus" class="autosave-indicator">Waiting for input...</div>
-                <div class="btn-group">
-                    <button class="primary" onclick="submitForReview()">Submit for Editor Approval</button>
-                    <button class="secondary" onclick="createNewDraft()">Start New Draft</button>
+        <!-- 3. Workspaces Grid -->
+        <div class="row g-4">
+            
+            <!-- Column 1: Reporter Workspace (Auto-Save Enabled) -->
+            <div class="col-lg-6">
+                <div class="editorial-card h-100">
+                    <div class="card-header-clean">
+                        <h2>
+                            <i class="bi bi-pencil-square text-primary"></i>
+                            1. מרחב עבודת הכתב (Auto-Save מובנה)
+                        </h2>
+                        <span id="articleStatusBadge" class="status-badge status-draft">DRAFT</span>
+                    </div>
+
+                    <div class="p-4 d-flex flex-column gap-3">
+                        <div>
+                            <label class="form-label text-muted small fw-bold mb-1">מזהה כתבה ב-MongoDB (Article ID):</label>
+                            <input type="text" id="articleId" class="form-control font-num bg-light text-muted" placeholder="כתבה חדשה (נוצר אוטומטית בעת תחילת ההקלדה)" readonly>
+                        </div>
+
+                        <div>
+                            <label class="form-label text-muted small fw-bold mb-1">כותרת הכתבה (Title):</label>
+                            <input type="text" id="articleTitle" class="form-control fw-bold font-editorial fs-5" placeholder="הקלד כותרת מושכת...">
+                        </div>
+
+                        <div>
+                            <label class="form-label text-muted small fw-bold mb-1">מדור / קטגוריה (Category):</label>
+                            <select id="articleCategory" class="form-select fw-semibold">
+                                <option value="חדשות">חדשות (News)</option>
+                                <option value="פוליטיקה">פוליטיקה (Politics)</option>
+                                <option value="כלכלה">כלכלה (Economy)</option>
+                                <option value="טכנולוגיה" selected>טכנולוגיה (Technology)</option>
+                                <option value="ספורט">ספורט (Sports)</option>
+                                <option value="תרבות">תרבות (Culture)</option>
+                                <option value="בריאות">בריאות (Health)</option>
+                                <option value="דעות">דעות (Opinions)</option>
+                            </select>
+                        </div>
+
+                        <div>
+                            <label class="form-label text-muted small fw-bold mb-1">תוכן הידיעה (Content):</label>
+                            <textarea id="articleContent" class="form-control" rows="6" placeholder="הקלד את תוכן הכתבה כאן... מנגנון השמירה האוטומטית (Auto-Save) ישמור את הטיוטה ל-MongoDB כ-600ms לאחר הפסקת ההקלדה."></textarea>
+                        </div>
+
+                        <div id="autosaveStatus" class="autosave-indicator">
+                            <i class="bi bi-clock-history"></i> ממתין לקלט מקלדת...
+                        </div>
+
+                        <div class="d-flex gap-2 pt-2 flex-wrap">
+                            <button class="btn btn-primary fw-bold px-4" onclick="submitForReview()">
+                                <i class="bi bi-send-check me-1"></i> הגש לאישור עורך
+                            </button>
+                            <button class="btn btn-outline-secondary fw-semibold" onclick="createNewDraft()">
+                                <i class="bi bi-file-earmark-plus me-1"></i> פתח טיוטה חדשה
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="card">
-                <h2>2. Editor Dashboard & Public Reader View</h2>
-                <div class="btn-group">
-                    <button class="warning" onclick="loadPendingArticles()">Load Pending Articles</button>
-                    <button class="secondary" onclick="loadArticleReview()">Inspect Review Details</button>
-                </div>
+            <!-- Column 2: Editor Dashboard & Public Reader Preview -->
+            <div class="col-lg-6">
+                <div class="editorial-card h-100">
+                    <div class="card-header-clean">
+                        <h2>
+                            <i class="bi bi-shield-check text-warning"></i>
+                            2. דשבורד עריכה ובקרת גרסאות
+                        </h2>
+                        <span class="badge bg-light text-muted border">בקרת איכות</span>
+                    </div>
 
-                <div id="pendingList" style="max-height: 120px; overflow-y: auto; font-size: 13px; border: 1px solid #334155; border-radius: 4px; padding: 8px; background: #0f172a;">
-                    <em>Click "Load Pending Articles" to list articles awaiting review.</em>
-                </div>
+                    <div class="p-4 d-flex flex-column gap-3">
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-warning fw-bold text-dark" onclick="loadPendingArticles()">
+                                <i class="bi bi-inbox me-1"></i> טען כתבות הממתינות לאישור
+                            </button>
+                            <button class="btn btn-outline-secondary fw-semibold" onclick="loadArticleReview()">
+                                <i class="bi bi-search me-1"></i> טען פרטי כתבה לבדיקה
+                            </button>
+                        </div>
 
-                <div>
-                    <label>Editor Feedback (Mandatory when returning for revisions):</label>
-                    <input type="text" id="editorFeedbackInput" placeholder="Enter reason for revisions...">
-                </div>
+                        <div>
+                            <label class="form-label text-muted small fw-bold mb-1">רשימת כתבות הממתינות לאישור (Pending Queue):</label>
+                            <div id="pendingList" class="border rounded bg-light p-2" style="max-height: 140px; overflow-y: auto; font-size: 0.88rem;">
+                                <div class="text-muted small p-2 text-center">לחץ על "טען כתבות הממתינות לאישור" כדי להציג את התור.</div>
+                            </div>
+                        </div>
 
-                <div class="btn-group">
-                    <button class="success" onclick="approveArticle()">Approve & Publish</button>
-                    <button class="danger" onclick="rejectArticle()">Return for Revisions</button>
-                    <button class="danger" style="background: #991b1b;" onclick="deleteArticle()">Delete</button>
-                </div>
+                        <div>
+                            <label class="form-label text-muted small fw-bold mb-1">
+                                משוב עורך (חובה בעת החזרה לתיקונים):
+                            </label>
+                            <input type="text" id="editorFeedbackInput" class="form-control" placeholder="פרט מה נדרש מהכתב לשפר...">
+                        </div>
 
-                <h2 style="margin-top: 10px;">3. Public View (Live Reader Simulation)</h2>
-                <div id="publicViewCard" style="background: #0f172a; border: 1px solid #334155; border-radius: 6px; padding: 12px; font-size: 13px;">
-                    <em>Shows what unauthenticated public readers currently see.</em>
+                        <div class="d-flex gap-2 flex-wrap">
+                            <button class="btn btn-success fw-bold px-3" onclick="approveArticle()">
+                                <i class="bi bi-check-lg me-1"></i> אשר ופרסם כתבה
+                            </button>
+                            <button class="btn btn-danger fw-bold px-3" onclick="rejectArticle()">
+                                <i class="bi bi-arrow-return-right me-1"></i> החזר לתיקונים
+                            </button>
+                            <button class="btn btn-outline-danger fw-semibold" onclick="deleteArticle()">
+                                <i class="bi bi-trash me-1"></i> מחק
+                            </button>
+                        </div>
+
+                        <hr class="my-2">
+
+                        <div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <h3 class="fs-6 fw-bold text-dark m-0">
+                                    <i class="bi bi-eye text-primary me-1"></i> 3. סימולציית תצוגת קורא בזמן אמת (Public View)
+                                </h3>
+                                <button class="btn btn-sm btn-light border fw-semibold text-secondary" onclick="checkPublicView()">
+                                    <i class="bi bi-arrow-clockwise me-1"></i> רענן תצוגה
+                                </button>
+                            </div>
+                            <div id="publicViewCard" class="public-preview-box">
+                                <span class="text-muted small">מציג מה קורא בלתי-מזוהה רואה כרגע בכתובת הציבורית (GET /api/articles/public/:id).</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <button class="secondary" onclick="checkPublicView()">Check Public API (GET /api/articles/public/:id)</button>
+            </div>
+
+        </div>
+
+        <!-- 4. Live API Stream Console -->
+        <div class="editorial-card mt-4">
+            <div class="card-header-clean">
+                <h2>
+                    <i class="bi bi-terminal text-info"></i>
+                    מסוף תקשורת API חי (Live HTTP Traffic Stream)
+                </h2>
+                <button class="btn btn-sm btn-light border text-muted" onclick="document.getElementById('logBox').innerText='Ready.'">
+                    <i class="bi bi-trash me-1"></i> נקה מסוף
+                </button>
+            </div>
+            <div class="p-3">
+                <div id="logBox" class="console-stream">Ready.</div>
             </div>
         </div>
 
-        <div class="card">
-            <h2>Live API Log Console</h2>
-            <div id="logBox" class="log-box">Ready.</div>
-        </div>
-    </div>
+    </main>
 
+    <!-- Client-side Logic (Vanilla JS, Preserving 100% of Member 2 Functionality) -->
     <script>
         let currentToken = "";
         let currentRole = "reporter";
@@ -144,7 +397,7 @@
 
         const log = (msg, obj) => {
             const box = document.getElementById("logBox");
-            const time = new Date().toLocaleTimeString();
+            const time = new Date().toLocaleTimeString('he-IL');
             const text = typeof obj !== "undefined" ? msg + "\n" + JSON.stringify(obj, null, 2) : msg;
             box.innerText = "[" + time + "] " + text + "\n\n" + box.innerText;
         };
@@ -155,7 +408,7 @@
                 let res = await fetch("/api/auth/register", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ username, password: "password123", fullName: role === "editor" ? "Editor Sarah" : "Reporter Dan", role })
+                    body: JSON.stringify({ username, password: "password123", fullName: role === "editor" ? "עורך ראשי (דמו)" : "כתב דסק (דמו)", role })
                 });
                 let data = await res.json();
                 if (!res.ok) {
@@ -169,15 +422,17 @@
 
                 currentToken = data.token;
                 currentRole = role;
-                document.getElementById("currentRoleDisplay").innerText = role.toUpperCase() + " (" + data.user.username + ")";
-                log("Logged in as " + role.toUpperCase(), data.user);
+                const roleBadge = document.getElementById("currentRoleDisplay");
+                roleBadge.innerText = (role === "editor" ? "EDITOR" : "REPORTER") + " (" + data.user.username + ")";
+                roleBadge.className = "badge py-2 px-3 fw-bold font-num " + (role === "editor" ? "bg-warning text-dark" : "bg-primary text-white");
+                log("התחברת בהצלחה בתפקיד: " + role.toUpperCase(), data.user);
             } catch (err) {
-                log("Login error: " + err.message);
+                log("שגיאת התחברות: " + err.message);
             }
         }
 
         function triggerAutoSave() {
-            document.getElementById("autosaveStatus").innerText = "Saving changes to MongoDB...";
+            document.getElementById("autosaveStatus").innerHTML = '<i class="bi bi-arrow-repeat spin"></i> שומר שינויים ל-MongoDB...';
             clearTimeout(autoSaveTimer);
             autoSaveTimer = setTimeout(async () => {
                 const id = document.getElementById("articleId").value;
@@ -205,14 +460,14 @@
                             document.getElementById("articleId").value = data.articleId;
                         }
                         updateStatusBadge(data.status);
-                        document.getElementById("autosaveStatus").innerText = "Auto-saved at " + new Date(data.savedAt).toLocaleTimeString();
+                        document.getElementById("autosaveStatus").innerHTML = '<i class="bi bi-check-circle text-success"></i> נשמר אוטומטית בשעה ' + new Date(data.savedAt).toLocaleTimeString('he-IL');
                         log("[AUTO-SAVE OK] Article " + (data.articleId || id), data);
                     } else {
-                        document.getElementById("autosaveStatus").innerText = "Auto-save error: " + data.message;
+                        document.getElementById("autosaveStatus").innerText = "שגיאה בשמירה: " + data.message;
                         log("[AUTO-SAVE FAILED]", data);
                     }
                 } catch (e) {
-                    document.getElementById("autosaveStatus").innerText = "Auto-save network failed";
+                    document.getElementById("autosaveStatus").innerText = "שגיאת רשת בשמירה אוטומטית";
                 }
             }, 600);
         }
@@ -223,13 +478,19 @@
 
         function updateStatusBadge(status) {
             const badge = document.getElementById("articleStatusBadge");
-            badge.innerText = status ? status.toUpperCase() : "DRAFT";
-            badge.className = "status-badge status-" + (status || "draft");
+            const s = (status || "draft").toLowerCase();
+            let label = "טיוטה (DRAFT)";
+            if (s === "pending" || s === "pending_approval") label = "ממתינה לאישור (PENDING)";
+            if (s === "published") label = "פורסמה (PUBLISHED)";
+            if (s === "revision" || s === "revision_requested") label = "הוחזרה לתיקונים (REVISION)";
+
+            badge.innerText = label;
+            badge.className = "status-badge status-" + s;
         }
 
         async function submitForReview() {
             const id = document.getElementById("articleId").value;
-            if (!id) return alert("Please type something first to create an article.");
+            if (!id) return alert("יש להקליד תוכן או כותרת תחילה ליצירת כתבה.");
 
             if (currentRole !== "reporter") await loginAs("reporter");
 
@@ -241,9 +502,9 @@
             log("Submit for Review Response:", data);
             if (res.ok) {
                 updateStatusBadge(data.status);
-                alert("Article submitted to editor!");
+                alert("הכתבה הוגשה בהצלחה לאישור עורך!");
             } else {
-                alert("Error: " + data.message);
+                alert("שגיאה: " + data.message);
             }
         }
 
@@ -259,12 +520,19 @@
             const container = document.getElementById("pendingList");
             if (data.articles && data.articles.length > 0) {
                 container.innerHTML = data.articles.map(a => 
-                    '<div style="padding: 6px; border-bottom: 1px solid #334155; cursor: pointer;" onclick="selectArticle(\'' + a._id + '\')">' +
-                    '<strong>' + a.title + '</strong> - Status: ' + a.status + ' (by ' + (a.author ? a.author.fullName : "Reporter") + ')' +
+                    '<div class="pending-item" onclick="selectArticle(\'' + a._id + '\')">' +
+                    '<div class="d-flex justify-content-between align-items-center">' +
+                    '<strong class="text-dark">' + escapeHtml(a.title) + '</strong>' +
+                    '<span class="badge bg-warning text-dark">' + a.status + '</span>' +
+                    '</div>' +
+                    '<div class="text-muted small mt-1">' +
+                    '<i class="bi bi-person"></i> מאת: ' + (a.author ? a.author.fullName : "כתב") +
+                    ' | <span class="font-num">' + a._id + '</span>' +
+                    '</div>' +
                     '</div>'
                 ).join("");
             } else {
-                container.innerHTML = "<em>No pending articles waiting for approval.</em>";
+                container.innerHTML = '<div class="text-muted small p-2 text-center">אין כתבות הממתינות לאישור כרגע.</div>';
             }
         }
 
@@ -275,7 +543,7 @@
 
         async function loadArticleReview() {
             const id = document.getElementById("articleId").value;
-            if (!id) return alert("Select or enter an article ID first.");
+            if (!id) return alert("יש לבחור או להזין מזהה כתבה תחילה.");
             if (currentRole !== "editor") await loginAs("editor");
 
             const res = await fetch("/api/articles/editor/" + id + "/review", {
@@ -292,14 +560,14 @@
                 updateStatusBadge(art.pendingVersion.status);
 
                 if (art.isPublishedUpdate) {
-                    alert("This is an edit of an ALREADY PUBLISHED article! The public sees the live content, while you are reviewing the pending revision.");
+                    alert("שים לב: עריכה זו היא על גבי כתבה שכבר פורסמה בעבר! הציבור רואה את הגרסה החיה, בעוד אתה בודק את העדכון הממתין.");
                 }
             }
         }
 
         async function approveArticle() {
             const id = document.getElementById("articleId").value;
-            if (!id) return alert("Select or enter an article ID first.");
+            if (!id) return alert("יש לבחור כתבה תחילה.");
             if (currentRole !== "editor") await loginAs("editor");
 
             const res = await fetch("/api/articles/" + id + "/approve", {
@@ -310,18 +578,18 @@
             log("Approve Response:", data);
             if (res.ok) {
                 updateStatusBadge("published");
-                alert("Article approved and published!");
+                alert("הכתבה אושרה ופורסמה בהצלחה לציבור!");
                 checkPublicView();
             } else {
-                alert("Error: " + data.message);
+                alert("שגיאה: " + data.message);
             }
         }
 
         async function rejectArticle() {
             const id = document.getElementById("articleId").value;
             const feedback = document.getElementById("editorFeedbackInput").value;
-            if (!id) return alert("Select an article ID first.");
-            if (!feedback.trim()) return alert("Editor Feedback is MANDATORY when returning for revisions!");
+            if (!id) return alert("יש לבחור כתבה תחילה.");
+            if (!feedback.trim()) return alert("משוב עורך הוא שדה חובה בעת החזרה לתיקונים!");
             if (currentRole !== "editor") await loginAs("editor");
 
             const res = await fetch("/api/articles/" + id + "/reject", {
@@ -336,18 +604,18 @@
             log("Return for Revisions Response:", data);
             if (res.ok) {
                 updateStatusBadge("revision_requested");
-                alert("Returned for revisions with feedback: " + feedback);
+                alert("הכתבה הוחזרה לתיקונים עם המשוב: " + feedback);
             } else {
-                alert("Error: " + data.message);
+                alert("שגיאה: " + data.message);
             }
         }
 
         async function deleteArticle() {
             const id = document.getElementById("articleId").value;
-            if (!id) return alert("Select an article ID first.");
+            if (!id) return alert("יש לבחור כתבה למחיקה.");
             if (currentRole !== "editor") await loginAs("editor");
 
-            if (!confirm("Are you sure you want to delete this article?")) return;
+            if (!confirm("האם אתה בטוח שברצונך למחוק כתבה זו?")) return;
 
             const res = await fetch("/api/articles/" + id, {
                 method: "DELETE",
@@ -356,16 +624,16 @@
             const data = await res.json();
             log("Delete Article Response:", data);
             if (res.ok) {
-                alert("Article deleted!");
+                alert("הכתבה נמחקה בהצלחה!");
                 createNewDraft();
             } else {
-                alert("Error: " + data.message);
+                alert("שגיאה: " + data.message);
             }
         }
 
         async function checkPublicView() {
             const id = document.getElementById("articleId").value;
-            if (!id) return alert("Select an article first.");
+            if (!id) return alert("בחר כתבה תחילה.");
 
             const res = await fetch("/api/articles/public/" + id);
             const data = await res.json();
@@ -373,11 +641,14 @@
 
             const card = document.getElementById("publicViewCard");
             if (res.ok) {
-                card.innerHTML = "<h3>" + data.article.title + "</h3>" +
-                    "<p style=\"color: #94a3b8; font-size: 11px;\">Published: " + new Date(data.article.publishedAt).toLocaleString() + "</p>" +
-                    "<div style=\"margin-top: 8px;\">" + data.article.content + "</div>";
+                card.innerHTML = "<h4 class='font-editorial fw-bold text-dark'>" + escapeHtml(data.article.title) + "</h4>" +
+                    "<div class='text-muted small mb-2'>" +
+                    "<span>מדור: <strong>" + escapeHtml(data.article.category) + "</strong></span> | " +
+                    "<span>פורסם בתאריך: " + new Date(data.article.publishedAt).toLocaleString('he-IL') + "</span>" +
+                    "</div>" +
+                    "<div class='border-top pt-2 text-dark'>" + escapeHtml(data.article.content) + "</div>";
             } else {
-                card.innerHTML = "<span style=\"color: #f87171;\">Public cannot view this article: " + data.message + "</span>";
+                card.innerHTML = "<div class='text-danger fw-bold'><i class='bi bi-shield-x me-1'></i> הציבור אינו יכול לצפות בכתבה זו: " + escapeHtml(data.message) + "</div>";
             }
         }
 
@@ -386,11 +657,19 @@
             document.getElementById("articleTitle").value = "";
             document.getElementById("articleContent").value = "";
             document.getElementById("editorFeedbackInput").value = "";
-            document.getElementById("publicViewCard").innerHTML = "<em>Shows what unauthenticated public readers currently see.</em>";
+            document.getElementById("publicViewCard").innerHTML = "<span class='text-muted small'>מציג מה קורא בלתי-מזוהה רואה כרגע בכתובת הציבורית.</span>";
             updateStatusBadge("draft");
-            document.getElementById("autosaveStatus").innerText = "New draft started.";
+            document.getElementById("autosaveStatus").innerHTML = '<i class="bi bi-clock-history"></i> נפתחה טיוטה חדשה.';
         }
 
+        function escapeHtml(text) {
+            if (!text) return "";
+            return String(text).replace(/[&<>"']/g, function(m) {
+                return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+            });
+        }
+
+        // Initialize session on load
         loginAs("reporter");
     </script>
 </body>
