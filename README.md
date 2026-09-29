@@ -1,108 +1,111 @@
-# The Daily Web - מערכת חדשות וניהול תוכן מתקדמת
+# The Daily Web - News Management & Publishing Portal
 
-מערכת אינטרנטית לניהול, עריכה ופרסום חדשות, המבוססת על ארכיטקטורת MVC וטכנולוגיות צד שרת ולקוח תקניות.
+A modern web application for news management, editing, and publishing based on MVC architecture and standard server/client technologies.
 
 ---
 
-## 🚀 הוראות התקנה והרצה
+## 🚀 Installation & Getting Started
 
-### דרישות קדם:
-- **Node.js** (גרסה 18 ומעלה)
-- **Docker Desktop** (עבור הרצת MongoDB בקונטיינר)
+### Prerequisites:
+- **Node.js** (v18 or newer)
+- **Docker Desktop** (for running MongoDB in an isolated container)
 
-### 1. הפעלת בסיס הנתונים (MongoDB ב-Docker):
+### 1. Start the Database (MongoDB via Docker):
 ```bash
 docker compose up -d
 ```
-הפקודה תפעיל קונטיינר של MongoDB בפורט ברירת המחדל `27017` עם שמירת מידע מתמשכת ב-volume.
+This starts a MongoDB container on default port `27017` with persistent volume storage (`mongo_data`).
 
-### 2. התקנת תלויות:
+### 2. Install Dependencies:
 ```bash
 npm install
 ```
 
-### 3. קובץ הגדרות סביבה:
-העתק את הקובץ `.env.example` לקובץ חדש בשם `.env`:
+### 3. Environment Configuration:
+Copy the `.env.example` file to `.env`:
 ```bash
 cp .env.example .env
 ```
 
-### 4. הרצת המערכת:
-- **סביבת פיתוח (עם Hot-Reload):**
+### 4. Run the Application:
+- **Development Mode (with auto-reload):**
   ```bash
   npm run dev
   ```
-- **סביבת ייצור / רגילה:**
+- **Standard Mode:**
   ```bash
   npm start
   ```
-השרת יעלה בכתובת: `http://localhost:3000`
+The server will be available at: `http://localhost:3000`
 
-### 5. הרצת בדיקות אוטומטיות (Test Suite):
+### 5. Run Automated Tests:
 ```bash
 npm test
 ```
 
 ---
 
-## 📁 מבנה הפרויקט (MVC Pattern)
+## 📁 Project Structure (MVC Pattern)
 
 ```text
 the-daily-web/
-├── docker-compose.yml          # הפעלת MongoDB בקונטיינר
-├── package.json               # הגדרות פרויקט ותלויות מאושרות בלבד
-├── .gitignore                 # מניעת העלאת סודות, קבצי סביבה ו-node_modules
-├── .env.example               # תבנית משתני סביבה
-├── README.md                  # תיעוד המערכת
+├── docker-compose.yml          # MongoDB container service configuration
+├── package.json               # Project manifest and allowed dependencies
+├── .gitignore                 # Excludes secrets (.env), logs, and node_modules
+├── .env.example               # Environment variable template
+├── README.md                  # Project documentation
+├── public/
+│   └── test.html              # Interactive visual testing workbench
 ├── src/
-│   ├── app.js                 # אתחול Express, הגדרת View Engine וניתובים
-│   ├── server.js              # נקודת כניסה, חיבור ל-DB והאזנה לפורט
+│   ├── app.js                 # Express application initialization & middleware setup
+│   ├── server.js              # Server entrypoint and MongoDB connection
 │   ├── config/
-│   │   └── db.js              # חיבור Mongoose עם טיפול בניתוקים ושגיאות
+│   │   └── db.js              # Mongoose connection with event listeners and retry logic
 │   ├── constants/
-│   │   └── articleConstants.js# קבועים עבור מצבי כתבות ("בהכנה", "ממתינה לאישור עורך", "פורסמה", "הוחזרה לתיקונים")
+│   │   └── articleConstants.js# Article statuses (Draft, Pending Approval, Published, Revision Requested)
 │   ├── models/
-│   │   ├── User.js            # מודל משתמשים (תפקידים: Reporter, Editor, אורח), הצפנת bcrypt
-│   │   ├── Article.js         # מודל כתבות עם State Machine, ניהול גרסאות טיוטה לכתבה מפורסמת והיסטוריית אישורים
-│   │   ├── Comment.js         # מודל תגובות עם הכנה להגבלת ספאם (3 לדקה)
-│   │   └── ViewStat.js        # מודל סטטיסטיקות צפייה עבור Impact Analytics
+│   │   ├── User.js            # User model (Reporter, Editor, Guest roles) with bcrypt password hashing
+│   │   ├── Article.js         # Article model with 4-state lifecycle, draft subdocument, and revisions history
+│   │   ├── Comment.js         # Comment model with anti-spam indexing (3 comments/min limit)
+│   │   └── ViewStat.js        # View statistics model for Impact Analytics graph
 │   ├── middleware/
-│   │   ├── auth.js            # אימות והרשאות שרת (מתמשך גם לאחר Restart)
-│   │   ├── errorHandler.js    # טיפול מרכזי בשגיאות ותיעוד לקובץ
-│   │   └── requestLogger.js   # תיעוד פעולות תפעוליות משמעותיות בלוג
+│   │   ├── auth.js            # JWT auth & server restart persistence, role-based access control
+│   │   ├── errorHandler.js    # Centralized error handler and logging to error.log
+│   │   └── requestLogger.js   # Operational event logging to operations.log
 │   ├── controllers/
-│   │   ├── articleController.js # לוגיקת כתבות, שמירה אוטומטית, גרסאות ואישורי עורך
-│   │   └── authController.js    # הרשמה, התחברות וניהול טוקנים
+│   │   ├── articleController.js # Core article logic, auto-save, draft versioning, and editor approvals
+│   │   └── authController.js    # Registration, login, and token generation
 │   └── routes/
-│       ├── articleRoutes.js   # ניתוב RESTful מלא לכתבות (כתבים, עורכים וציבור)
-│       └── authRoutes.js      # נתיבי הזדהות
+│       ├── articleRoutes.js   # RESTful routes for articles (reporters, editors, public)
+│       └── authRoutes.js      # Authentication endpoints
 └── tests/
-    ├── articleWorkflow.test.js # בדיקות יחידה ומצבי כתבה
-    └── articleApi.test.js      # בדיקות אינטגרציה מקצה לקצה לכלל ה-REST API
+    ├── articleWorkflow.test.js # Unit and state-machine test suite
+    └── articleApi.test.js      # End-to-end RESTful API integration tests
 ```
 
 ---
 
-## 💡 פיצ'רים ופונקציונליות מרכזית (חבר צוות 2: לוגיקת כתבות ותהליכי עבודה)
+## 💡 Core Features & Business Logic (Team Member 2: Article Lifecycle & Workflows)
 
-1. **ניהול מצבי כתבה (State Machine):**
-   - **"בהכנה" (Draft):** כתבה חדשה שנוצרת על ידי כתב.
-   - **"ממתינה לאישור עורך" (Pending Approval):** כתב מגיש כתבה מוכנה לעיון עורך.
-   - **"פורסמה" (Published):** עורך מאשר את הכתבה והיא הופכת זמינה לקוראים.
-   - **"הוחזרה לתיקונים" (Revision Requested):** עורך מחזיר כתבה לכתב בצירוף **הערת חובה**. הכתב מתקן ויכול להגיש מחדש.
-   - מניעת מעברים לא חוקיים בצד השרת.
+1. **Article State Machine:**
+   - **"In Preparation" (`draft`)**: Initial state when created by a reporter.
+   - **"Pending Approval" (`pending_approval`)**: Submitted by the reporter for editorial review.
+   - **"Published" (`published`)**: Approved by an editor and visible to public readers.
+   - **"Returned for Revisions" (`revision_requested`)**: Returned by an editor with **mandatory feedback notes**. The reporter can revise and resubmit.
+   - Illegal state transitions are strictly blocked at the server level.
 
-2. **שמירה אוטומטית (Auto-Save):**
-   - Endpoint ייעודי (`PUT /api/articles/:id/autosave` ו-`POST /api/articles/autosave`) השומר רציפות עבודה ישירות במסד הנתונים.
-   - סגירת דפדפן, רענון או מעבר מחשב אינם גורמים לאובדן עבודה.
+2. **Continuous Auto-Save:**
+   - Dedicated endpoints (`PUT /api/articles/:id/autosave` and `POST /api/articles/autosave`) save work continuously to MongoDB in the background.
+   - Closing the browser, refreshing the page, or switching computers does not cause any data loss.
 
-3. **עריכת כתבה שכבר פורסמה:**
-   - בעת עריכת כתבה מפורסמת, השינויים נשמרים תחת `draftVersion` נפרד.
-   - הציבור ממשיך לראות באופן רציף את הגרסה המאושרת האחרונה.
-   - עורך מקבל תצוגת השוואה (Diff) בין הגרסה הפעילה לגרסה המוצעת.
-   - רק בעת אישור עורך, הגרסה החדשה מחליפה את הגרסה הפורמלית, ונרשמת נקודת זמן ב-`revisionsHistory` לצורך גרף ה-Impact Analytics.
+3. **Editing Already-Published Articles:**
+   - When editing an existing published article, edits are stored in an isolated `draftVersion` subdocument.
+   - **The public audience continues seeing the latest approved version** without interruption during drafting and review.
+   - Editors can view a side-by-side comparison (diff) between the currently published content and the proposed revision.
+   - Only upon editor approval does the revision overwrite the public content, recording a timestamp in `revisionsHistory` for the **Impact Analytics** timeline.
 
-4. **אבטחה והרשאות:**
-   - אימות תפקידים strictly בצד השרת.
-   - הצפנת סיסמאות חד-כיוונית ב-bcrypt.
-   - שרידות ל-Server Restart.
+4. **Security, Persistence & Logging:**
+   - Server-side role enforcement (reporters can only edit their own articles; editors can review, edit, approve, return, or delete).
+   - Passwords hashed using `bcrypt` (never plaintext, irreversible).
+   - Authentication survives server restarts without requiring re-login.
+   - Error logs (`logs/error.log`) and operational logs (`logs/operations.log`).
