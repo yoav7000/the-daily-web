@@ -1,6 +1,7 @@
 const Article = require('../models/Article');
 const { ARTICLE_STATUS, ARTICLE_CATEGORIES } = require('../constants/articleConstants');
 const { logOperation } = require('../middleware/requestLogger');
+const { recordViewInternal } = require('./analyticsController');
 
 /**
  * Helper to check if user has permission to modify an article
@@ -738,6 +739,9 @@ const getPublicArticleById = async (req, res, next) => {
         if (!article) {
             return res.status(404).json({ success: false, message: 'הכתבה לא נמצאה או שטרם פורסמה' });
         }
+
+        // דרישת פרויקט: כל כניסה לכתבה נלקחת בחשבון לצורך נתוני הצפייה והסטטיסטיקות
+        recordViewInternal(article._id);
 
         // Return published content only (ignore any draftVersion)
         return res.status(200).json({

@@ -10,7 +10,7 @@ const app = require('../src/app');
 const Article = require('../src/models/Article');
 const User = require('../src/models/User');
 
-const MONGO_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/the-daily-web-test';
+const MONGO_URI = process.env.MONGODB_URI_API || 'mongodb://127.0.0.1:27017/the-daily-web-test-api';
 
 let server;
 let baseUrl;

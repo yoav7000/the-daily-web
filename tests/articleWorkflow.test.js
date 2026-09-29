@@ -9,7 +9,7 @@ const Article = require('../src/models/Article');
 const User = require('../src/models/User');
 const { ARTICLE_STATUS } = require('../src/constants/articleConstants');
 
-const MONGO_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/the-daily-web-test';
+const MONGO_URI = process.env.MONGODB_URI_WORKFLOW || 'mongodb://127.0.0.1:27017/the-daily-web-test-workflow';
 
 test.before(async () => {
     await mongoose.connect(MONGO_URI);
