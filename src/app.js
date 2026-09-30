@@ -7,6 +7,8 @@ dotenv.config();
 
 const articleRoutes = require('./routes/articleRoutes');
 const authRoutes = require('./routes/authRoutes');
+const commentRoutes = require('./routes/commentRoutes');
+const analyticsRoutes = require('./routes/analyticsRoutes');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -37,7 +39,9 @@ app.get('/api/health', (req, res) => {
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api', commentRoutes);
 app.use('/api/articles', articleRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Catch 404 for undefined API routes
 app.use('/api/*', (req, res) => {
