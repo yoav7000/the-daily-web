@@ -23,30 +23,9 @@ const connectDB = async () => {
             const conn = await mongoose.connect(mongoURI);
             console.log(`[MongoDB] Connected to IN-MEMORY database successfully.`);
             
-            // Seed DB
-            const Article = require('../models/Article');
-            const User = require('../models/User');
-            if (await Article.countDocuments() === 0) {
-                let dummyUser = await User.findOne({ email: 'test@example.com' });
-                if (!dummyUser) {
-                    dummyUser = await User.create({
-                        fullName: 'Test Reporter',
-                        username: 'testreporter123',
-                        email: 'test@example.com',
-                        password: 'Password123!',
-                        role: 'reporter'
-                    });
-                }
-                await Article.create({
-                    title: 'כתבת דמה לבדיקות עיצוב (ממורי-DB)',
-                    summary: 'השרת פועל עם מסד נתונים זמני בזיכרון, לכן כתבה זו נוצרה אוטומטית כדי שתוכלו לבדוק את הפיד.',
-                    content: '<p>טקסט הכתבה המלא עבור בדיקות.</p>',
-                    category: 'כלכלה',
-                    status: 'published',
-                    publishedAt: new Date(),
-                    author: dummyUser._id
-                });
-            }
+            // Seed DB with test articles
+            const seedTestData = require('../../seed_test');
+            await seedTestData();
             return conn;
         } catch (memError) {
             throw memError;
