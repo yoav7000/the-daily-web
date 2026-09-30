@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>The Daily Web — עיתון החדשות והתוכן הדיגיטלי המוביל</title>
+
+    <!-- Google Fonts: Frank Ruhl Libre (Classic Editorial Serif) + Assistant (Modern Clean Hebrew) + Inter (Data & Numbers) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&family=Frank+Ruhl+Libre:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 CSS & Icons (Approved course technology via CDN) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <style>
+        :root {
+            --font-editorial: 'Frank Ruhl Libre', serif;
+            --font-sans: 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-num: 'Inter', monospace;
+            
+            --news-dark: #121212;
+            --news-ink: #1f2937;
+            --news-muted: #6b7280;
+            --news-border: #e5e7eb;
+            --news-bg-subtle: #f9fafb;
+            --news-red: #b91c1c;
+            --news-blue: #1d4ed8;
+            --news-gold: #b45309;
+        }
+
+        body {
+            font-family: var(--font-sans);
+            background-color: #ffffff;
+            color: var(--news-ink);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .font-editorial { font-family: var(--font-editorial); }
+        .font-num { font-family: var(--font-num); }
+
+        /* 1. Top Utility Header */
+        .top-utility-bar {
+            background-color: #fafafa;
+            border-bottom: 1px solid var(--news-border);
+            font-size: 0.82rem;
+            color: var(--news-muted);
+        }
+
+        /* 2. Main Newspaper Masthead */
+        .newspaper-masthead {
+            text-align: center;
+            padding: 24px 0 16px;
+            border-bottom: 3px double var(--news-dark);
+        }
+
+        .masthead-title {
+            font-family: var(--font-editorial);
+            font-size: 3.4rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            color: var(--news-dark);
+            text-decoration: none;
+            display: inline-block;
+            line-height: 1;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        @media (max-width: 768px) {
+            .masthead-title { font-size: 2.2rem; }
+        }
+
+        .masthead-tagline {
+            font-size: 0.9rem;
+            color: var(--news-muted);
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        /* 3. Category Navigation */
+        .category-nav-bar {
+            background-color: #ffffff;
+            border-bottom: 1px solid var(--news-border);
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+        }
+
+        .category-link {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--news-ink);
+            padding: 12px 14px;
+            text-decoration: none;
+            display: inline-block;
+            transition: color 0.15s, border-color 0.15s;
+            border-bottom: 3px solid transparent;
+        }
+
+        .category-link:hover, .category-link.active {
+            color: var(--news-red);
+            border-bottom-color: var(--news-red);
+        }
+
+        /* 4. Breaking News Strip */
+        .breaking-strip {
+            background-color: #fef2f2;
+            border-bottom: 1px solid #fee2e2;
+            padding: 8px 16px;
+            font-size: 0.85rem;
+        }
+
+        .breaking-badge {
+            background-color: var(--news-red);
+            color: #ffffff;
+            font-weight: 800;
+            font-size: 0.75rem;
+            padding: 2px 8px;
+            border-radius: 4px;
+            letter-spacing: 0.5px;
+            margin-inline-end: 8px;
+        }
+
+        /* 5. Lead Story & Grid Layouts */
+        .lead-headline {
+            font-family: var(--font-editorial);
+            font-size: 2.4rem;
+            font-weight: 900;
+            line-height: 1.15;
+            color: var(--news-dark);
+            text-decoration: none;
+            transition: color 0.15s;
+        }
+
+        .lead-headline:hover {
+            color: var(--news-red);
+        }
+
+        @media (max-width: 768px) {
+            .lead-headline { font-size: 1.7rem; }
+        }
+
+        .lead-image-container {
+            position: relative;
+            overflow: hidden;
+            border-radius: 8px;
+            height: 380px;
+            background-color: #e5e7eb;
+        }
+
+        .lead-image-container img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.4s ease;
+        }
+
+        .lead-image-container:hover img {
+            transform: scale(1.02);
+        }
+
+        /* 6. Standard Article Cards */
+        .news-card {
+            border: none;
+            border-bottom: 1px solid var(--news-border);
+            border-radius: 0;
+            background: transparent;
+            padding-bottom: 18px;
+            margin-bottom: 20px;
+            transition: transform 0.15s;
+            cursor: pointer;
+        }
+
+        .news-card-img-wrap {
+            position: relative;
+            overflow: hidden;
+            border-radius: 6px;
+            height: 180px;
+            background-color: #f3f4f6;
+            margin-bottom: 10px;
+        }
+
+        .news-card-img-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+
+        .news-card:hover .news-card-img-wrap img {
+            transform: scale(1.03);
+        }
+
+        .category-tag {
+            font-size: 0.72rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--news-red);
+            margin-bottom: 4px;
+            display: inline-block;
+        }
+
+        .card-title-news {
+            font-family: var(--font-editorial);
+            font-size: 1.25rem;
+            font-weight: 800;
+            line-height: 1.25;
+            color: var(--news-dark);
+            margin-bottom: 6px;
+        }
+
+        .card-title-news:hover {
+            color: var(--news-red);
+        }
+
+        .card-snippet {
+            font-size: 0.9rem;
+            color: var(--news-muted);
+            line-height: 1.45;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            margin-bottom: 8px;
+        }
+
+        .byline {
+            font-size: 0.78rem;
+            color: #9ca3af;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .viewed-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 3px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            padding: 1px 6px;
+            border-radius: 4px;
+            background-color: #f3f4f6;
+            color: #4b5563;
+        }
+
+        .viewed-badge.is-viewed {
+            background-color: #ecfdf5;
+            color: #059669;
+        }
+
+        /* 7. Sidebar Widgets */
+        .sidebar-widget {
+            border: 1px solid var(--news-border);
+            border-radius: 8px;
+            padding: 18px;
+            background-color: #ffffff;
+            margin-bottom: 24px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+        }
+
+        .sidebar-title {
+            font-family: var(--font-editorial);
+            font-size: 1.15rem;
+            font-weight: 900;
+            border-bottom: 2px solid var(--news-dark);
+            padding-bottom: 8px;
+            margin-bottom: 14px;
+            color: var(--news-dark);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .weather-display {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .weather-temp {
+            font-size: 2.2rem;
+            font-weight: 800;
+            font-family: var(--font-num);
+            line-height: 1;
+        }
+
+        .trending-item {
+            display: flex;
+            gap: 12px;
+            padding: 10px 0;
+            border-bottom: 1px solid var(--news-border);
+            cursor: pointer;
+        }
+
+        .trending-item:last-child { border-bottom: none; }
+
+        .trending-num {
+            font-family: var(--font-num);
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--news-red);
+            line-height: 1;
+            width: 24px;
+        }
+
+        /* 8. Filter / Control Toolbar */
+        .filter-toolbar {
+            background-color: var(--news-bg-subtle);
+            border: 1px solid var(--news-border);
+            border-radius: 8px;
+            padding: 12px 18px;
+            margin-bottom: 24px;
+        }
+
+        /* Infinite Scroll Loader */
+        .infinite-loader {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+
+        /* Full Article Modal Reader */
+        .modal-article-title {
+            font-family: var(--font-editorial);
+            font-size: 2.2rem;
+            font-weight: 900;
+            line-height: 1.2;
+            color: var(--news-dark);
+        }
+
+        .modal-article-body {
+            font-size: 1.12rem;
+            line-height: 1.8;
+            color: #27272a;
+        }
+
+        .modal-article-body p {
+            margin-bottom: 1.4rem;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 1. Top Utility Header -->
+    <div class="top-utility-bar py-1">
+        <div class="container d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-3">
+                <span id="currentDateDisplay" class="fw-semibold">
+                    יום רביעי, 30 בספטמבר 2026 | י"ט בתשרי תשפ"ז
+                </span>
+                <span class="text-muted d-none d-md-inline">|</span>
+                <span id="topWeatherSnippet" class="d-none d-md-inline-flex align-items-center gap-1">
+                    <i class="bi bi-cloud-sun text-warning"></i> תל אביב: <strong class="font-num">27°C</strong>
+                </span>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <a href="/analytics.html" class="text-decoration-none text-primary fw-bold">
+                    <i class="bi bi-graph-up-arrow me-1"></i> דשבורד Impact Analytics
+                </a>
+                <span class="text-muted">|</span>
+                <a href="/test.html" class="text-decoration-none text-secondary fw-semibold">
+                    <i class="bi bi-shield-check me-1"></i> כניסת כתבים ועורכים
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Master Newspaper Masthead -->
+    <header class="newspaper-masthead">
+        <div class="container">
+            <a href="/" class="masthead-title">The Daily Web</a>
+            <div class="masthead-tagline">
+                עיתון החדשות הדיגיטלי המוביל בישראל • דיווחים שוטפים ופרשנויות בזמן אמת
+            </div>
+        </div>
+    </header>
+
+    <!-- 3. Category Navigation Bar -->
+    <nav class="category-nav-bar">
+        <div class="container d-flex justify-content-between align-items-center overflow-auto">
+            <div class="d-flex align-items-center flex-nowrap" id="categoryNavList">
+                <a href="#" class="category-link active" onclick="filterByCategory('')">ראשי</a>
+                <a href="#" class="category-link" onclick="filterByCategory('חדשות')">חדשות</a>
+                <a href="#" class="category-link" onclick="filterByCategory('פוליטיקה')">פוליטיקה</a>
+                <a href="#" class="category-link" onclick="filterByCategory('כלכלה')">כלכלה</a>
+                <a href="#" class="category-link" onclick="filterByCategory('טכנולוגיה')">טכנולוגיה</a>
+                <a href="#" class="category-link" onclick="filterByCategory('ספורט')">ספורט</a>
+                <a href="#" class="category-link" onclick="filterByCategory('תרבות')">תרבות</a>
+                <a href="#" class="category-link" onclick="filterByCategory('בריאות')">בריאות</a>
+                <a href="#" class="category-link" onclick="filterByCategory('דעות')">דעות</a>
+            </div>
+            <div class="d-none d-lg-block">
+                <span class="badge bg-danger fw-bold text-uppercase px-2 py-1">מהדורת קיץ 2026</span>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 4. Breaking News Ticker Strip -->
+    <div class="breaking-strip">
+        <div class="container d-flex align-items-center">
+            <span class="breaking-badge">מבזק</span>
+            <marquee behavior="scroll" direction="right" scrollamount="4" class="fw-semibold text-dark">
+                מערכת The Daily Web באוויר: מעל 500 כתבות זמינות בפיד • שבב ה-AI הישראלי רושם זינוק שיא בצפיות • החלטת הריבית של בנק ישראל מעוררת סערה בשוק המשכנתאות • מזג האוויר מתעדכן אחת ל-15 דקות ללא חריגת קצב
+            </marquee>
+        </div>
+    </div>
+
+    <!-- Main Content Layout -->
+    <main class="container my-4">
+
+        <!-- 5. Front-Page Hero Section (Lead Story + Top Editorial Column) -->
+        <section id="heroSection" class="mb-5 pb-4 border-bottom">
+            <div class="row g-4">
+                <!-- Lead Story -->
+                <div class="col-lg-8" id="heroLeadStory">
+                    <div class="lead-image-container mb-3" onclick="openHeroArticle()">
+                        <img id="heroImage" src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200&q=80" alt="Lead News">
+                    </div>
+                    <div>
+                        <span id="heroCategory" class="category-tag">כתבה ראשית</span>
+                        <h1 class="lead-headline mb-3">
+                            <a href="#" id="heroTitle" class="text-decoration-none text-dark" onclick="openHeroArticle()">טוען את הידיעה המרכזית...</a>
+                        </h1>
+                        <p id="heroSummary" class="text-muted fs-5 mb-3 lead">
+                            טוען תקציר...
+                        </p>
+                        <div class="byline">
+                            <span id="heroAuthor" class="fw-bold text-dark">כתב המערכת</span>
+                            <span>•</span>
+                            <span id="heroDate">היום</span>
+                            <span>•</span>
+                            <span id="heroViewsBadge" class="viewed-badge font-num"><i class="bi bi-eye"></i> 0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Secondary Top Editorial Column -->
+                <div class="col-lg-4">
+                    <div class="sidebar-title">
+                        <span>מבזקים וידיעות בולטות</span>
+                        <i class="bi bi-fire text-danger"></i>
+                    </div>
+                    <div id="secondaryLeadList">
+                        <div class="text-muted small py-3">טוען מבזקים...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 6. Filter, Search and Sort Toolbar -->
+        <section class="filter-toolbar">
+            <div class="row g-3 align-items-center">
+                <!-- Search Input -->
+                <div class="col-md-4 col-sm-12">
+                    <div class="input-group">
+                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
+                        <input type="text" id="searchInput" class="form-control border-start-0" placeholder="חיפוש כתבות לפי כותרת או מילות מפתח..." oninput="debounceSearch()">
+                    </div>
+                </div>
+
+                <!-- Read Status Filter (נצפה / לא נצפה) -->
+                <div class="col-md-4 col-sm-6">
+                    <div class="btn-group w-100" role="group">
+                        <input type="radio" class="btn-check" name="statusFilter" id="filterAll" value="all" checked onchange="applyFilters()">
+                        <label class="btn btn-outline-secondary btn-sm fw-bold" for="filterAll">הכל</label>
+
+                        <input type="radio" class="btn-check" name="statusFilter" id="filterUnread" value="unread" onchange="applyFilters()">
+                        <label class="btn btn-outline-secondary btn-sm fw-bold" for="filterUnread">לא נצפו</label>
+
+                        <input type="radio" class="btn-check" name="statusFilter" id="filterRead" value="read" onchange="applyFilters()">
+                        <label class="btn btn-outline-secondary btn-sm fw-bold" for="filterRead">נקראו</label>
+                    </div>
+                </div>
+
+                <!-- Sort Dropdown -->
+                <div class="col-md-4 col-sm-6">
+                    <select id="sortSelect" class="form-select form-select-sm fw-bold" onchange="applyFilters()">
+                        <option value="newest">מיון: תאריך פרסום (החדש ביותר)</option>
+                        <option value="oldest">מיון: תאריך פרסום (הישן ביותר)</option>
+                    </select>
+                </div>
+            </div>
+        </section>
+
+        <!-- 7. News Feed Grid & Sidebar -->
+        <div class="row g-4">
+            <!-- Articles Grid (Infinite Scroll) -->
+            <div class="col-lg-8">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="fs-4 fw-bold font-editorial m-0" id="feedHeading">הפיד הראשי</h2>
+                    <span id="articlesCountBadge" class="text-muted small">מציג כתבות שפורסמו</span>
+                </div>
+
+                <div class="row g-4" id="articlesGrid">
+                    <!-- Cards injected dynamically via Vanilla JS -->
+                </div>
+
+                <!-- Infinite Scroll Loading Indicator -->
+                <div id="infiniteScrollLoader" class="infinite-loader">
+                    <div class="spinner-border text-danger" role="status">
+                        <span class="visually-hidden">טוען כתבות נוספות...</span>
+                    </div>
+                    <div class="text-muted small mt-2">טוען 20 כתבות נוספות (גלילה אינסופית)...</div>
+                </div>
+
+                <div id="endOfFeedMessage" class="text-center py-4 text-muted small d-none">
+                    — הגעת לסוף פיד הכתבות —
+                </div>
+            </div>
+
+            <!-- Sidebar Column -->
+            <div class="col-lg-4">
+                <!-- Weather Widget (Fulfilling course specs: OpenWeatherMap/Open-Meteo with 15-min cache) -->
+                <div class="sidebar-widget">
+                    <div class="sidebar-title">
+                        <span>תחזית מזג אוויר</span>
+                        <i id="weatherIcon" class="bi bi-cloud-sun fs-4 text-warning"></i>
+                    </div>
+                    <div class="weather-display">
+                        <div>
+                            <div class="weather-temp" id="weatherTemp">27°C</div>
+                            <div class="fw-bold text-dark mt-1" id="weatherCity">תל אביב-יפו</div>
+                            <div class="text-muted small" id="weatherCondition">מעונן חלקית</div>
+                        </div>
+                        <div class="text-end small text-muted">
+                            <div>רוח: <strong id="weatherWind" class="font-num">11 קמ"ש</strong></div>
+                            <div class="mt-2 text-success small">
+                                <i class="bi bi-check2-circle"></i> מטמון שרת (עד 15 דק')
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Most Read / Trending Column -->
+                <div class="sidebar-widget">
+                    <div class="sidebar-title">
+                        <span>הכתבות הנקראות ביותר</span>
+                        <span class="badge bg-danger-subtle text-danger font-num">TOP</span>
+                    </div>
+                    <div id="topArticlesList">
+                        <div class="text-muted small py-3">טוען דירוג צפיות...</div>
+                    </div>
+                </div>
+
+                <!-- Editorial Team Banner -->
+                <div class="sidebar-widget bg-light border-0">
+                    <h5 class="fw-bold font-editorial text-dark mb-2">מערכת The Daily Web</h5>
+                    <p class="text-muted small mb-3">
+                        פרויקט מסכם בפיתוח אפליקציות אינטרנט. המערכת כוללת ניהול כתבות, עריכה, איסוף צפיות אטומי בעומס, והגנת ספאם לתגובות.
+                    </p>
+                    <div class="d-grid gap-2">
+                        <a href="/analytics.html" class="btn btn-outline-primary btn-sm fw-bold">
+                            <i class="bi bi-bar-chart-line me-1"></i> כניסה לגרף Impact Analytics
+                        </a>
+                        <a href="/test.html" class="btn btn-outline-secondary btn-sm fw-semibold">
+                            <i class="bi bi-tools me-1"></i> מעבדת בדיקת Workflow כתבים
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- 8. Full Article Reader Modal (SEO & Reader View) -->
+    <div class="modal fade" id="articleModal" tabindex="-1" aria-labelledby="articleModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+            <div class="modal-content border-0 shadow-lg">
+                <div class="modal-header border-0 pb-0">
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="סגור"></button>
+                </div>
+                <div class="modal-body px-4 pt-1 pb-4">
+                    <span id="modalCategory" class="category-tag mb-1">קטגוריה</span>
+                    <h1 id="modalTitle" class="modal-article-title mb-3">כותרת הכתבה</h1>
+                    
+                    <div class="d-flex align-items-center justify-content-between border-bottom pb-3 mb-3 text-muted small">
+                        <div class="d-flex align-items-center gap-2">
+                            <div id="modalAuthorAvatar" class="avatar-circle" style="width: 32px; height: 32px; font-size: 0.8rem;">A</div>
+                            <div>
+                                <span id="modalAuthor" class="fw-bold text-dark d-block">שם הכתב</span>
+                                <span id="modalDate" class="text-muted" style="font-size: 0.75rem;">תאריך פרסום</span>
+                            </div>
+                        </div>
+                        <span class="viewed-badge font-num"><i class="bi bi-eye"></i> צפייה נרשמה במערכת</span>
+                    </div>
+
+                    <img id="modalImage" src="" alt="Article image" class="img-fluid rounded-3 mb-4 w-100" style="max-height: 400px; object-fit: cover;">
+
+                    <div id="modalContent" class="modal-article-body mb-5">
+                        <!-- Full article HTML -->
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- Comments Section in Modal -->
+                    <div class="comments-section">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h3 class="fs-5 fw-bold font-editorial m-0">תגובות קוראים</h3>
+                            <span id="modalCommentsBadge" class="badge bg-light text-dark border">0 תגובות</span>
+                        </div>
+
+                        <!-- Anti-Spam Notification Banner -->
+                        <div id="modalRateLimitBanner" class="alert alert-danger py-2 px-3 small d-none">
+                            <i class="bi bi-shield-slash me-1"></i> חריגה ממגבלת התגובות: ניתן לפרסם עד 3 תגובות בדקה מאותו מכשיר.
+                            <span id="modalCountdownTimer" class="fw-bold"></span>
+                        </div>
+
+                        <!-- Add Comment Form -->
+                        <div class="p-3 bg-light rounded-3 border mb-3">
+                            <div class="mb-2">
+                                <input type="text" id="modalCommentAuthor" class="form-control form-control-sm" placeholder="שם מלא / כינוי...">
+                            </div>
+                            <div class="mb-2">
+                                <textarea id="modalCommentContent" class="form-control form-control-sm" rows="2" placeholder="הוסיפו תגובה (עדכון מיידי ברשימה ללא רענון עמוד)..."></textarea>
+                            </div>
+                            <button id="modalCommentSubmitBtn" class="btn btn-danger btn-sm fw-bold px-3" onclick="submitModalComment()">
+                                <i class="bi bi-send me-1"></i> פרסם תגובה (AJAX)
+                            </button>
+                        </div>
+
+                        <!-- Comments List -->
+                        <div id="modalCommentsList" class="d-flex flex-column gap-2" style="max-height: 280px; overflow-y: auto;">
+                            <!-- Injected dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap 5 JS Bundle via CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!-- Client-side Logic (Vanilla JS, AJAX, Infinite Scroll) -->
+    <script>
+        let currentPage = 1;
+        let totalPages = 1;
+        let isLoading = false;
+        let activeCategory = '';
+        let currentSearchQuery = '';
+        let currentSort = 'newest';
+        let currentStatusFilter = 'all'; // all, read, unread
+        let searchTimeout = null;
+        let currentModalArticleId = null;
+        let heroArticleData = null;
+
+        // LocalStorage Viewed Articles Set
+        function getViewedArticles() {
+            try {
+                return JSON.parse(localStorage.getItem('the_daily_web_viewed') || '[]');
+            } catch {
+                return [];
+            }
+        }
+
+        function markArticleViewed(id) {
+            const viewed = getViewedArticles();
+            if (!viewed.includes(id)) {
+                viewed.push(id);
+                localStorage.setItem('the_daily_web_viewed', JSON.stringify(viewed));
+            }
+        }
+
+        // Initialize on DOM load
+        document.addEventListener('DOMContentLoaded', async () => {
+            await fetchWeather();
+            await fetchTopArticles();
+            await loadFeed(true);
+
+            // Infinite Scroll Listener
+            window.addEventListener('scroll', handleInfiniteScroll);
+        });
+
+        // 1. Weather Widget Fetch
+        async function fetchWeather() {
+            try {
+                const res = await fetch('/api/weather');
+                const data = await res.json();
+                if (data.success && data.data) {
+                    const w = data.data;
+                    document.getElementById('weatherTemp').textContent = `${w.temp}°C`;
+                    document.getElementById('weatherCity').textContent = w.city;
+                    document.getElementById('weatherCondition').textContent = w.condition;
+                    document.getElementById('weatherWind').textContent = `${w.windSpeed} קמ"ש`;
+                    document.getElementById('weatherIcon').className = `bi ${w.icon} fs-4 text-warning`;
+                    document.getElementById('topWeatherSnippet').innerHTML = 
+                        `<i class="bi ${w.icon} text-warning"></i> ${w.city}: <strong class="font-num">${w.temp}°C</strong>`;
+                }
+            } catch (err) {
+                console.error('Weather load error:', err);
+            }
+        }
+
+        // 2. Fetch Top Viewed Articles for Sidebar
+        async function fetchTopArticles() {
+            try {
+                const res = await fetch('/api/analytics/overview/top?limit=5');
+                const data = await res.json();
+                const container = document.getElementById('topArticlesList');
+
+                if (data.success && data.topArticles.length > 0) {
+                    container.innerHTML = '';
+                    data.topArticles.forEach((art, idx) => {
+                        const div = document.createElement('div');
+                        div.className = 'trending-item';
+                        div.onclick = () => openArticleById(art._id);
+                        div.innerHTML = `
+                            <span class="trending-num">${idx + 1}</span>
+                            <div>
+                                <span class="category-tag" style="font-size:0.65rem;">${art.category}</span>
+                                <div class="fw-bold text-dark small leading-tight">${escapeHtml(art.title)}</div>
+                                <div class="font-num text-muted" style="font-size:0.75rem;"><i class="bi bi-eye"></i> ${art.totalViews.toLocaleString()} צפיות</div>
+                            </div>
+                        `;
+                        container.appendChild(div);
+                    });
+                }
+            } catch (err) {
+                console.error('Top articles error:', err);
+            }
+        }
+
+        // 3. Main Articles Feed Loader
+        async function loadFeed(reset = false) {
+            if (isLoading) return;
+            isLoading = true;
+
+            if (reset) {
+                currentPage = 1;
+                document.getElementById('articlesGrid').innerHTML = '';
+                document.getElementById('endOfFeedMessage').classList.add('d-none');
+            }
+
+            document.getElementById('infiniteScrollLoader').style.display = 'block';
+
+            try {
+                let url = `/api/articles/public?page=${currentPage}&limit=20&sort=${currentSort}`;
+                if (activeCategory) url += `&category=${encodeURIComponent(activeCategory)}`;
+                if (currentSearchQuery) url += `&search=${encodeURIComponent(currentSearchQuery)}`;
+
+                const res = await fetch(url);
+                const data = await res.json();
+
+                document.getElementById('infiniteScrollLoader').style.display = 'none';
+
+                if (data.success && data.articles) {
+                    totalPages = data.pagination.totalPages;
+
+                    // If reset & first page: populate Hero Lead & Secondary leads
+                    if (reset && data.articles.length > 0) {
+                        populateHeroSection(data.articles);
+                    }
+
+                    renderArticleCards(data.articles, reset);
+                    currentPage++;
+
+                    if (currentPage > totalPages) {
+                        document.getElementById('endOfFeedMessage').classList.remove('d-none');
+                    }
+                }
+            } catch (err) {
+                console.error('Feed load error:', err);
+                document.getElementById('infiniteScrollLoader').style.display = 'none';
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        // 4. Populate Hero Front Page
+        function populateHeroSection(articles) {
+            if (articles.length === 0) return;
+
+            heroArticleData = articles[0];
+            document.getElementById('heroImage').src = heroArticleData.mainImage || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200&q=80';
+            document.getElementById('heroCategory').textContent = heroArticleData.category;
+            document.getElementById('heroTitle').textContent = heroArticleData.title;
+            document.getElementById('heroSummary').textContent = heroArticleData.summary || 'לחצו לקריאת הדיווח המלא...';
+            document.getElementById('heroAuthor').textContent = heroArticleData.author ? heroArticleData.author.fullName : 'כתב The Daily Web';
+            document.getElementById('heroDate').textContent = new Date(heroArticleData.publishedAt).toLocaleDateString('he-IL');
+
+            // Secondary sidebar leads (articles 1, 2, 3)
+            const secondaryList = document.getElementById('secondaryLeadList');
+            secondaryList.innerHTML = '';
+            articles.slice(1, 4).forEach(art => {
+                const item = document.createElement('div');
+                item.className = 'd-flex gap-3 py-2 border-bottom';
+                item.style.cursor = 'pointer';
+                item.onclick = () => openArticleById(art._id);
+                item.innerHTML = `
+                    <img src="${art.mainImage || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=150&q=80'}" style="width: 75px; height: 60px; object-fit: cover; border-radius: 4px;">
+                    <div>
+                        <span class="category-tag" style="font-size: 0.65rem;">${art.category}</span>
+                        <div class="fw-bold small text-dark leading-tight">${escapeHtml(art.title)}</div>
+                        <span class="text-muted" style="font-size: 0.7rem;">${new Date(art.publishedAt).toLocaleDateString('he-IL')}</span>
+                    </div>
+                `;
+                secondaryList.appendChild(item);
+            });
+        }
+
+        // 5. Render Articles Cards in Feed Grid
+        function renderArticleCards(articles, isReset) {
+            const grid = document.getElementById('articlesGrid');
+            const viewedIds = getViewedArticles();
+
+            let displayedArticles = articles;
+
+            // Apply Viewed/Unviewed Client Filter
+            if (currentStatusFilter === 'read') {
+                displayedArticles = articles.filter(a => viewedIds.includes(a._id));
+            } else if (currentStatusFilter === 'unread') {
+                displayedArticles = articles.filter(a => !viewedIds.includes(a._id));
+            }
+
+            if (isReset && displayedArticles.length === 0) {
+                grid.innerHTML = '<div class="col-12 text-center text-muted py-5">לא נמצאו כתבות התואמות את החיפוש והסינון.</div>';
+                return;
+            }
+
+            displayedArticles.forEach(art => {
+                const isViewed = viewedIds.includes(art._id);
+                const col = document.createElement('div');
+                col.className = 'col-md-6';
+                col.innerHTML = `
+                    <article class="news-card" onclick="openArticleById('${art._id}')">
+                        <div class="news-card-img-wrap">
+                            <img src="${art.mainImage || 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=600&q=80'}" alt="${escapeHtml(art.title)}" loading="lazy">
+                        </div>
+                        <span class="category-tag">${escapeHtml(art.category)}</span>
+                        <h3 class="card-title-news">${escapeHtml(art.title)}</h3>
+                        <p class="card-snippet">${escapeHtml(art.summary || '')}</p>
+                        <div class="byline justify-content-between">
+                            <span>${art.author ? escapeHtml(art.author.fullName) : 'כתב המערכת'} • ${new Date(art.publishedAt).toLocaleDateString('he-IL')}</span>
+                            <span class="viewed-badge ${isViewed ? 'is-viewed' : ''}">
+                                <i class="bi ${isViewed ? 'bi-check2' : 'bi-circle'}"></i> ${isViewed ? 'נקרא' : 'חדש'}
+                            </span>
+                        </div>
+                    </article>
+                `;
+                grid.appendChild(col);
+            });
+        }
+
+        // 6. Infinite Scroll Handler
+        function handleInfiniteScroll() {
+            if (isLoading || currentPage > totalPages) return;
+
+            const scrollPos = window.innerHeight + window.scrollY;
+            const threshold = document.documentElement.offsetHeight - 600;
+
+            if (scrollPos >= threshold) {
+                loadFeed(false);
+            }
+        }
+
+        // 7. Filter & Search Controls
+        function filterByCategory(cat) {
+            activeCategory = cat;
+            document.querySelectorAll('#categoryNavList .category-link').forEach(link => {
+                link.classList.remove('active');
+                if ((cat === '' && link.textContent === 'ראשי') || link.textContent === cat) {
+                    link.classList.add('active');
+                }
+            });
+            document.getElementById('feedHeading').textContent = cat ? `חדשות בתחום ה-${cat}` : 'הפיד הראשי';
+            loadFeed(true);
+        }
+
+        function debounceSearch() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                currentSearchQuery = document.getElementById('searchInput').value.trim();
+                loadFeed(true);
+            }, 300);
+        }
+
+        function applyFilters() {
+            const radios = document.getElementsByName('statusFilter');
+            for (let r of radios) {
+                if (r.checked) currentStatusFilter = r.value;
+            }
+            currentSort = document.getElementById('sortSelect').value;
+            loadFeed(true);
+        }
+
+        // 8. Open Article Modal & Track View
+        async function openArticleById(id) {
+            currentModalArticleId = id;
+            markArticleViewed(id);
+
+            try {
+                // GET /api/articles/public/:id (automatically records view on the server!)
+                const res = await fetch(`/api/articles/public/${id}`);
+                const data = await res.json();
+
+                if (data.success && data.article) {
+                    const art = data.article;
+                    document.getElementById('modalCategory').textContent = art.category;
+                    document.getElementById('modalTitle').textContent = art.title;
+                    document.getElementById('modalAuthor').textContent = art.author ? art.author.fullName : 'כתב מערכת';
+                    document.getElementById('modalDate').textContent = new Date(art.publishedAt).toLocaleDateString('he-IL');
+                    document.getElementById('modalImage').src = art.mainImage || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1000&q=80';
+                    document.getElementById('modalContent').innerHTML = art.content;
+
+                    const authorName = art.author ? art.author.fullName : 'כתב';
+                    document.getElementById('modalAuthorAvatar').textContent = authorName.charAt(0);
+
+                    // Load comments
+                    await loadModalComments(id);
+
+                    // Open Bootstrap Modal
+                    const modal = new bootstrap.Modal(document.getElementById('articleModal'));
+                    modal.show();
+                }
+            } catch (err) {
+                console.error('Error opening article:', err);
+            }
+        }
+
+        function openHeroArticle() {
+            if (heroArticleData) openArticleById(heroArticleData._id);
+        }
+
+        // 9. Comments in Modal (AJAX)
+        async function loadModalComments(articleId) {
+            const listEl = document.getElementById('modalCommentsList');
+            const badge = document.getElementById('modalCommentsBadge');
+
+            try {
+                const res = await fetch(`/api/articles/${articleId}/comments`);
+                const data = await res.json();
+
+                if (data.success) {
+                    badge.textContent = `${data.comments.length} תגובות`;
+                    if (data.comments.length === 0) {
+                        listEl.innerHTML = '<div class="text-center text-muted small py-3">אין עדיין תגובות לכתבה זו. היו הראשונים להגיב!</div>';
+                        return;
+                    }
+
+                    listEl.innerHTML = '';
+                    data.comments.forEach(c => {
+                        const item = document.createElement('div');
+                        item.className = 'p-2 bg-white rounded border small';
+                        const d = new Date(c.createdAt || Date.now());
+                        item.innerHTML = `
+                            <div class="d-flex justify-content-between text-muted" style="font-size: 0.72rem;">
+                                <strong class="text-primary">${escapeHtml(c.authorName)}</strong>
+                                <span>${d.toLocaleDateString('he-IL')} ${d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</span>
+                            </div>
+                            <div class="text-dark mt-1">${escapeHtml(c.content)}</div>
+                        `;
+                        listEl.appendChild(item);
+                    });
+                }
+            } catch (err) {
+                listEl.innerHTML = '<div class="text-danger small">שגיאה בטעינת תגובות</div>';
+            }
+        }
+
+        async function submitModalComment() {
+            if (!currentModalArticleId) return;
+
+            const authorInput = document.getElementById('modalCommentAuthor');
+            const contentInput = document.getElementById('modalCommentContent');
+            const submitBtn = document.getElementById('modalCommentSubmitBtn');
+            const banner = document.getElementById('modalRateLimitBanner');
+            const timerSpan = document.getElementById('modalCountdownTimer');
+
+            const authorName = authorInput.value.trim();
+            const content = contentInput.value.trim();
+
+            if (!authorName || !content) {
+                alert('נא למלא שם מגיב ותוכן תגובה');
+                return;
+            }
+
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> שולח...';
+
+            try {
+                const res = await fetch(`/api/articles/${currentModalArticleId}/comments`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ authorName, content })
+                });
+
+                const data = await res.json();
+
+                if (res.status === 429) {
+                    banner.classList.remove('d-none');
+                    let rem = data.retryAfterSeconds || 60;
+                    timerSpan.textContent = `(נעילה תשתחרר בעוד ${rem} שניות)`;
+
+                    const iv = setInterval(() => {
+                        rem--;
+                        if (rem <= 0) {
+                            clearInterval(iv);
+                            banner.classList.add('d-none');
+                        } else {
+                            timerSpan.textContent = `(נעילה תשתחרר בעוד ${rem} שניות)`;
+                        }
+                    }, 1000);
+                } else if (data.success) {
+                    banner.classList.add('d-none');
+                    contentInput.value = '';
+                    await loadModalComments(currentModalArticleId);
+                } else {
+                    alert(data.message || 'שגיאה בשליחת התגובה');
+                }
+            } catch (err) {
+                alert('שגיאת תקשורת מול השרת');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = '<i class="bi bi-send me-1"></i> פרסם תגובה (AJAX)';
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+    </script>
+</body>
+</html>

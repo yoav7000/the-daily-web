@@ -9,6 +9,7 @@ const articleRoutes = require('./routes/articleRoutes');
 const authRoutes = require('./routes/authRoutes');
 const commentRoutes = require('./routes/commentRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
+const weatherRoutes = require('./routes/weatherRoutes');
 const { errorHandler } = require('./middleware/errorHandler');
 
 const app = express();
@@ -42,6 +43,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api', commentRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/analytics', analyticsRoutes);
+app.use('/api/weather', weatherRoutes);
 
 // Catch 404 for undefined API routes
 app.use('/api/*', (req, res) => {
