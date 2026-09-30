@@ -3,556 +3,735 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Daily Web - אזור ניתוח השפעה (Impact Analytics) ותגובות</title>
-    <!-- Chart.js מה-CDN כפי שנלמד בקורס -->
+    <title>The Daily Web — Impact Analytics & Comments</title>
+
+    <!-- Google Fonts: Assistant for Hebrew, Inter for numbers & UI -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <!-- Bootstrap 5 CSS & Icons (Approved course technologies via CDN) -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+    <!-- Chart.js via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
     <style>
         :root {
-            --bg-primary: #0f172a;
-            --bg-card: #1e293b;
-            --border-color: #334155;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --accent-blue: #38bdf8;
-            --accent-green: #22c55e;
-            --accent-orange: #f59e0b;
-            --accent-red: #ef4444;
-            --accent-purple: #a855f7;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            --font-main: 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            --font-mono: 'Inter', monospace;
+            
+            --bg-page: #f8fafc;
+            --bg-surface: #ffffff;
+            --bg-subtle: #f1f5f9;
+            
+            --border-light: #e2e8f0;
+            --border-medium: #cbd5e1;
+            
+            --text-heading: #0f172a;
+            --text-body: #334155;
+            --text-muted: #64748b;
+            
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-subtle: #eff6ff;
+            
+            --success: #16a34a;
+            --success-subtle: #f0fdf4;
+            
+            --warning: #d97706;
+            --warning-subtle: #fffbeb;
+            
+            --danger: #dc2626;
+            --danger-subtle: #fef2f2;
+            
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.05);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+            --radius-md: 10px;
+            --radius-lg: 14px;
         }
 
         body {
-            background-color: var(--bg-primary);
-            color: var(--text-main);
-            padding: 24px;
-            line-height: 1.5;
+            font-family: var(--font-main);
+            background-color: var(--bg-page);
+            color: var(--text-body);
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
         }
 
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
+        .font-mono {
+            font-family: var(--font-mono);
         }
 
-        header {
-            background: var(--bg-card);
-            padding: 20px;
-            border-radius: 10px;
-            border: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 15px;
+        /* Top Editorial Masthead */
+        .masthead {
+            background-color: var(--bg-surface);
+            border-bottom: 1px solid var(--border-light);
+            box-shadow: var(--shadow-sm);
         }
 
-        header h1 {
-            font-size: 22px;
-            color: var(--accent-blue);
-        }
-
-        header p {
-            font-size: 14px;
-            color: var(--text-muted);
-        }
-
-        .nav-links a {
-            color: var(--accent-blue);
+        .masthead-brand {
+            font-size: 1.35rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text-heading);
             text-decoration: none;
-            margin-inline-start: 15px;
-            font-size: 14px;
-            padding: 6px 12px;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            transition: all 0.2s;
-        }
-
-        .nav-links a:hover {
-            background: var(--border-color);
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 16px;
-        }
-
-        .stat-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .stat-title {
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-
-        .stat-value {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--accent-blue);
-        }
-
-        .stat-change {
-            font-size: 12px;
-            font-weight: 600;
-        }
-
-        .positive { color: var(--accent-green); }
-        .negative { color: var(--accent-red); }
-
-        .card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            padding: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-        }
-
-        .card h2 {
-            font-size: 18px;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-            color: var(--text-main);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .controls-row {
-            display: flex;
-            gap: 12px;
-            flex-wrap: wrap;
-            align-items: center;
-        }
-
-        select, input, textarea {
-            padding: 10px 14px;
-            background: #090d16;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            font-size: 14px;
-            color: var(--text-main);
-        }
-
-        select {
-            min-width: 280px;
-            cursor: pointer;
-        }
-
-        button {
-            cursor: pointer;
-            padding: 9px 18px;
-            border: none;
-            border-radius: 6px;
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.2s;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-        }
-
-        button.primary { background: #2563eb; color: white; }
-        button.primary:hover { background: #1d4ed8; }
-        button.success { background: #16a34a; color: white; }
-        button.success:hover { background: #15803d; }
-        button.warning { background: #d97706; color: white; }
-        button.danger { background: #dc2626; color: white; }
-        button.secondary { background: var(--border-color); color: var(--text-main); }
-
-        .chart-container {
-            position: relative;
-            height: 380px;
-            width: 100%;
-        }
-
-        .milestones-list {
-            display: flex;
-            flex-direction: column;
             gap: 10px;
-            margin-top: 10px;
         }
 
-        .milestone-item {
-            background: #090d16;
-            border-inline-start: 4px solid var(--accent-blue);
-            padding: 10px 14px;
-            border-radius: 4px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 13px;
-        }
-
-        .milestone-item.revision {
-            border-inline-start-color: var(--accent-orange);
-        }
-
-        .two-columns {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-        }
-
-        @media (max-width: 850px) {
-            .two-columns {
-                grid-template-columns: 1fr;
-            }
-        }
-
-        /* Comments Styling */
-        .comments-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            max-height: 360px;
-            overflow-y: auto;
-            padding-inline-end: 6px;
-        }
-
-        .comment-bubble {
-            background: #090d16;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 12px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .comment-header {
-            display: flex;
-            justify-content: space-between;
-            font-size: 12px;
-            color: var(--text-muted);
-            border-bottom: 1px solid #1e293b;
-            padding-bottom: 4px;
-        }
-
-        .comment-author {
+        .brand-badge {
+            background: linear-gradient(135deg, #1e3a8a, #2563eb);
+            color: #ffffff;
+            font-size: 0.7rem;
             font-weight: 700;
-            color: var(--accent-blue);
-        }
-
-        .comment-content {
-            font-size: 14px;
-            color: #e2e8f0;
-            white-space: pre-wrap;
-        }
-
-        .rate-limit-banner {
-            display: none;
-            background: #450a0a;
-            border: 1px solid #ef4444;
-            color: #fee2e2;
-            padding: 12px;
+            padding: 3px 8px;
             border-radius: 6px;
-            font-size: 13px;
-            font-weight: 600;
-            animation: pulse 1.5s infinite alternate;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
         }
 
-        @keyframes pulse {
-            from { opacity: 0.85; }
-            to { opacity: 1; }
+        /* Elevating Card Components */
+        .analytics-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-sm);
+            transition: box-shadow 0.2s ease;
+        }
+
+        .analytics-card:hover {
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-header-clean {
+            padding: 18px 24px;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: transparent;
+        }
+
+        .card-header-clean h2 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-heading);
+            margin: 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Metric KPI Cards */
+        .kpi-card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            box-shadow: var(--shadow-sm);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+
+        .kpi-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--primary);
+        }
+
+        .kpi-card.kpi-orange::before { background: var(--warning); }
+        .kpi-card.kpi-green::before { background: var(--success); }
+        .kpi-card.kpi-purple::before { background: #8b5cf6; }
+
+        .kpi-label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+            margin-bottom: 8px;
+        }
+
+        .kpi-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--text-heading);
+            font-family: var(--font-mono);
+            line-height: 1.1;
+            margin-bottom: 6px;
+        }
+
+        .kpi-subtext {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .growth-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 2px 8px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 700;
+            font-family: var(--font-mono);
+        }
+
+        .growth-badge.positive {
+            background-color: var(--success-subtle);
+            color: var(--success);
+        }
+
+        .growth-badge.negative {
+            background-color: var(--danger-subtle);
+            color: var(--danger);
+        }
+
+        /* Selector Bar */
+        .selector-bar {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            padding: 16px 20px;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .form-select-custom {
+            font-size: 0.95rem;
+            font-weight: 600;
+            padding: 10px 16px;
+            border: 1px solid var(--border-medium);
+            border-radius: var(--radius-md);
+            background-color: var(--bg-surface);
+            color: var(--text-heading);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .form-select-custom:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        /* Chart Canvas Container */
+        .chart-box {
+            position: relative;
+            height: 360px;
+            width: 100%;
+            padding: 10px 0;
+        }
+
+        /* Milestones Timeline */
+        .timeline-item {
+            position: relative;
+            padding-right: 28px;
+            padding-bottom: 16px;
+            border-right: 2px solid var(--border-light);
+        }
+
+        .timeline-item:last-child {
+            border-right-color: transparent;
+            padding-bottom: 0;
+        }
+
+        .timeline-dot {
+            position: absolute;
+            top: 2px;
+            right: -7px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 2px solid #ffffff;
+            box-shadow: 0 0 0 2px var(--primary);
+        }
+
+        .timeline-dot.revision {
+            background: var(--warning);
+            box-shadow: 0 0 0 2px var(--warning);
+        }
+
+        /* Modern Comment Stream */
+        .comments-stream {
+            max-height: 400px;
+            overflow-y: auto;
+            padding-left: 8px;
+        }
+
+        .comment-item {
+            background-color: var(--bg-subtle);
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-md);
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            transition: transform 0.15s ease, border-color 0.15s ease;
+        }
+
+        .comment-item:hover {
+            border-color: var(--border-medium);
+            transform: translateY(-1px);
+        }
+
+        .avatar-circle {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: #ffffff;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 0.85rem;
+        }
+
+        /* Custom Anti-Spam Banner */
+        .rate-limit-card {
+            display: none;
+            background: var(--danger-subtle);
+            border: 1px solid #fca5a5;
+            border-radius: var(--radius-md);
+            padding: 14px 18px;
+            color: #991b1b;
+            font-size: 0.9rem;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-4px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Console Output Box */
+        .console-stream {
+            background-color: #090d16;
+            color: #38bdf8;
+            font-family: var(--font-mono);
+            font-size: 0.8rem;
+            padding: 14px;
+            border-radius: 8px;
+            max-height: 180px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+            border: 1px solid #1e293b;
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header -->
-        <header>
-            <div>
-                <h1>The Daily Web - לוח ניתוח השפעה (Impact Analytics) ומודול תגובות</h1>
-                <p>חבר צוות 5: איסוף צפיות בעומס, גרף צפיות לאורך זמן, סימון אישור ועדכוני עורך, והגנת ספאם לתגובות.</p>
-            </div>
-            <div class="nav-links">
-                <a href="/test.html">⬅ מעבר למעבדת הבדיקות הראשית (Test Lab)</a>
-            </div>
-        </header>
 
-        <!-- Controls & Article Selection -->
-        <div class="card">
-            <h2>
-                <span>בחירת כתבה לניתוח סטטיסטי</span>
-                <span style="font-size: 13px; color: var(--accent-blue); font-weight: normal;" id="selectedArticleCategory"></span>
-            </h2>
-            <div class="controls-row">
-                <label for="articleSelect" style="font-size: 14px; font-weight: 600;">כתבה:</label>
-                <select id="articleSelect" onchange="loadAnalyticsForSelectedArticle()">
-                    <option value="">טוען רשימת כתבות מהשרת...</option>
-                </select>
+    <!-- 1. Top Masthead Navigation -->
+    <header class="masthead py-3 mb-4">
+        <div class="container-fluid px-4 d-flex justify-content-between align-items-center flex-wrap gap-3">
+            <div class="d-flex align-items-center gap-3">
+                <a href="/" class="masthead-brand">
+                    <i class="bi bi-newspaper fs-3 text-primary"></i>
+                    <span>The Daily Web</span>
+                    <span class="brand-badge">Editorial Analytics</span>
+                </a>
+                <span class="badge bg-light text-muted border py-2 px-3 d-none d-md-inline-flex align-items-center gap-2">
+                    <span class="spinner-grow spinner-grow-sm text-success" style="width: 8px; height: 8px;"></span>
+                    <span>שרת פעיל ומחובר ל-MongoDB</span>
+                </span>
+            </div>
 
-                <button class="primary" onclick="simulateViews(1)">+1 צפייה (סימולציית קורא)</button>
-                <button class="secondary" onclick="simulateViews(10)">+10 צפיות מהירות</button>
-                <button class="warning" onclick="loadAnalyticsForSelectedArticle()">רענן גרף ונתונים</button>
+            <div class="d-flex align-items-center gap-2">
+                <a href="/test.html" class="btn btn-outline-secondary btn-sm px-3 fw-semibold">
+                    <i class="bi bi-arrow-right-circle me-1"></i> מעבדת בדיקת כתבות (Member 2)
+                </a>
+                <span class="badge bg-primary-subtle text-primary border border-primary-subtle py-2 px-3 fw-bold">
+                    <i class="bi bi-person-badge me-1"></i> חבר צוות 5: אנליטיקות, תגובות וספאם
+                </span>
             </div>
         </div>
+    </header>
 
-        <!-- Metric Cards -->
-        <div class="stats-grid">
-            <div class="stat-card">
-                <div class="stat-title">סה"כ צפיות בכתבה</div>
-                <div class="stat-value" id="totalViewsDisplay">0</div>
-                <div class="stat-change" id="articleDateDisplay">-</div>
-            </div>
+    <main class="container-fluid px-4 mb-5">
 
-            <div class="stat-card">
-                <div class="stat-title">מספר עדכוני תוכן (Revisions)</div>
-                <div class="stat-value" id="revisionsCountDisplay">0</div>
-                <div class="stat-change" style="color: var(--accent-orange);">נקודות אישור עורך</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-title">ממוצע צפיות לשעה לפני העדכון</div>
-                <div class="stat-value" id="beforeAvgDisplay">-</div>
-                <div class="stat-change" id="beforeCountDisplay">-</div>
-            </div>
-
-            <div class="stat-card">
-                <div class="stat-title">ממוצע צפיות לשעה אחרי העדכון</div>
-                <div class="stat-value" id="afterAvgDisplay">-</div>
-                <div class="stat-change" id="impactPercentageDisplay">-</div>
-            </div>
-        </div>
-
-        <!-- Analytics Chart -->
-        <div class="card">
-            <h2>
-                <span>גרף צפיות לאורך זמן ונקודות פרסום/עדכון</span>
-                <span style="font-size: 12px; color: var(--text-muted); font-weight: normal;">מבוסס Chart.js ודליי זמן שעתיים</span>
-            </h2>
-            <div class="chart-container">
-                <canvas id="impactChart"></canvas>
-            </div>
-            <div id="chartMilestones" class="milestones-list"></div>
-        </div>
-
-        <!-- Two Columns: Comments & Anti-Spam Demonstration -->
-        <div class="two-columns">
-            <!-- Comments Section -->
-            <div class="card">
-                <h2>
-                    <span>תגובות קוראים (AJAX ללא רענון עמוד)</span>
-                    <span id="commentsCountBadge" style="font-size: 13px; color: var(--accent-blue);">0 תגובות</span>
-                </h2>
-
-                <!-- Rate Limit Alert Banner -->
-                <div id="rateLimitBanner" class="rate-limit-banner">
-                    ⚠️ חריגה ממגבלת התגובות: ניתן לפרסם עד 3 תגובות בדקה מאותו מכשיר! 
-                    <span id="countdownTimer"></span>
+        <!-- 2. Interactive Article Selector & Quick Action Bar -->
+        <section class="selector-bar mb-4">
+            <div class="row g-3 align-items-center">
+                <div class="col-lg-5 col-md-12">
+                    <label for="articleSelect" class="form-label text-muted fw-bold small mb-1">
+                        <i class="bi bi-file-earmark-text text-primary me-1"></i> בחר כתבה לניתוח השפעה סטטיסטי:
+                    </label>
+                    <select id="articleSelect" class="form-select form-select-custom" onchange="loadAnalyticsForSelectedArticle()">
+                        <option value="">טוען רשימת כתבות מהשרת...</option>
+                    </select>
                 </div>
 
-                <!-- Add Comment Form -->
-                <div style="display: flex; flex-direction: column; gap: 10px;">
-                    <input type="text" id="commentAuthor" placeholder="שם המגיב/ה (למשל: דנה לוי)...">
-                    <textarea id="commentContent" rows="3" placeholder="כתבו תגובה... (דרישת פרויקט: עדכון מיידי ברשימה ללא טעינת עמוד)"></textarea>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <button class="success" id="submitCommentBtn" onclick="submitCommentAJAX()">שלח תגובה (AJAX)</button>
-                        <span id="rateLimitHint" style="font-size: 12px; color: var(--text-muted);">מגבלה: עד 3 תגובות בדקה לאורח</span>
+                <div class="col-lg-7 col-md-12 d-flex align-items-end justify-content-lg-end flex-wrap gap-2 pt-2 pt-lg-0">
+                    <button class="btn btn-primary fw-semibold d-inline-flex align-items-center gap-2" onclick="simulateViews(1)">
+                        <i class="bi bi-eye"></i> +1 צפיית קורא
+                    </button>
+                    <button class="btn btn-outline-primary fw-semibold d-inline-flex align-items-center gap-2" onclick="simulateViews(10)">
+                        <i class="bi bi-lightning-charge"></i> +10 צפיות מהירות
+                    </button>
+                    <button class="btn btn-light border fw-semibold text-secondary d-inline-flex align-items-center gap-2" onclick="loadAnalyticsForSelectedArticle()">
+                        <i class="bi bi-arrow-clockwise"></i> רענן נתונים
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- 3. Key Performance Indicators (KPI Cards) -->
+        <section class="row g-3 mb-4">
+            <div class="col-xl-3 col-sm-6">
+                <div class="kpi-card h-100">
+                    <div>
+                        <div class="kpi-label">סה"כ צפיות בכתבה</div>
+                        <div class="kpi-value text-primary" id="totalViewsDisplay">0</div>
                     </div>
-                </div>
-
-                <!-- Comments List -->
-                <div id="commentsList" class="comments-list">
-                    <div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px;">
-                        טוען תגובות לכתבה...
+                    <div class="kpi-subtext" id="articleCategoryDisplay">
+                        <i class="bi bi-tag text-muted"></i> קטגוריה: -
                     </div>
                 </div>
             </div>
 
-            <!-- Anti-Spam Demonstration & Technical Explanation -->
-            <div class="card">
-                <h2>
-                    <span>בדיקת עמידות ספאם ו-Restart</span>
-                </h2>
-                <p style="font-size: 13px; color: var(--text-muted);">
-                    דרישת המרצה: חסימת אורח מלהגיב יותר מ-3 תגובות בדקה מאותו מכשיר/IP. המגבלה נבדקת בצד השרת 
-                    באמצעות שאילתת MongoDB מהירה, כך שגם אם השרת עובר <strong>Restart</strong>, המגבלה אינה מתאפסת!
-                </p>
-
-                <div style="background: #090d16; border: 1px solid var(--border-color); border-radius: 6px; padding: 14px; display: flex; flex-direction: column; gap: 8px;">
-                    <div style="font-size: 13px; font-weight: 600; color: var(--accent-orange);">
-                        בדיקה מהירה להגנה (Stress Test):
+            <div class="col-xl-3 col-sm-6">
+                <div class="kpi-card kpi-orange h-100">
+                    <div>
+                        <div class="kpi-label">עדכוני עורך שאושרו</div>
+                        <div class="kpi-value text-warning" id="revisionsCountDisplay">0</div>
                     </div>
-                    <p style="font-size: 12px; color: var(--text-muted);">
-                        לחץ על הכפתור מטה כדי לנסות לשלוח 4 תגובות ברצף. שלוש הראשונות יאושרו, והרביעית תיחסם מיידית עם שגיאת HTTP 429 Too Many Requests:
+                    <div class="kpi-subtext">
+                        <i class="bi bi-check-circle text-warning"></i> נקודות פרסום גרסאות
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-sm-6">
+                <div class="kpi-card kpi-purple h-100">
+                    <div>
+                        <div class="kpi-label">קצב צפיות לפני העדכון</div>
+                        <div class="kpi-value" id="beforeAvgDisplay">-</div>
+                    </div>
+                    <div class="kpi-subtext" id="beforeCountDisplay">
+                        <i class="bi bi-clock-history"></i> ממוצע צפיות לשעה
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-xl-3 col-sm-6">
+                <div class="kpi-card kpi-green h-100">
+                    <div>
+                        <div class="kpi-label">קצב צפיות אחרי העדכון</div>
+                        <div class="kpi-value text-success" id="afterAvgDisplay">-</div>
+                    </div>
+                    <div class="kpi-subtext" id="impactPercentageContainer">
+                        <span id="impactPercentageBadge" class="growth-badge positive">-</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 4. Interactive Impact Analytics Chart (Chart.js) -->
+        <section class="row g-4 mb-4">
+            <div class="col-xl-8 col-lg-12">
+                <div class="analytics-card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+                        <div>
+                            <h2 class="fs-5 fw-bold text-dark m-0">
+                                <i class="bi bi-graph-up text-primary me-2"></i>עקומת צפיות לאורך ציר הזמן
+                            </h2>
+                            <p class="text-muted small m-0">מעקב רציף לפי דליי זמן שעתיים (Time-Bucket Aggregation)</p>
+                        </div>
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="small text-muted d-flex align-items-center gap-1">
+                                <span style="display:inline-block; width:10px; height:10px; background:#2563eb; border-radius:50%;"></span>
+                                צפיות שוטפות
+                            </span>
+                            <span class="small text-muted d-flex align-items-center gap-1">
+                                <span style="display:inline-block; width:10px; height:10px; background:#d97706; border-radius:50%;"></span>
+                                אישור עדכון עורך
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="chart-box">
+                        <canvas id="impactChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Milestones & Editorial Timeline -->
+            <div class="col-xl-4 col-lg-12">
+                <div class="analytics-card p-4 h-100">
+                    <h2 class="fs-5 fw-bold text-dark mb-3">
+                        <i class="bi bi-flag text-warning me-2"></i>אבני דרך בתוכן הכתבה
+                    </h2>
+                    <p class="text-muted small mb-4">מועדי אישור ופרסום עדכוני גרסה על ידי העורכים:</p>
+                    
+                    <div id="milestonesTimeline" class="mt-2">
+                        <div class="text-muted small text-center py-4">טוען נתוני גרסאות...</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- 5. Real-Time AJAX Comments & Anti-Spam Defense Lab -->
+        <section class="row g-4">
+            <!-- Comments Module -->
+            <div class="col-lg-6">
+                <div class="analytics-card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h2 class="fs-5 fw-bold text-dark m-0">
+                            <i class="bi bi-chat-left-dots text-primary me-2"></i>תגובות קוראים (AJAX ללא רענון)
+                        </h2>
+                        <span id="commentsCountBadge" class="badge bg-light text-primary border fw-bold px-3 py-2">
+                            0 תגובות
+                        </span>
+                    </div>
+
+                    <!-- Anti-Spam Notification Banner -->
+                    <div id="rateLimitBanner" class="rate-limit-card mb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <i class="bi bi-shield-slash fs-4 text-danger"></i>
+                            <div>
+                                <strong class="d-block">חסימת ספאם הופעלה (Server-Side 429)!</strong>
+                                <span>ניתן לפרסם עד 3 תגובות בדקה מאותו מכשיר. המגבלה תשתחרר <strong id="countdownTimer"></strong>.</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Add Comment Form -->
+                    <div class="p-3 bg-light rounded-3 mb-3 border">
+                        <div class="mb-2">
+                            <input type="text" id="commentAuthor" class="form-control" placeholder="שם מלא / כינוי המגיב..." maxlength="100">
+                        </div>
+                        <div class="mb-2">
+                            <textarea id="commentContent" class="form-control" rows="3" placeholder="כתבו תגובה... (דרישת פרויקט: עדכון מיידי ברשימה ללא טעינה מחדש של הדף)" maxlength="1000"></textarea>
+                        </div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <button id="submitCommentBtn" class="btn btn-success fw-semibold px-4 d-inline-flex align-items-center gap-2" onclick="submitCommentAJAX()">
+                                <i class="bi bi-send"></i> פרסם תגובה (AJAX)
+                            </button>
+                            <span class="text-muted small">
+                                <i class="bi bi-shield-check text-success"></i> מגבלת ספאם: 3/דקה
+                            </span>
+                        </div>
+                    </div>
+
+                    <!-- Comments Stream -->
+                    <div id="commentsStream" class="comments-stream pe-2">
+                        <div class="text-center text-muted py-4 small">טוען תגובות...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Anti-Spam & Server Restart Demonstration Lab -->
+            <div class="col-lg-6">
+                <div class="analytics-card p-4">
+                    <h2 class="fs-5 fw-bold text-dark mb-2">
+                        <i class="bi bi-shield-lock text-danger me-2"></i>בדיקת חסימת ספאם ועמידות ל-Restart
+                    </h2>
+                    <p class="text-muted small mb-3">
+                        דרישת הקורס: אורח מוגבל ל-3 תגובות בדקה מאותו מכשיר. השרת מבצע שאילתת <code>countDocuments</code> 
+                        ישירות מול MongoDB, ולכן המגבלה **אינה מתאפסת גם בעת Restart של השרת**.
                     </p>
-                    <button class="danger" onclick="triggerSpamTest()">בצע בדיקת הצפת ספאם (4 תגובות מהירות)</button>
-                </div>
 
-                <div id="spamTestLog" style="background: #020617; border: 1px solid #1e293b; border-radius: 6px; padding: 12px; font-family: monospace; font-size: 12px; color: var(--accent-blue); max-height: 180px; overflow-y: auto; white-space: pre-wrap;">
-מוכן לבדיקה...
+                    <div class="p-3 bg-light rounded-3 border mb-3">
+                        <div class="fw-bold text-dark small mb-1">
+                            <i class="bi bi-lightning text-warning me-1"></i> הדגמה מול המרצה (Stress Test):
+                        </div>
+                        <p class="text-muted small mb-2">
+                            לחיצה על הכפתור תשלח 4 תגובות ברצף מהיר. 3 הראשונות יאושרו, וה-4 תיחסם ב-<code>HTTP 429 Too Many Requests</code>:
+                        </p>
+                        <button class="btn btn-danger btn-sm fw-semibold px-3 d-inline-flex align-items-center gap-2" onclick="triggerSpamTest()">
+                            <i class="bi bi-bug"></i> הרץ בדיקת הצפת ספאם (4 תגובות רצופות)
+                        </button>
+                    </div>
+
+                    <div class="mb-2 d-flex justify-content-between align-items-center">
+                        <span class="small fw-bold text-muted">יומן קריאות שרת בזמן אמת:</span>
+                        <span class="badge bg-dark font-mono text-info small">Terminal Stream</span>
+                    </div>
+                    <div id="spamTestLog" class="console-stream">מוכן להדגמה...</div>
                 </div>
             </div>
-        </div>
-    </div>
+        </section>
 
-    <!-- Vanilla JS Logic for Chart.js, AJAX Comments, and Anti-Spam -->
+    </main>
+
+    <!-- Client-side Logic (Vanilla JS, AJAX, Chart.js) -->
     <script>
-        let currentChartInstance = null;
-        let selectedArticleId = null;
+        let currentChart = null;
+        let activeArticleId = null;
 
-        // טעינת רשימת כתבות בעת פתיחת הדף
         document.addEventListener('DOMContentLoaded', async () => {
-            await loadArticlesDropdown();
+            await initializeArticleDropdown();
         });
 
-        async function loadArticlesDropdown() {
+        // 1. Initial Data Fetch for Dropdown
+        async function initializeArticleDropdown() {
             const selectEl = document.getElementById('articleSelect');
             try {
                 const res = await fetch('/api/articles/public?limit=100');
                 const data = await res.json();
-                
+
                 if (data.success && data.articles.length > 0) {
                     selectEl.innerHTML = '';
-                    data.articles.forEach((art, index) => {
+                    data.articles.forEach(art => {
                         const opt = document.createElement('option');
                         opt.value = art._id;
                         opt.textContent = `[${art.category}] ${art.title}`;
                         selectEl.appendChild(opt);
                     });
 
-                    // בדיקה האם יש פרמטר ב-URL
+                    // Check for URL query param
                     const urlParams = new URLSearchParams(window.location.search);
-                    const queryId = urlParams.get('articleId');
-                    if (queryId) {
-                        selectEl.value = queryId;
+                    const queryArticleId = urlParams.get('articleId');
+                    if (queryArticleId) {
+                        selectEl.value = queryArticleId;
                     }
 
-                    selectedArticleId = selectEl.value;
+                    activeArticleId = selectEl.value;
                     await loadAnalyticsForSelectedArticle();
                 } else {
-                    selectEl.innerHTML = '<option value="">אין כתבות פורסמו עדיין במערכת</option>';
+                    selectEl.innerHTML = '<option value="">אין כתבות מפורסמות כרגע במערכת</option>';
                 }
             } catch (err) {
-                console.error('Error fetching articles:', err);
-                selectEl.innerHTML = '<option value="">שגיאה בטעינת כתבות</option>';
+                console.error('Failed to load articles:', err);
+                selectEl.innerHTML = '<option value="">שגיאה בתקשורת עם השרת</option>';
             }
         }
 
+        // 2. Load Analytics & Comments for Selected Article
         async function loadAnalyticsForSelectedArticle() {
             const selectEl = document.getElementById('articleSelect');
-            selectedArticleId = selectEl.value;
-            if (!selectedArticleId) return;
+            activeArticleId = selectEl.value;
+            if (!activeArticleId) return;
 
             try {
-                // 1. קריאה ל-API נתוני Impact Analytics
-                const res = await fetch(`/api/analytics/article/${selectedArticleId}`);
+                const res = await fetch(`/api/analytics/article/${activeArticleId}`);
                 const data = await res.json();
 
                 if (data.success) {
-                    renderMetrics(data);
-                    renderChart(data);
-                    renderMilestones(data.milestones);
+                    renderKpis(data);
+                    renderImpactChart(data);
+                    renderMilestonesTimeline(data.milestones);
                 }
 
-                // 2. קריאה ל-API תגובות
-                await loadComments(selectedArticleId);
-
+                await fetchAndDisplayComments(activeArticleId);
             } catch (err) {
-                console.error('Error loading analytics:', err);
+                console.error('Failed to load article analytics:', err);
             }
         }
 
-        function renderMetrics(data) {
+        // 3. Render KPI Summary Cards
+        function renderKpis(data) {
             document.getElementById('totalViewsDisplay').textContent = (data.totalViews || 0).toLocaleString();
-            document.getElementById('revisionsCountDisplay').textContent = (data.milestones ? data.milestones.length - 1 : 0);
-            document.getElementById('selectedArticleCategory').textContent = `קטגוריה: ${data.article.category || ''}`;
+            document.getElementById('revisionsCountDisplay').textContent = (data.milestones ? Math.max(0, data.milestones.length - 1) : 0);
+            document.getElementById('articleCategoryDisplay').innerHTML = `<i class="bi bi-tag text-muted"></i> קטגוריה: <strong>${data.article.category || 'כללי'}</strong>`;
 
             const impact = data.impactAnalysis;
+            const badge = document.getElementById('impactPercentageBadge');
+
             if (impact) {
                 document.getElementById('beforeAvgDisplay').textContent = impact.avgHourlyBefore;
-                document.getElementById('beforeCountDisplay').textContent = `סה"כ ${impact.viewsBeforeUpdate} צפיות`;
+                document.getElementById('beforeCountDisplay').innerHTML = `<i class="bi bi-clock-history"></i> סה"כ ${impact.viewsBeforeUpdate.toLocaleString()} צפיות קודם`;
 
                 document.getElementById('afterAvgDisplay').textContent = impact.avgHourlyAfter;
                 const sign = impact.percentageChange >= 0 ? '+' : '';
-                const pctClass = impact.isPositiveImpact ? 'positive' : 'negative';
-                document.getElementById('impactPercentageDisplay').innerHTML = 
-                    `<span class="${pctClass}">${sign}${impact.percentageChange}% שינוי בצפיות</span>`;
+                badge.className = `growth-badge ${impact.isPositiveImpact ? 'positive' : 'negative'}`;
+                badge.innerHTML = `<i class="bi ${impact.isPositiveImpact ? 'bi-graph-up-arrow' : 'bi-graph-down-arrow'}"></i> ${sign}${impact.percentageChange}% שינוי בצפיות`;
             } else {
-                document.getElementById('beforeAvgDisplay').textContent = 'כתבה ללא עדכון';
-                document.getElementById('beforeCountDisplay').textContent = 'טרם פורסם עדכון גרסה';
+                document.getElementById('beforeAvgDisplay').textContent = '-';
+                document.getElementById('beforeCountDisplay').innerHTML = `<i class="bi bi-clock-history"></i> טרם פורסם עדכון תוכן`;
                 document.getElementById('afterAvgDisplay').textContent = '-';
-                document.getElementById('impactPercentageDisplay').textContent = 'אין נתוני השוואה';
+                badge.className = 'growth-badge';
+                badge.textContent = 'אין עדכונים להשוואה';
             }
         }
 
-        function renderChart(data) {
+        // 4. Render Chart.js with Beautiful Modern Aesthetics
+        function renderImpactChart(data) {
             const ctx = document.getElementById('impactChart').getContext('2d');
 
-            if (currentChartInstance) {
-                currentChartInstance.destroy();
+            if (currentChart) {
+                currentChart.destroy();
             }
 
             const labels = data.timeline.labels.length > 0 ? data.timeline.labels : ['התחלה'];
             const viewValues = data.timeline.views.length > 0 ? data.timeline.views : [0];
 
-            // מציאת נקודות אישור ועדכון על ציר הזמן
-            const pointBackgroundColors = [];
-            const pointRadius = [];
+            // Build soft blue gradient
+            const gradient = ctx.createLinearGradient(0, 0, 0, 320);
+            gradient.addColorStop(0, 'rgba(37, 99, 235, 0.25)');
+            gradient.addColorStop(1, 'rgba(37, 99, 235, 0.00)');
 
-            // זיהוי אינדקסים עבור נקודות ציון
-            labels.forEach((lbl, idx) => {
-                pointBackgroundColors.push('#38bdf8');
-                pointRadius.push(4);
-            });
-
-            currentChartInstance = new Chart(ctx, {
+            currentChart = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [{
-                        label: 'כמות צפיות לאורך ציר הזמן',
+                        label: 'צפיות לשעה',
                         data: viewValues,
-                        borderColor: '#38bdf8',
-                        backgroundColor: 'rgba(56, 189, 248, 0.15)',
-                        borderWidth: 3,
+                        borderColor: '#2563eb',
+                        backgroundColor: gradient,
+                        borderWidth: 2.5,
                         fill: true,
-                        tension: 0.3,
-                        pointBackgroundColor: pointBackgroundColors,
-                        pointBorderColor: '#ffffff',
-                        pointRadius: pointRadius,
-                        pointHoverRadius: 7
+                        tension: 0.35,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#2563eb',
+                        pointBorderWidth: 2,
+                        pointRadius: 3.5,
+                        pointHoverRadius: 6,
+                        pointHoverBackgroundColor: '#2563eb',
+                        pointHoverBorderColor: '#ffffff'
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    interaction: {
+                        mode: 'index',
+                        intersect: false
+                    },
+                    plugins: {
+                        legend: { display: false },
+                        tooltip: {
+                            backgroundColor: '#0f172a',
+                            titleFont: { family: 'Assistant', size: 13, weight: 'bold' },
+                            bodyFont: { family: 'Inter', size: 12 },
+                            padding: 10,
+                            cornerRadius: 8,
+                            displayColors: false,
+                            callbacks: {
+                                label: (item) => ` כמות צפיות: ${item.parsed.y.toLocaleString()}`
+                            }
+                        }
+                    },
                     scales: {
                         x: {
-                            grid: { color: '#1e293b' },
-                            ticks: { color: '#94a3b8', font: { size: 11 } }
+                            grid: { display: false },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { family: 'Inter', size: 11 },
+                                maxRotation: 0,
+                                autoSkip: true,
+                                maxTicksLimit: 8
+                            }
                         },
                         y: {
                             beginAtZero: true,
-                            grid: { color: '#1e293b' },
-                            ticks: { color: '#94a3b8', precision: 0 }
-                        }
-                    },
-                    plugins: {
-                        legend: {
-                            labels: { color: '#f8fafc', font: { size: 13 } }
-                        },
-                        tooltip: {
-                            callbacks: {
-                                label: (context) => `צפיות: ${context.parsed.y}`
+                            grid: { color: '#f1f5f9' },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { family: 'Inter', size: 11 },
+                                precision: 0
                             }
                         }
                     }
@@ -560,44 +739,49 @@
             });
         }
 
-        function renderMilestones(milestones) {
-            const container = document.getElementById('chartMilestones');
+        // 5. Render Milestone Timeline
+        function renderMilestonesTimeline(milestones) {
+            const container = document.getElementById('milestonesTimeline');
             container.innerHTML = '';
 
-            if (!milestones || milestones.length === 0) return;
+            if (!milestones || milestones.length === 0) {
+                container.innerHTML = '<div class="text-muted small text-center py-3">לא נרשמו עדכוני גרסאות לכתבה זו.</div>';
+                return;
+            }
 
             milestones.forEach((m, idx) => {
-                const item = document.createElement('div');
-                item.className = `milestone-item ${m.type === 'REVISION_UPDATE' ? 'revision' : ''}`;
-                
-                const d = new Date(m.timestamp);
-                const timeStr = `${d.toLocaleDateString('he-IL')} בשעה ${d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}`;
+                const div = document.createElement('div');
+                div.className = 'timeline-item';
+                const isRev = m.type === 'REVISION_UPDATE';
 
-                item.innerHTML = `
-                    <div>
-                        <strong>${m.title}:</strong> ${m.description}
-                        ${m.editorName ? `<span style="color: var(--accent-orange);"> (ע"י ${m.editorName})</span>` : ''}
+                const d = new Date(m.timestamp);
+                const dateStr = d.toLocaleDateString('he-IL');
+                const timeStr = d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+
+                div.innerHTML = `
+                    <div class="timeline-dot ${isRev ? 'revision' : ''}"></div>
+                    <div class="d-flex justify-content-between align-items-baseline mb-1">
+                        <strong class="small ${isRev ? 'text-warning' : 'text-primary'}">${m.title}</strong>
+                        <span class="font-mono text-muted small" style="font-size: 0.75rem;">${dateStr} ${timeStr}</span>
                     </div>
-                    <div style="color: var(--text-muted); font-size: 12px;">${timeStr}</div>
+                    <p class="small text-muted mb-0">${m.description} ${m.editorName ? `<span class="badge bg-light text-dark border">ע"י ${m.editorName}</span>` : ''}</p>
                 `;
-                container.appendChild(item);
+                container.appendChild(div);
             });
         }
 
+        // 6. View Simulation Action
         async function simulateViews(amount) {
-            if (!selectedArticleId) return;
+            if (!activeArticleId) return;
             for (let i = 0; i < amount; i++) {
-                await fetch(`/api/analytics/view/${selectedArticleId}`, { method: 'POST' });
+                await fetch(`/api/analytics/view/${activeArticleId}`, { method: 'POST' });
             }
             await loadAnalyticsForSelectedArticle();
         }
 
-        // ==========================================
-        // מודול תגובות ב-AJAX (Vanilla JS)
-        // ==========================================
-
-        async function loadComments(articleId) {
-            const listEl = document.getElementById('commentsList');
+        // 7. Comments Module (AJAX)
+        async function fetchAndDisplayComments(articleId) {
+            const container = document.getElementById('commentsStream');
             const badge = document.getElementById('commentsCountBadge');
 
             try {
@@ -606,41 +790,49 @@
 
                 if (data.success) {
                     badge.textContent = `${data.comments.length} תגובות`;
+
                     if (data.comments.length === 0) {
-                        listEl.innerHTML = '<div style="color: var(--text-muted); font-size: 13px; text-align: center; padding: 20px;">אין עדיין תגובות לכתבה זו. היו הראשונים להגיב!</div>';
+                        container.innerHTML = '<div class="text-center text-muted py-4 small">טרם פורסמו תגובות לכתבה זו. היו הראשונים להגיב!</div>';
                         return;
                     }
 
-                    listEl.innerHTML = '';
+                    container.innerHTML = '';
                     data.comments.forEach(c => {
-                        const el = createCommentBubble(c);
-                        listEl.appendChild(el);
+                        container.appendChild(buildCommentElement(c));
                     });
                 }
             } catch (err) {
-                console.error('Error fetching comments:', err);
-                listEl.innerHTML = '<div style="color: var(--accent-red); font-size: 13px;">שגיאה בטעינת התגובות</div>';
+                container.innerHTML = '<div class="text-danger small py-3">שגיאה בטעינת תגובות</div>';
             }
         }
 
-        function createCommentBubble(comment) {
-            const div = document.createElement('div');
-            div.className = 'comment-bubble';
-            const dateObj = new Date(comment.createdAt || Date.now());
-            const timeStr = `${dateObj.toLocaleDateString('he-IL')} ${dateObj.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}`;
+        function buildCommentElement(comment) {
+            const el = document.createElement('div');
+            el.className = 'comment-item';
 
-            div.innerHTML = `
-                <div class="comment-header">
-                    <span class="comment-author">${escapeHtml(comment.authorName)}</span>
-                    <span>${timeStr}</span>
+            const author = comment.authorName || 'אורח';
+            const initial = author.trim().charAt(0) || 'A';
+            const d = new Date(comment.createdAt || Date.now());
+            const timeStr = `${d.toLocaleDateString('he-IL')} בשעה ${d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}`;
+
+            el.innerHTML = `
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="d-flex align-items-center gap-2">
+                        <div class="avatar-circle">${escapeHtml(initial)}</div>
+                        <div>
+                            <div class="fw-bold small text-dark">${escapeHtml(author)}</div>
+                            <div class="font-mono text-muted" style="font-size: 0.75rem;">${timeStr}</div>
+                        </div>
+                    </div>
+                    <span class="badge bg-white text-muted border small">קורא/ת מאומת/ת</span>
                 </div>
-                <div class="comment-content">${escapeHtml(comment.content)}</div>
+                <div class="text-body small" style="white-space: pre-wrap;">${escapeHtml(comment.content)}</div>
             `;
-            return div;
+            return el;
         }
 
         async function submitCommentAJAX() {
-            if (!selectedArticleId) return;
+            if (!activeArticleId) return;
 
             const authorInput = document.getElementById('commentAuthor');
             const contentInput = document.getElementById('commentContent');
@@ -651,15 +843,15 @@
             const content = contentInput.value.trim();
 
             if (!authorName || !content) {
-                alert('נא למלא שם ותוכן תגובה');
+                alert('נא למלא שם מגיב ותוכן תגובה');
                 return;
             }
 
             submitBtn.disabled = true;
-            submitBtn.textContent = 'שולח...';
+            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> שולח...';
 
             try {
-                const res = await fetch(`/api/articles/${selectedArticleId}/comments`, {
+                const res = await fetch(`/api/articles/${activeArticleId}/comments`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ authorName, content })
@@ -668,88 +860,85 @@
                 const data = await res.json();
 
                 if (res.status === 429) {
-                    // נחסם ע"י מנגנון ה-Rate Limiting (ספאם)
-                    showRateLimitAlert(data.retryAfterSeconds || 60);
+                    displayRateLimitError(data.retryAfterSeconds || 60);
                 } else if (data.success) {
                     banner.style.display = 'none';
-                    // עדכון מיידי ברשימת התגובות ללא רענון עמוד!
-                    const listEl = document.getElementById('commentsList');
-                    const newBubble = createCommentBubble(data.comment);
 
-                    // אם זו התגובה הראשונה
-                    if (listEl.querySelector('.comment-bubble') === null) {
-                        listEl.innerHTML = '';
+                    // Instant prepend to stream without page refresh
+                    const stream = document.getElementById('commentsStream');
+                    const newEl = buildCommentElement(data.comment);
+
+                    if (stream.querySelector('.comment-item') === null) {
+                        stream.innerHTML = '';
                     }
-                    listEl.insertBefore(newBubble, listEl.firstChild);
+                    stream.insertBefore(newEl, stream.firstChild);
 
-                    // ניקוי שדות הטופס
+                    // Clear form
                     contentInput.value = '';
-                    
-                    // עדכון המונה
+
+                    // Update count
                     const badge = document.getElementById('commentsCountBadge');
-                    const curCount = parseInt(badge.textContent) || 0;
-                    badge.textContent = `${curCount + 1} תגובות`;
+                    const cur = parseInt(badge.textContent) || 0;
+                    badge.textContent = `${cur + 1} תגובות`;
                 } else {
                     alert(data.message || 'שגיאה בשליחת התגובה');
                 }
             } catch (err) {
-                console.error('Error posting comment:', err);
-                alert('אירעה שגיאת תקשורת');
+                alert('שגיאת תקשורת מול השרת');
             } finally {
                 submitBtn.disabled = false;
-                submitBtn.textContent = 'שלח תגובה (AJAX)';
+                submitBtn.innerHTML = '<i class="bi bi-send"></i> פרסם תגובה (AJAX)';
             }
         }
 
-        function showRateLimitAlert(seconds) {
+        function displayRateLimitError(seconds) {
             const banner = document.getElementById('rateLimitBanner');
-            const timerSpan = document.getElementById('countdownTimer');
+            const timer = document.getElementById('countdownTimer');
             banner.style.display = 'block';
 
-            let remaining = seconds;
-            timerSpan.textContent = `(נעילה תשתחרר בעוד ${remaining} שניות)`;
+            let rem = seconds;
+            timer.textContent = `בעוד ${rem} שניות`;
 
-            const interval = setInterval(() => {
-                remaining--;
-                if (remaining <= 0) {
-                    clearInterval(interval);
+            const t = setInterval(() => {
+                rem--;
+                if (rem <= 0) {
+                    clearInterval(t);
                     banner.style.display = 'none';
                 } else {
-                    timerSpan.textContent = `(נעילה תשתחרר בעוד ${remaining} שניות)`;
+                    timer.textContent = `בעוד ${rem} שניות`;
                 }
             }, 1000);
         }
 
+        // 8. Anti-Spam Stress Test for Oral Defense
         async function triggerSpamTest() {
-            if (!selectedArticleId) return;
+            if (!activeArticleId) return;
             const logBox = document.getElementById('spamTestLog');
-            logBox.textContent = `[${new Date().toLocaleTimeString()}] מתחיל בדיקת הצפה (4 תגובות מהירות ברצף)...\n`;
+            logBox.textContent = `[${new Date().toLocaleTimeString()}] תחילת בדיקת הצפה מהירה (4 תגובות ברצף)...\n`;
 
             for (let i = 1; i <= 4; i++) {
                 try {
-                    const res = await fetch(`/api/articles/${selectedArticleId}/comments`, {
+                    const res = await fetch(`/api/articles/${activeArticleId}/comments`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            authorName: `בודק אוטומטי #${i}`,
-                            content: `בדיקת עמידות ספאם תגובה מס' ${i}`
+                            authorName: `בודק #${i}`,
+                            content: `בדיקת עמידות ספאם תגובה ${i}`
                         })
                     });
                     const data = await res.json();
-                    
+
                     if (res.status === 429) {
-                        logBox.textContent += `❌ תגובה #${i}: נחסמה כחוק! HTTP 429 (Too Many Requests). הודעה: ${data.message}\n`;
-                        showRateLimitAlert(data.retryAfterSeconds || 60);
+                        logBox.textContent += `🔴 תגובה #${i}: נחסמה כחוק! HTTP 429 (Too Many Requests). המתנה: ${data.retryAfterSeconds} שניות.\n`;
+                        displayRateLimitError(data.retryAfterSeconds || 60);
                     } else if (data.success) {
-                        logBox.textContent += `✅ תגובה #${i}: אושרה בהצלחה! HTTP 201\n`;
-                    } else {
-                        logBox.textContent += `⚠️ תגובה #${i}: סטטוס ${res.status}: ${data.message}\n`;
+                        logBox.textContent += `🟢 תגובה #${i}: אושרה בהצלחה! HTTP 201 Created\n`;
                     }
                 } catch (err) {
-                    logBox.textContent += `❌ תגובה #${i}: שגיאת רשת ${err.message}\n`;
+                    logBox.textContent += `⚠️ תגובה #${i}: תקלה ברשת\n`;
                 }
             }
-            await loadComments(selectedArticleId);
+            await fetchAndDisplayComments(activeArticleId);
         }
 
         function escapeHtml(str) {
