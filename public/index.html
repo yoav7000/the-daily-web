@@ -673,6 +673,13 @@
             await fetchTopArticles();
             await loadFeed(true);
 
+            // Deep link support: auto-open article modal if articleId query parameter exists
+            const urlParams = new URLSearchParams(window.location.search);
+            const queryArticleId = urlParams.get('articleId');
+            if (queryArticleId) {
+                await openArticleById(queryArticleId);
+            }
+
             // Infinite Scroll Listener
             window.addEventListener('scroll', handleInfiniteScroll);
         });
