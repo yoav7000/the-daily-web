@@ -835,7 +835,8 @@
                 const col = document.createElement('div');
                 col.className = 'col-md-6';
                 col.innerHTML = `
-                    <article class="news-card" onclick="openArticleById('${art._id}')">
+                    <a href="/article/${art._id}" class="text-decoration-none text-dark d-block">
+                        <article class="news-card">
                         <div class="news-card-img-wrap">
                             <img src="${art.mainImage || 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=600&q=80'}" alt="${escapeHtml(art.title)}" loading="lazy">
                         </div>
