@@ -57,8 +57,16 @@ const request = (method, path, body = null, headers = {}) => {
     });
 };
 
+let mongod;
+
 test.before(async () => {
-    await mongoose.connect(MONGO_URI);
+    try {
+        await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 1500 });
+    } catch (err) {
+        const { MongoMemoryServer } = require('mongodb-memory-server');
+        mongod = await MongoMemoryServer.create();
+        await mongoose.connect(mongod.getUri());
+    }
     await Article.deleteMany({});
     await User.deleteMany({});
 
@@ -75,6 +83,9 @@ test.after(async () => {
     await Article.deleteMany({});
     await User.deleteMany({});
     await mongoose.connection.close();
+    if (mongod) {
+        await mongod.stop();
+    }
     await new Promise(resolve => server.close(resolve));
 });
 

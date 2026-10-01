@@ -9,10 +9,16 @@ const Article = require('../src/models/Article');
 const User = require('../src/models/User');
 const { ARTICLE_STATUS } = require('../src/constants/articleConstants');
 
-const MONGO_URI = process.env.MONGODB_URI_WORKFLOW || 'mongodb://127.0.0.1:27017/the-daily-web-test-workflow';
+let mongod;
 
 test.before(async () => {
-    await mongoose.connect(MONGO_URI);
+    try {
+        await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 1500 });
+    } catch (err) {
+        const { MongoMemoryServer } = require('mongodb-memory-server');
+        mongod = await MongoMemoryServer.create();
+        await mongoose.connect(mongod.getUri());
+    }
     // Clean up test collections
     await Article.deleteMany({});
     await User.deleteMany({});
@@ -22,6 +28,9 @@ test.after(async () => {
     await Article.deleteMany({});
     await User.deleteMany({});
     await mongoose.connection.close();
+    if (mongod) {
+        await mongod.stop();
+    }
 });
 
 test('Article Workflow & Auto-Save Test Suite', async (t) => {
