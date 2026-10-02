@@ -1,27 +1,33 @@
 const mongoose = require('mongoose');
 
+/**
+ * מודל תגובות (Comment)
+ * תומך בפעולות CRUD מלאות, מנגנון חיפוש טקסטואלי,
+ * ואינדקסים מהירים לשליפת תגובות לפי כתבה ולסינון ספאם לפי IP.
+ */
 const commentSchema = new mongoose.Schema({
     article: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Article',
-        required: [true, 'Article reference is required'],
+        required: [true, 'מזהה כתבה הוא שדה חובה'],
         index: true
     },
     authorName: {
         type: String,
-        required: [true, 'Author name is required'],
+        required: [true, 'שם המגיב הוא שדה חובה'],
         trim: true,
-        maxlength: 100
+        maxlength: [100, 'שם המגיב לא יכול לעלות על 100 תווים']
     },
     content: {
         type: String,
-        required: [true, 'Comment content is required'],
+        required: [true, 'תוכן התגובה הוא שדה חובה'],
         trim: true,
-        maxlength: 1000
+        maxlength: [1000, 'תוכן התגובה לא יכול לעלות על 1000 תווים']
     },
     clientIp: {
         type: String,
-        required: false
+        required: false,
+        index: true
     },
     createdAt: {
         type: Date,
@@ -32,9 +38,21 @@ const commentSchema = new mongoose.Schema({
     timestamps: true
 });
 
-// Index for anti-spam rate limiting (3 comments per minute per device/IP) and fast article comments retrieval
+// אינדקסים משולבים לביצועים מהירים בעומס
 commentSchema.index({ article: 1, createdAt: -1 });
 commentSchema.index({ clientIp: 1, createdAt: -1 });
+
+// אינדקס טקסטואלי לחיפוש תגובות לפי תוכן או שם מגיב
+commentSchema.index({
+    content: 'text',
+    authorName: 'text'
+}, {
+    name: 'CommentTextIndex',
+    weights: {
+        content: 10,
+        authorName: 5
+    }
+});
 
 const Comment = mongoose.model('Comment', commentSchema);
 
