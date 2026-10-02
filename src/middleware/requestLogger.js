@@ -7,6 +7,21 @@ if (!fs.existsSync(logsDir)) {
 }
 
 const accessLogPath = path.join(logsDir, 'operations.log');
+const httpLogPath = path.join(logsDir, 'access.log');
+
+/**
+ * HTTP access logger - one line per request with status and duration
+ */
+const httpLogger = (req, res, next) => {
+    const start = Date.now();
+    res.on('finish', () => {
+        const line = `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} ${res.statusCode} ${Date.now() - start}ms
+`;
+        process.stdout.write(line);
+        fs.appendFile(httpLogPath, line, () => {});
+    });
+    next();
+};
 
 /**
  * Log significant operational events (Article creation, publishing, reviews, auto-saves)
@@ -23,5 +38,6 @@ const logOperation = (action, details) => {
 };
 
 module.exports = {
+    httpLogger,
     logOperation
 };
