@@ -38,6 +38,10 @@ app.get('/api/health', (req, res) => {
     res.status(200).json({ status: 'ok', timestamp: new Date() });
 });
 
+// EJS Page Routes
+const articleController = require('./controllers/articleController');
+app.get('/article/:id', articleController.renderArticlePage);
+
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api', commentRoutes);

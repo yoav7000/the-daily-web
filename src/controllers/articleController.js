@@ -778,3 +778,35 @@ module.exports = {
     getPublicArticles,
     getPublicArticleById
 };
+
+const renderArticlePage = async (req, res, next) => {
+    try {
+        const article = await Article.findOne({
+            _id: req.params.id,
+            status: ARTICLE_STATUS.PUBLISHED
+        }).populate('author', 'fullName username');
+
+        if (!article) {
+            return res.status(404).send('הכתבה לא נמצאה או שטרם פורסמה');
+        }
+
+        recordViewInternal(article._id);
+
+        res.render('article', {
+            article: {
+                _id: article._id,
+                title: article.title,
+                summary: article.summary,
+                content: article.content,
+                category: article.category,
+                mainImage: article.mainImage,
+                author: article.author,
+                publishedAt: article.publishedAt
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+module.exports.renderArticlePage = renderArticlePage;
