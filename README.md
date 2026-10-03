@@ -48,7 +48,7 @@ Public sign-up only creates **reporters**. Editor accounts are created either fr
 npm run create-editor -- <username> <password> "<full name>"
 ```
 
-or by a logged-in editor through `POST /api/auth/users` (body: `username`, `password`, `fullName`, `role`).
+or by a logged-in editor through the user management API (see below).
 
 ### Tests
 
@@ -68,7 +68,8 @@ Every test file starts its own temporary in-memory MongoDB, so tests never touch
 | `MONGODB_URI` | MongoDB connection string |
 | `SESSION_SECRET` | Signs the session cookie. **Required in production** |
 | `JWT_SECRET` | Signs login tokens. **Required in production** |
-| `OPENWEATHER_API_KEY` | OpenWeatherMap key for the weather widget. Without it, placeholder data is shown |
+| `OPENWEATHER_API_KEY` | OpenWeatherMap key for the weather widget (new free keys can take up to 2 hours to activate). Without a working key the widget shows sample data and says so |
+| `TRUST_PROXY` | Number of reverse proxies in front of the server (e.g. `1`). Needed behind nginx or a load balancer so the comment limit sees the real visitor IP. Leave unset otherwise |
 | `WEATHER_CITY` | City for the weather widget (default `Tel Aviv,IL`) |
 | `USE_MEMORY_DB` | `true` = temporary in-memory database with demo data (development only) |
 
@@ -88,6 +89,7 @@ the-daily-web/
 │   ├── editor.html              # Editor dashboard (review, diff view, approve / return)
 │   ├── analytics.html           # Impact Analytics graph (Chart.js) and comments demo
 │   ├── js/common.js             # Shared client helpers (escapeHtml, token, logout)
+│   ├── js/comments.js           # Comment list helpers (add a comment without reloading the list)
 │   └── images/                  # Default article image
 ├── src/
 │   ├── app.js                   # Express setup, middleware, routes
@@ -99,10 +101,10 @@ the-daily-web/
 │   ├── constants/               # Article statuses, categories, default image
 │   ├── models/                  # User, Article, Comment, ViewStat (Mongoose)
 │   ├── middleware/              # auth (roles), commentRateLimiter, errorHandler, requestLogger
-│   ├── controllers/             # article, auth, comment, analytics, weather
+│   ├── controllers/             # article, auth, user, comment, analytics, weather
 │   ├── services/                # weatherService (OpenWeatherMap + 15 minute cache)
 │   ├── routes/                  # REST routes per controller
-│   ├── utils/                   # pagination, status filter, text cleaning, HTML sanitizer
+│   ├── utils/                   # pagination, search filter, status filter, text cleaning, HTML sanitizer
 │   ├── scripts/                 # seed.js (demo data), createEditor.js
 │   └── views/article.ejs        # Server-rendered article page (SEO)
 └── tests/                       # node:test suites (+ helpers/testEnv.js)
@@ -117,6 +119,7 @@ the-daily-web/
 - Passwords are hashed with `bcrypt`.
 - Logins are kept in a server session stored in MongoDB (`connect-mongo`), so they survive a server restart. The dashboards authenticate with a signed token, and the server accepts the session cookie as well.
 - Public sign-up always creates a reporter. Editors are created by another editor or with `npm run create-editor`.
+- **User management (editors only):** `GET /api/users?search=&role=` (list and search by part of the name), `GET /api/users/:id`, `POST /api/users`, `PUT /api/users/:id` (name, role, active flag, password), `DELETE /api/users/:id`. The last active editor cannot be removed, and a user who wrote articles is deactivated instead of deleted.
 - Article HTML is sanitized on save (small allowlist of tags, safe links only), and the dashboards escape all text they render.
 - Centralized error handling, with errors in `logs/error.log`, HTTP requests in `logs/access.log`, and operational events in `logs/operations.log`.
 
@@ -124,18 +127,19 @@ the-daily-web/
 - **State machine:** `draft` (בהכנה) → `pending_approval` (ממתינה לאישור עורך) → `published` (פורסמה), or `revision_requested` (הוחזרה לתיקונים) with **mandatory editor feedback**. Illegal transitions are blocked on the server.
 - **Auto-save:** `POST /api/articles/autosave` and `PUT /api/articles/:id/autosave` save work continuously in the background.
 - **Editing a published article:** changes go to an isolated `draftVersion`. The public keeps seeing the approved version until an editor approves the update, which is recorded in `revisionsHistory` for the analytics timeline.
+- **Locked while under review:** once an article (or the update of a published article) is waiting for the editor, the server refuses further edits until the editor approves it or returns it for revisions.
 - **Editor tools:** filter all articles by status, side-by-side diff of the live version against the proposed one, approve, return with notes, direct edit, delete.
 
 ### Public site
-- Home page feed with infinite scroll (20 articles per request via `fetch`), search by title, filter by category and viewed / not viewed, sort by date or popularity.
+- Home page feed with infinite scroll (20 articles per request via `fetch`), search by title or summary (any part of a word matches), filter by category and viewed / not viewed, sort by date or popularity. Every article opens its own page.
 - Server-rendered article page (`/article/:id`, EJS) for search engines.
-- Weather widget in the sidebar. `GET /api/weather` calls OpenWeatherMap at most once every 15 minutes.
+- Weather widget in the sidebar. `GET /api/weather` calls OpenWeatherMap at most once every 15 minutes, however many visitors there are. If the service is unavailable, the last real reading is shown (or labelled sample data).
 
 ### Comments, anti-spam & analytics
-- Comments are posted with AJAX and appear without a page reload. Commenter IPs are never sent to the browser.
-- **Rate limit:** a guest cannot post more than 3 comments per minute from the same device/IP. It is checked against MongoDB, so a server restart does not reset it. Blocked requests get `429` with `Retry-After`.
+- Comments are posted with AJAX and the new comment appears at the top of the list without a page reload. Commenter IPs are never sent to the browser.
+- **Rate limit:** a guest cannot post more than 3 comments per minute from the same IP. The IP comes from the connection itself (headers such as `X-Forwarded-For` are ignored unless `TRUST_PROXY` is set), requests from one IP are handled one after another so a burst cannot slip through, and the count is checked against MongoDB so a server restart does not reset it. Blocked requests get `429` with `Retry-After`.
 - **Views** are counted in hourly buckets with atomic `$inc` upserts, which keeps heavy traffic cheap.
-- **Impact Analytics** (`public/analytics.html`) shows views over time with Chart.js, marks the publication and update times, and compares average hourly views before and after the last update.
+- **Impact Analytics** (`public/analytics.html`) shows views over time with Chart.js. Hours without views appear as 0. The publication and every editor-approved update are drawn on the graph as labelled vertical lines, with the period after the last update shaded, and a card compares the average views per hour before and after that update.
 
 ---
 
