@@ -1047,7 +1047,7 @@
                     const timeStr = new Date().toLocaleTimeString('he-IL');
                     updateAutoSaveIndicator('saved', `נשמר אוטומטית ברקע ב-${timeStr}`);
                 } else {
-                    updateAutoSaveIndicator('error', 'שגיאה בשמירה אוטומטית');
+                    updateAutoSaveIndicator('error', data.message || 'שגיאה בשמירה אוטומטית');
                 }
             } catch (err) {
                 console.error('AutoSave failed:', err);

@@ -135,20 +135,6 @@ articleSchema.index({ status: 1, publishedAt: -1 });
 articleSchema.index({ author: 1, status: 1 });
 articleSchema.index({ category: 1, status: 1, publishedAt: -1 });
 
-// Full-text search index on title, summary and content
-articleSchema.index({
-    title: 'text',
-    summary: 'text',
-    content: 'text'
-}, {
-    weights: {
-        title: 10,
-        summary: 5,
-        content: 1
-    },
-    name: 'ArticleTextIndex'
-});
-
 /**
  * Helper to get the working content for a reporter
  * If published and a draft exists, returns the draft.

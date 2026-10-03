@@ -3,8 +3,6 @@ const { generateToken } = require('../middleware/auth');
 const { logOperation } = require('../middleware/requestLogger');
 const { cleanText } = require('../utils/text');
 
-const ASSIGNABLE_ROLES = ['reporter', 'editor'];
-
 /**
  * Validates the shared fields of a new account.
  * Returns { error } with a Hebrew message, or { username, password, fullName } ready to save.
@@ -72,37 +70,6 @@ const register = async (req, res, next) => {
             success: true,
             message: 'המשתמש נרשם בהצלחה',
             token,
-            user: toUserResponse(user)
-        });
-    } catch (error) {
-        next(error);
-    }
-};
-
-/**
- * Create an account with any role without logging in as it (editor only)
- * POST /api/auth/users
- */
-const createUser = async (req, res, next) => {
-    try {
-        const fields = await readNewUserFields(req.body);
-        if (fields.error) {
-            return res.status(400).json({ success: false, message: fields.error });
-        }
-
-        const role = ASSIGNABLE_ROLES.includes(req.body.role) ? req.body.role : 'reporter';
-        const user = await User.create({ ...fields, role });
-
-        logOperation('USER_CREATED_BY_EDITOR', {
-            userId: user._id,
-            username: user.username,
-            role: user.role,
-            createdBy: req.user._id
-        });
-
-        return res.status(201).json({
-            success: true,
-            message: 'המשתמש נוצר בהצלחה',
             user: toUserResponse(user)
         });
     } catch (error) {
@@ -205,7 +172,6 @@ const getMe = async (req, res) => {
 
 module.exports = {
     register,
-    createUser,
     login,
     logout,
     getMe

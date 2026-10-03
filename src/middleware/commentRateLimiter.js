@@ -1,76 +1,85 @@
 const Comment = require('../models/Comment');
 
+const MAX_COMMENTS = 3;
+const WINDOW_MS = 60 * 1000;
+
 /**
  * מנגנון הגבלת תגובות (Anti-Spam Rate Limiter)
  * דרישת פרויקט: חסימת אורח מלהגיב יותר מ-3 תגובות בדקה מאותו מכשיר/IP.
- * 
- * היתרון בבדיקה מול מסד הנתונים:
- * 1. עמידות מלאה ל-Restart של השרת - המידע נשמר במסד הנתונים ולא מתאפס באתחול.
- * 2. אינדקס משולב { clientIp: 1, createdAt: -1 } מבטיח ביצועים מהירים במיוחד.
+ *
+ * - הזיהוי מבוסס על req.ip בלבד. כותרות שהלקוח שולח (X-Forwarded-For, מזהה מכשיר) אינן מהימנות
+ *   ולכן לא נקראות. מאחורי פרוקסי אמיתי יש להגדיר TRUST_PROXY (ראו app.js).
+ * - הספירה מתבצעת מול מסד הנתונים, ולכן עמידה ל-Restart של השרת.
+ * - בקשות מאותו IP מטופלות אחת אחרי השנייה, כך ששליחה של כמה בקשות במקביל לא עוקפת את הספירה.
  */
+
+// תור בקשות לכל IP: הבקשה הבאה מתחילה רק אחרי שהקודמת סיימה (נשמרה או נדחתה)
+const queues = new Map();
+
+const enterQueue = (key) => {
+    const previous = queues.get(key) || Promise.resolve();
+    let leave;
+    const turn = new Promise((resolve) => { leave = resolve; });
+    const tail = previous.then(() => turn);
+    queues.set(key, tail);
+    tail.then(() => {
+        if (queues.get(key) === tail) {
+            queues.delete(key);
+        }
+    });
+    return previous.then(() => leave);
+};
+
+const normalizeIp = (ip) => {
+    if (!ip || ip === '::1') {
+        return '127.0.0.1';
+    }
+    return ip.replace(/^::ffff:/, '');
+};
+
 const commentRateLimiter = async (req, res, next) => {
+    const clientIdentifier = normalizeIp(req.ip || req.socket.remoteAddress);
+    const leave = await enterQueue(clientIdentifier);
+
+    // משחררים את התור כשהתגובה נשלחה ללקוח (או שהחיבור נסגר)
+    let released = false;
+    const release = () => {
+        if (!released) {
+            released = true;
+            leave();
+        }
+    };
+    res.on('finish', release);
+    res.on('close', release);
+
     try {
-        // זיהוי ה-IP או המכשיר של השולח
-        let clientIp = req.headers['x-forwarded-for'] || 
-                       req.socket.remoteAddress || 
-                       req.ip || 
-                       '127.0.0.1';
+        const windowStartTime = new Date(Date.now() - WINDOW_MS);
 
-        // טיפול במחרוזת של מספר כתובות IP במקרה של פרוקסי
-        if (typeof clientIp === 'string' && clientIp.includes(',')) {
-            clientIp = clientIp.split(',')[0].trim();
-        }
-
-        // נרמול כתובת localhost ב-IPv6
-        if (clientIp === '::1' || clientIp === '::ffff:127.0.0.1') {
-            clientIp = '127.0.0.1';
-        }
-
-        // אפשרות לתמיכה במזהה מכשיר ייעודי מה-Header אם קיים
-        const deviceId = req.headers['x-device-id'];
-        const clientIdentifier = deviceId ? `${clientIp}_${deviceId}` : clientIp;
-
-        // חלון זמן של 60 שניות אחורה
-        const windowMs = 60 * 1000;
-        const windowStartTime = new Date(Date.now() - windowMs);
-
-        // ספירת כמות התגובות שפורסמו מחשבון/מכשיר זה בדקה האחרונה
-        const recentCommentsCount = await Comment.countDocuments({
+        const recentComments = await Comment.find({
             clientIp: clientIdentifier,
             createdAt: { $gte: windowStartTime }
-        });
+        }).sort({ createdAt: 1 }).select('createdAt').lean();
 
-        // בדיקה האם המשתמש עבר את מכסת 3 התגובות
-        if (recentCommentsCount >= 3) {
-            // מציאת התגובה הישנה ביותר בחלון כדי לחשב במדויק מתי ייפתח החלון מחדש
-            const oldestInWindow = await Comment.findOne({
-                clientIp: clientIdentifier,
-                createdAt: { $gte: windowStartTime }
-            }).sort({ createdAt: 1 }).select('createdAt');
-
-            let retryAfterSeconds = 60;
-            if (oldestInWindow && oldestInWindow.createdAt) {
-                const msRemaining = (oldestInWindow.createdAt.getTime() + windowMs) - Date.now();
-                retryAfterSeconds = Math.max(1, Math.ceil(msRemaining / 1000));
-            }
+        if (recentComments.length >= MAX_COMMENTS) {
+            // החלון ייפתח מחדש כשהתגובה הישנה ביותר שבחלון "תצא" ממנו
+            const msRemaining = recentComments[0].createdAt.getTime() + WINDOW_MS - Date.now();
+            const retryAfterSeconds = Math.max(1, Math.ceil(msRemaining / 1000));
 
             res.set('Retry-After', String(retryAfterSeconds));
             return res.status(429).json({
                 success: false,
                 message: 'חריגה ממגבלת התגובות: ניתן לפרסם עד 3 תגובות בדקה מאותו מכשיר. אנא המתן מעט ונסה שוב.',
-                limit: 3,
-                currentCount: recentCommentsCount,
+                limit: MAX_COMMENTS,
+                currentCount: recentComments.length,
                 retryAfterSeconds
             });
         }
 
-        // העברת מזהה הלקוח אל ה-Request להמשך הטיפול
         req.clientIdentifier = clientIdentifier;
         next();
     } catch (error) {
-        console.error('Error in commentRateLimiter:', error);
-        // במקרה של שגיאה בלתי צפויה במנגנון ההגבלה, נאפשר לבקשה להמשיך כדי לא להשבית את השירות
-        next();
+        release();
+        next(error);
     }
 };
 

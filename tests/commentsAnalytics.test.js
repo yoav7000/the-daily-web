@@ -106,36 +106,23 @@ test('Team Member 5: Comments & Anti-Spam Rate Limiter Test Suite', async (t) =>
     });
 
     await t.test('3. Anti-Spam: Block guest posting more than 3 comments per minute from same device/IP', async () => {
-        const spamDeviceId = 'spam_device_test_99';
+        // start from a clean slate for this device (the first test already posted one comment)
+        await Comment.deleteMany({});
+
+        const postComment = (label, headers = {}) => fetch(`${baseUrl}/api/articles/${testArticleId}/comments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...headers },
+            body: JSON.stringify({ authorName: `משתמש ${label}`, content: `תגובה ${label}` })
+        });
 
         // שליחת 3 תגובות מותרות
         for (let i = 1; i <= 3; i++) {
-            const res = await fetch(`${baseUrl}/api/articles/${testArticleId}/comments`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'x-device-id': spamDeviceId
-                },
-                body: JSON.stringify({
-                    authorName: `משתמש לגיטימי #${i}`,
-                    content: `תגובה מותרת מספר ${i}`
-                })
-            });
+            const res = await postComment(i);
             assert.equal(res.status, 201, `Comment ${i} should be accepted`);
         }
 
         // ניסיון שליחת תגובה רביעית תוך אותה דקה -> חייב להיחסם כחוק עם 429
-        const blockedRes = await fetch(`${baseUrl}/api/articles/${testArticleId}/comments`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-device-id': spamDeviceId
-            },
-            body: JSON.stringify({
-                authorName: 'ספאמר זדוני',
-                content: 'תגובת ספאם שלא צריכה לעבור'
-            })
-        });
+        const blockedRes = await postComment('spam');
 
         assert.equal(blockedRes.status, 429, 'Fourth comment must be rejected with HTTP 429');
         const blockedData = await blockedRes.json();
@@ -143,23 +130,35 @@ test('Team Member 5: Comments & Anti-Spam Rate Limiter Test Suite', async (t) =>
         assert.ok(blockedData.message.includes('חריגה ממגבלת התגובות'));
         assert.equal(blockedData.limit, 3);
         assert.ok(blockedData.retryAfterSeconds > 0);
+
+        // headers sent by the client must not let it dodge the limit
+        const spoofed = await postComment('spoof', { 'X-Forwarded-For': '8.8.8.8', 'x-device-id': 'another-device' });
+        assert.equal(spoofed.status, 429, 'Faking X-Forwarded-For / device id must not bypass the limit');
+    });
+
+    await t.test('3b. Anti-Spam: a burst of simultaneous requests cannot slip past the limit', async () => {
+        await Comment.deleteMany({});
+
+        const results = await Promise.all(Array.from({ length: 8 }, (_, i) => fetch(`${baseUrl}/api/articles/${testArticleId}/comments`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ authorName: 'מציף', content: `גל ${i}` })
+        })));
+        const statuses = results.map((r) => r.status);
+
+        assert.equal(statuses.filter((s) => s === 201).length, 3);
+        assert.equal(statuses.filter((s) => s === 429).length, 5);
     });
 
     await t.test('4. Full CRUD on Comments: Editor can update and delete a comment', async () => {
-        // יצירת תגובה
-        const createRes = await fetch(`${baseUrl}/api/articles/${testArticleId}/comments`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'x-device-id': 'crud_device'
-            },
-            body: JSON.stringify({
-                authorName: 'יוסי',
-                content: 'תוכן ראשוני לפני עריכה'
-            })
+        // יצירת תגובה (ישירות במסד, כדי לא להיות תלויים במגבלת הקצב של הבדיקות הקודמות)
+        const created = await Comment.create({
+            article: testArticleId,
+            authorName: 'יוסי',
+            content: 'תוכן ראשוני לפני עריכה',
+            clientIp: 'crud-test'
         });
-        const created = await createRes.json();
-        const commentId = created.comment._id;
+        const commentId = created._id.toString();
 
         // קריאה בודדת (Read)
         const getRes = await fetch(`${baseUrl}/api/comments/${commentId}`);

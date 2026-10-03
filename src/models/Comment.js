@@ -42,18 +42,6 @@ const commentSchema = new mongoose.Schema({
 commentSchema.index({ article: 1, createdAt: -1 });
 commentSchema.index({ clientIp: 1, createdAt: -1 });
 
-// אינדקס טקסטואלי לחיפוש תגובות לפי תוכן או שם מגיב
-commentSchema.index({
-    content: 'text',
-    authorName: 'text'
-}, {
-    name: 'CommentTextIndex',
-    weights: {
-        content: 10,
-        authorName: 5
-    }
-});
-
 const Comment = mongoose.model('Comment', commentSchema);
 
 module.exports = Comment;
