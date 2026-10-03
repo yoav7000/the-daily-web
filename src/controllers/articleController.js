@@ -699,6 +699,48 @@ const getPublicArticles = async (req, res, next) => {
             sortOption = { publishedAt: 1 };
         }
 
+        // For popularity sort, we need to aggregate view counts
+        if (sort === 'popular') {
+            const ViewStat = require('../models/ViewStat');
+            const skip = (parseInt(page) - 1) * parseInt(limit);
+
+            // Get total views per article
+            const pipeline = [
+                { $group: { _id: '$article', totalViews: { $sum: '$viewCount' } } },
+                { $sort: { totalViews: -1 } }
+            ];
+            const viewCounts = await ViewStat.aggregate(pipeline);
+            const viewMap = {};
+            viewCounts.forEach(v => { viewMap[v._id.toString()] = v.totalViews; });
+
+            // Fetch all matching articles, then sort by views client-side
+            const [allArticles, totalCount] = await Promise.all([
+                Article.find(query)
+                    .select('title summary category mainImage author publishedAt createdAt')
+                    .populate('author', 'fullName username')
+                    .lean(),
+                Article.countDocuments(query)
+            ]);
+
+            allArticles.sort((a, b) => {
+                const viewsA = viewMap[a._id.toString()] || 0;
+                const viewsB = viewMap[b._id.toString()] || 0;
+                return viewsB - viewsA;
+            });
+
+            const paged = allArticles.slice(skip, skip + parseInt(limit));
+
+            return res.status(200).json({
+                success: true,
+                articles: paged,
+                pagination: {
+                    totalCount,
+                    currentPage: parseInt(page),
+                    totalPages: Math.ceil(totalCount / parseInt(limit))
+                }
+            });
+        }
+
         const skip = (parseInt(page) - 1) * parseInt(limit);
         const [articles, totalCount] = await Promise.all([
             Article.find(query)
@@ -810,3 +852,4 @@ const renderArticlePage = async (req, res, next) => {
 };
 
 module.exports.renderArticlePage = renderArticlePage;
+
