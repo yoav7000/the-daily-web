@@ -1,18 +1,16 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const mongoose = require('mongoose');
 const http = require('http');
-const { MongoMemoryServer } = require('mongodb-memory-server');
+const { connectTestDb, disconnectTestDb } = require('./helpers/testEnv');
 
-let mongod;
 let server;
 let baseUrl;
 
 const startApp = () => new Promise((resolve) => {
     // fresh copies of the app and session handler, like a server restart
     Object.keys(require.cache)
-        .filter((k) => k.includes('src\app.js') || k.includes('src/app.js') || k.includes('config\session.js') || k.includes('config/session.js'))
-        .forEach((k) => delete require.cache[k]);
+        .filter((file) => /src\/(app|config\/session)\.js$/.test(file.replaceAll('\\', '/')))
+        .forEach((file) => delete require.cache[file]);
     const app = require('../src/app');
     server = app.listen(0, () => {
         baseUrl = `http://localhost:${server.address().port}`;
@@ -45,15 +43,13 @@ const request = (method, path, body = null, headers = {}) => new Promise((resolv
 });
 
 test.before(async () => {
-    mongod = await MongoMemoryServer.create();
-    await mongoose.connect(mongod.getUri());
+    await connectTestDb();
     await startApp();
 });
 
 test.after(async () => {
     await stopApp();
-    await mongoose.connection.close();
-    await mongod.stop();
+    await disconnectTestDb();
 });
 
 test('Session login, restart persistence and logout', async (t) => {
