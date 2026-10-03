@@ -6,6 +6,7 @@ const { recordViewInternal } = require('./analyticsController');
 const { parsePagination, buildPagination } = require('../utils/pagination');
 const { normalizeStatus } = require('../utils/statusFilter');
 const { cleanText } = require('../utils/text');
+const { sanitizeHtml } = require('../utils/sanitizeHtml');
 
 /**
  * Helper to check if user has permission to modify an article
@@ -58,7 +59,7 @@ const createArticle = async (req, res, next) => {
         const article = new Article({
             title: cleanText(title),
             summary: cleanText(summary),
-            content,
+            content: sanitizeHtml(content),
             category,
             mainImage: mainImage || '/images/default-article.jpg',
             author: req.user._id,
@@ -110,7 +111,7 @@ const autoSaveArticle = async (req, res, next) => {
             article = new Article({
                 title: cleanText(title) || 'טיוטה ללא כותרת',
                 summary: cleanText(summary),
-                content: content || '',
+                content: sanitizeHtml(content),
                 category: category && ARTICLE_CATEGORIES.includes(category) ? category : ARTICLE_CATEGORIES[0],
                 mainImage: mainImage || '/images/default-article.jpg',
                 author: req.user._id,
@@ -127,7 +128,7 @@ const autoSaveArticle = async (req, res, next) => {
                 article.draftVersion = {
                     title: title !== undefined ? cleanText(title) : article.title,
                     summary: summary !== undefined ? cleanText(summary) : article.summary,
-                    content: content !== undefined ? content : article.content,
+                    content: content !== undefined ? sanitizeHtml(content) : article.content,
                     category: category !== undefined && ARTICLE_CATEGORIES.includes(category) ? category : article.category,
                     mainImage: mainImage !== undefined ? mainImage : article.mainImage,
                     status: ARTICLE_STATUS.DRAFT,
@@ -136,7 +137,7 @@ const autoSaveArticle = async (req, res, next) => {
             } else {
                 if (title !== undefined) article.draftVersion.title = cleanText(title);
                 if (summary !== undefined) article.draftVersion.summary = cleanText(summary);
-                if (content !== undefined) article.draftVersion.content = content;
+                if (content !== undefined) article.draftVersion.content = sanitizeHtml(content);
                 if (category !== undefined && ARTICLE_CATEGORIES.includes(category)) article.draftVersion.category = category;
                 if (mainImage !== undefined) article.draftVersion.mainImage = mainImage;
                 article.draftVersion.updatedAt = now;
@@ -145,7 +146,7 @@ const autoSaveArticle = async (req, res, next) => {
             // For unpublished articles, directly update the draft fields
             if (title !== undefined) article.title = cleanText(title);
             if (summary !== undefined) article.summary = cleanText(summary);
-            if (content !== undefined) article.content = content;
+            if (content !== undefined) article.content = sanitizeHtml(content);
             if (category !== undefined && ARTICLE_CATEGORIES.includes(category)) article.category = category;
             if (mainImage !== undefined) article.mainImage = mainImage;
             article.lastAutoSavedAt = now;
@@ -631,7 +632,7 @@ const editorDirectEdit = async (req, res, next) => {
 
         if (title !== undefined) article.title = cleanText(title);
         if (summary !== undefined) article.summary = cleanText(summary);
-        if (content !== undefined) article.content = content;
+        if (content !== undefined) article.content = sanitizeHtml(content);
         if (category !== undefined && ARTICLE_CATEGORIES.includes(category)) article.category = category;
         if (mainImage !== undefined) article.mainImage = mainImage;
 
