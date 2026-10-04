@@ -1,37 +1,14 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-
-dotenv.config();
 
 const Article = require('../src/models/Article');
 const User = require('../src/models/User');
+const { connectTestDb, disconnectTestDb, createEditor } = require('./helpers/testEnv');
 const { ARTICLE_STATUS } = require('../src/constants/articleConstants');
 
-let mongod;
+test.before(connectTestDb);
 
-test.before(async () => {
-    try {
-        await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 1500 });
-    } catch (err) {
-        const { MongoMemoryServer } = require('mongodb-memory-server');
-        mongod = await MongoMemoryServer.create();
-        await mongoose.connect(mongod.getUri());
-    }
-    // Clean up test collections
-    await Article.deleteMany({});
-    await User.deleteMany({});
-});
-
-test.after(async () => {
-    await Article.deleteMany({});
-    await User.deleteMany({});
-    await mongoose.connection.close();
-    if (mongod) {
-        await mongod.stop();
-    }
-});
+test.after(disconnectTestDb);
 
 test('Article Workflow & Auto-Save Test Suite', async (t) => {
     // Setup test users

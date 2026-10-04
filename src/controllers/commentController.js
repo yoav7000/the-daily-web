@@ -2,6 +2,11 @@ const Comment = require('../models/Comment');
 const Article = require('../models/Article');
 const { ARTICLE_STATUS } = require('../constants/articleConstants');
 const { logOperation } = require('../middleware/requestLogger');
+const { parsePagination, buildPagination } = require('../utils/pagination');
+const { cleanText } = require('../utils/text');
+
+// clientIp is only used for spam protection and must never be sent to the browser
+const PUBLIC_FIELDS = '-clientIp';
 
 /**
  * הוספת תגובה חדשה לכתבה
@@ -13,29 +18,32 @@ const addComment = async (req, res, next) => {
         const { articleId } = req.params;
         const { authorName, content } = req.body;
 
+        const name = cleanText(authorName);
+        const text = cleanText(content);
+
         // בדיקת שדות חובה
-        if (!authorName || !authorName.trim()) {
+        if (!name) {
             return res.status(400).json({
                 success: false,
                 message: 'נא להזין שם מגיב'
             });
         }
 
-        if (!content || !content.trim()) {
+        if (!text) {
             return res.status(400).json({
                 success: false,
                 message: 'נא להזין תוכן לתגובה'
             });
         }
 
-        if (authorName.trim().length > 100) {
+        if (name.length > 100) {
             return res.status(400).json({
                 success: false,
                 message: 'שם המגיב לא יכול לעלות על 100 תווים'
             });
         }
 
-        if (content.trim().length > 1000) {
+        if (text.length > 1000) {
             return res.status(400).json({
                 success: false,
                 message: 'תוכן התגובה לא יכול לעלות על 1000 תווים'
@@ -61,8 +69,8 @@ const addComment = async (req, res, next) => {
         // שמירת התגובה עם מזהה ה-IP/מכשיר שנבדק במגבלת הקצב
         const comment = new Comment({
             article: articleId,
-            authorName: authorName.trim(),
-            content: content.trim(),
+            authorName: name,
+            content: text,
             clientIp: req.clientIdentifier || req.ip || '127.0.0.1'
         });
 
@@ -77,7 +85,13 @@ const addComment = async (req, res, next) => {
         return res.status(201).json({
             success: true,
             message: 'התגובה נוספה בהצלחה',
-            comment
+            comment: {
+                _id: comment._id,
+                article: comment.article,
+                authorName: comment.authorName,
+                content: comment.content,
+                createdAt: comment.createdAt
+            }
         });
     } catch (error) {
         next(error);
@@ -92,22 +106,23 @@ const addComment = async (req, res, next) => {
 const getArticleComments = async (req, res, next) => {
     try {
         const { articleId } = req.params;
-        const { page = 1, limit = 50, search } = req.query;
+        const { search } = req.query;
 
         const query = { article: articleId };
 
         // תמיכה בחיפוש טקסטואלי בתוך תגובות הכתבה
-        if (search && search.trim()) {
-            query.$text = { $search: search.trim() };
+        if (cleanText(search)) {
+            query.$text = { $search: cleanText(search) };
         }
 
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const { page, limit, skip } = parsePagination(req.query);
 
         const [comments, totalCount] = await Promise.all([
             Comment.find(query)
+                .select(PUBLIC_FIELDS)
                 .sort({ createdAt: -1 })
                 .skip(skip)
-                .limit(parseInt(limit))
+                .limit(limit)
                 .lean(),
             Comment.countDocuments(query)
         ]);
@@ -115,11 +130,7 @@ const getArticleComments = async (req, res, next) => {
         return res.status(200).json({
             success: true,
             comments,
-            pagination: {
-                totalCount,
-                currentPage: parseInt(page),
-                totalPages: Math.ceil(totalCount / parseInt(limit))
-            }
+            pagination: buildPagination(totalCount, page, limit)
         });
     } catch (error) {
         next(error);
@@ -132,7 +143,7 @@ const getArticleComments = async (req, res, next) => {
  */
 const getCommentById = async (req, res, next) => {
     try {
-        const comment = await Comment.findById(req.params.id).populate('article', 'title');
+        const comment = await Comment.findById(req.params.id).select(PUBLIC_FIELDS).populate('article', 'title');
         if (!comment) {
             return res.status(404).json({
                 success: false,
@@ -167,17 +178,17 @@ const updateComment = async (req, res, next) => {
         }
 
         if (content !== undefined) {
-            if (!content.trim()) {
+            if (!cleanText(content)) {
                 return res.status(400).json({ success: false, message: 'תוכן התגובה אינו יכול להיות ריק' });
             }
-            comment.content = content.trim();
+            comment.content = cleanText(content);
         }
 
         if (authorName !== undefined) {
-            if (!authorName.trim()) {
+            if (!cleanText(authorName)) {
                 return res.status(400).json({ success: false, message: 'שם המגיב אינו יכול להיות ריק' });
             }
-            comment.authorName = authorName.trim();
+            comment.authorName = cleanText(authorName);
         }
 
         await comment.save();
@@ -234,21 +245,21 @@ const deleteComment = async (req, res, next) => {
  */
 const getAllComments = async (req, res, next) => {
     try {
-        const { page = 1, limit = 20, search } = req.query;
+        const { search } = req.query;
         const query = {};
 
-        if (search && search.trim()) {
-            query.$text = { $search: search.trim() };
+        if (cleanText(search)) {
+            query.$text = { $search: cleanText(search) };
         }
 
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const { page, limit, skip } = parsePagination(req.query);
 
         const [comments, totalCount] = await Promise.all([
             Comment.find(query)
                 .populate('article', 'title')
                 .sort({ createdAt: -1 })
                 .skip(skip)
-                .limit(parseInt(limit))
+                .limit(limit)
                 .lean(),
             Comment.countDocuments(query)
         ]);
@@ -256,11 +267,7 @@ const getAllComments = async (req, res, next) => {
         return res.status(200).json({
             success: true,
             comments,
-            pagination: {
-                totalCount,
-                currentPage: parseInt(page),
-                totalPages: Math.ceil(totalCount / parseInt(limit))
-            }
+            pagination: buildPagination(totalCount, page, limit)
         });
     } catch (error) {
         next(error);

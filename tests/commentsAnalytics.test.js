@@ -1,19 +1,14 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-
-dotenv.config();
 
 const app = require('../src/app');
 const User = require('../src/models/User');
 const Article = require('../src/models/Article');
 const Comment = require('../src/models/Comment');
 const ViewStat = require('../src/models/ViewStat');
+const { connectTestDb, disconnectTestDb, createEditor } = require('./helpers/testEnv');
 const { ARTICLE_STATUS, ARTICLE_CATEGORIES } = require('../src/constants/articleConstants');
 const { recordViewInternal, getTimeBucketKey } = require('../src/controllers/analyticsController');
-
-const MONGO_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/the-daily-web-test-comments';
 
 let server;
 let baseUrl;
@@ -21,24 +16,8 @@ let editorToken;
 let reporterToken;
 let testArticleId;
 
-let mongod;
-
 test.before(async () => {
-    if (mongoose.connection.readyState === 0) {
-        try {
-            await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 1500 });
-        } catch (err) {
-            const { MongoMemoryServer } = require('mongodb-memory-server');
-            mongod = await MongoMemoryServer.create();
-            await mongoose.connect(mongod.getUri());
-        }
-    }
-
-    // ניקוי אוספים לצורך הרצת בדיקות מבודדת
-    await Promise.all([
-        Comment.deleteMany({}),
-        ViewStat.deleteMany({})
-    ]);
+    await connectTestDb();
 
     // הרמת שרת זמני על פורט דינמי
     await new Promise((resolve) => {
@@ -63,17 +42,7 @@ test.before(async () => {
     const repData = await regReporter.json();
     reporterToken = repData.token;
 
-    const regEditor = await fetch(`${baseUrl}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            username: `tester_ed_${Date.now()}`,
-            password: 'password123',
-            fullName: 'עורכת בדיקה',
-            role: 'editor'
-        })
-    });
-    const edData = await regEditor.json();
+    const edData = await createEditor(`tester_ed_${Date.now()}`, 'עורכת בדיקה');
     editorToken = edData.token;
 
     // יצירת כתבה שפורסמה לבדיקות
@@ -100,7 +69,7 @@ test.after(async () => {
     if (server) {
         await new Promise((resolve) => server.close(resolve));
     }
-    await mongoose.connection.close();
+    await disconnectTestDb();
 });
 
 test('Comments & Anti-Spam Rate Limiter Test Suite', async (t) => {
@@ -341,6 +310,5 @@ test('Scalable View Analytics & Impact Graph Test Suite', async (t) => {
 
 test.after(async () => {
     if (server) await new Promise(resolve => server.close(resolve));
-    await mongoose.connection.close();
-    if (mongod) await mongod.stop();
+    await disconnectTestDb();
 });
