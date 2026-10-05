@@ -221,30 +221,177 @@
             border-radius: 4px;
         }
 
+        /* חלון כתיבת ועריכת כתבה - מותאם למסכים ומודרני */
+        .editor-modal-dialog {
+            max-width: 1040px;
+            margin: 1.25rem auto;
+        }
+
+        .editor-modal-content {
+            border: 1px solid var(--news-border);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+            overflow: hidden;
+            max-height: 92vh;
+            display: flex;
+            flex-direction: column;
+        }
+
         .editor-modal-header {
             background-color: #ffffff;
             border-bottom: 1px solid var(--news-border);
-            padding: 16px 24px;
+            padding: 14px 22px;
+            flex-shrink: 0;
         }
 
         .editor-modal-body {
             background-color: #f8fafc;
-            padding: 24px;
+            padding: 20px 22px;
+            overflow-y: auto;
+            flex-grow: 1;
         }
 
-        .editor-paper {
+        .editor-canvas-card {
             background: #ffffff;
             border: 1px solid var(--news-border);
-            border-radius: 10px;
-            padding: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
         }
 
-        .editor-textarea {
-            font-size: 1.05rem;
-            line-height: 1.7;
-            min-height: 280px;
-            font-family: inherit;
+        .editor-sidebar-card {
+            background: #ffffff;
+            border: 1px solid var(--news-border);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            margin-bottom: 16px;
+        }
+
+        .editor-headline-input {
+            font-family: var(--font-editorial);
+            font-size: 1.45rem;
+            font-weight: 800;
+            line-height: 1.3;
+            border: 1px solid var(--news-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--news-dark);
+            background: #ffffff;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .editor-headline-input:focus {
+            border-color: var(--news-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+            outline: none;
+        }
+
+        .editor-lead-input {
+            font-size: 0.98rem;
+            line-height: 1.5;
+            border: 1px solid var(--news-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--news-ink);
+            resize: vertical;
+        }
+
+        .editor-toolbar {
+            background-color: #f1f5f9;
+            border: 1px solid var(--news-border);
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .editor-tool-btn {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #334155;
+            border-radius: 6px;
+            padding: 3px 9px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .editor-tool-btn:hover {
+            background-color: #e2e8f0;
+            color: #0f172a;
+        }
+
+        .editor-content-area {
+            font-family: var(--font-sans);
+            font-size: 1.02rem;
+            line-height: 1.75;
+            min-height: 220px;
+            max-height: 360px;
+            border: 1px solid var(--news-border);
+            border-radius: 0 0 8px 8px;
+            padding: 14px 16px;
+            color: var(--news-dark);
+            resize: vertical;
+        }
+
+        .editor-content-area:focus {
+            border-color: var(--news-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+            outline: none;
+        }
+
+        .preset-badge-btn {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 20px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .preset-badge-btn:hover {
+            background-color: var(--news-blue);
+            border-color: var(--news-blue);
+            color: #ffffff;
+        }
+
+        .preview-img-box {
+            width: 100%;
+            height: 120px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--news-border);
+            background-color: #e2e8f0;
+        }
+
+        .preview-img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        @media (max-width: 991.98px) {
+            .editor-modal-dialog {
+                margin: 0.5rem;
+                max-width: 100%;
+            }
+            .editor-modal-body {
+                padding: 14px;
+            }
+            .editor-canvas-card, .editor-sidebar-card {
+                padding: 14px;
+            }
         }
     </style>
 </head>
@@ -390,17 +537,18 @@
 
     <!-- מודאל: עריכה וכתיבת כתבה -->
     <div class="modal fade" id="articleEditModal" tabindex="-1" aria-labelledby="articleEditModalLabel" aria-hidden="true" data-bs-backdrop="static">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable">
-            <div class="modal-content">
+        <div class="modal-dialog editor-modal-dialog modal-dialog-scrollable">
+            <div class="modal-content editor-modal-content">
                 
                 <!-- כותרת המודאל עם אינדיקטור שמירה אוטומטית -->
-                <div class="editor-modal-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <div class="d-flex align-items-center gap-3">
-                        <h5 class="modal-title fw-bold font-editorial mb-0" id="articleEditModalLabel">עריכת כתבה</h5>
+                <div class="editor-modal-header d-flex justify-content-between align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <i class="bi bi-pencil-square text-primary fs-5"></i>
+                        <h5 class="modal-title fw-bold font-editorial mb-0" id="articleEditModalLabel">כתיבת כתבה חדשה</h5>
                         <span class="status-badge status-draft" id="modalStatusBadge">בהכנה</span>
                     </div>
 
-                    <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-2">
                         <!-- אינדיקטור שמירה אוטומטית -->
                         <div class="autosave-indicator autosave-saved" id="autosaveIndicator">
                             <i class="bi bi-check-circle-fill"></i>
@@ -415,114 +563,157 @@
                 <div class="editor-modal-body">
 
                     <!-- התראת עריכת כתבה שפורסמה -->
-                    <div class="alert alert-info d-flex align-items-center gap-2 d-none" id="modalPublishedWarning">
+                    <div class="alert alert-info py-2 px-3 d-flex align-items-center gap-2 d-none mb-3" id="modalPublishedWarning">
                         <i class="bi bi-info-circle-fill fs-5"></i>
-                        <div>
-                            <strong>שים לב:</strong> הכתבה כבר פורסמה לציבור. עריכתה נשמרת כטיוטה ברקע ואינה משנה את התוכן הפורסם באתר עד לאישור העורך.
+                        <div class="small">
+                            <strong>שים לב:</strong> הכתבה כבר פורסמה לציבור. עריכתה נשמרת כטיוטה ברקע ואינה משנה את התוכן המוצג באתר עד לאישור העורך.
                         </div>
                     </div>
 
                     <!-- התראת הערת עורך כשהכתבה הוחזרה לתיקונים -->
                     <div class="revision-callout d-none mb-3" id="modalRevisionCallout">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <div class="d-flex align-items-center gap-2 text-danger fw-bold">
-                                <i class="bi bi-chat-left-quote-fill fs-5"></i>
-                                <span>הערת עורך – מה נדרש לתקן:</span>
-                            </div>
+                        <div class="d-flex align-items-center gap-2 text-danger fw-bold mb-1">
+                            <i class="bi bi-chat-left-quote-fill fs-5"></i>
+                            <span>הערת עורך – מה נדרש לתקן:</span>
                         </div>
-                        <div class="text-dark fs-6 mt-1 p-2 bg-white rounded border border-danger-subtle" id="modalRevisionFeedbackText"></div>
+                        <div class="text-dark fs-6 p-2 bg-white rounded border border-danger-subtle" id="modalRevisionFeedbackText"></div>
                     </div>
 
-                    <div class="editor-paper">
-                        <form id="articleForm">
-                            <input type="hidden" id="editArticleId" value="">
+                    <form id="articleForm" onsubmit="return false;">
+                        <input type="hidden" id="editArticleId" value="">
 
-                            <!-- כותרת -->
-                            <div class="mb-3">
-                                <label for="editTitle" class="form-label fw-bold small text-muted">כותרת הכתבה *</label>
-                                <input type="text" class="form-control form-control-lg fw-bold" id="editTitle" placeholder="הזן כותרת מושכת..." required oninput="triggerAutoSave()">
+                        <div class="row g-3">
+                            <!-- עמודה ראשית: שטח הכתיבה העיתונאי -->
+                            <div class="col-12 col-lg-8">
+                                <div class="editor-canvas-card">
+                                    <!-- כותרת -->
+                                    <div class="mb-3">
+                                        <label for="editTitle" class="form-label fw-bold small text-muted d-flex justify-content-between">
+                                            <span><i class="bi bi-fonts me-1"></i> כותרת הכתבה *</span>
+                                            <span class="text-secondary fw-normal">הכותרת הראשית</span>
+                                        </label>
+                                        <input type="text" class="form-control editor-headline-input" id="editTitle" placeholder="הזן כותרת מושכת וברורה..." required oninput="triggerAutoSave()">
+                                    </div>
+
+                                    <!-- תקציר -->
+                                    <div class="mb-3">
+                                        <label for="editSummary" class="form-label fw-bold small text-muted d-flex justify-content-between">
+                                            <span><i class="bi bi-card-text me-1"></i> תקציר / כותרת משנה (Lead)</span>
+                                            <span class="text-secondary fw-normal">מבוא מקדים</span>
+                                        </label>
+                                        <textarea class="form-control editor-lead-input" id="editSummary" rows="2" placeholder="תקציר קצר שיופיע בדף הבית, במבזקים ובתוצאות חיפוש..." oninput="triggerAutoSave()"></textarea>
+                                    </div>
+
+                                    <!-- תוכן מלא עם סרגל עיצוב עשיר -->
+                                    <div>
+                                        <label for="editContent" class="form-label fw-bold small text-muted mb-1">
+                                            <i class="bi bi-text-paragraph me-1"></i> גוף הכתבה המלא *
+                                        </label>
+                                        
+                                        <!-- סרגל כפתורי עיצוב מודרני -->
+                                        <div class="editor-toolbar">
+                                            <button type="button" class="editor-tool-btn" onclick="insertFormatting('<b>', '</b>')" title="הדגשה">
+                                                <i class="bi bi-type-bold"></i> <span>מודגש</span>
+                                            </button>
+                                            <button type="button" class="editor-tool-btn" onclick="insertFormatting('<i>', '</i>')" title="נטוי">
+                                                <i class="bi bi-type-italic"></i> <span>נטוי</span>
+                                            </button>
+                                            <button type="button" class="editor-tool-btn" onclick="insertFormatting('<h3>', '</h3>')" title="כותרת משנה">
+                                                <i class="bi bi-type-h3"></i> <span>כותרת משנה</span>
+                                            </button>
+                                            <button type="button" class="editor-tool-btn" onclick="insertFormatting('<blockquote>', '</blockquote>')" title="ציטוט עיתונאי">
+                                                <i class="bi bi-quote"></i> <span>ציטוט</span>
+                                            </button>
+                                            <button type="button" class="editor-tool-btn" onclick="insertFormatting('<p>', '</p>')" title="פסקה">
+                                                <i class="bi bi-paragraph"></i> <span>פסקה</span>
+                                            </button>
+                                        </div>
+
+                                        <textarea class="form-control editor-content-area" id="editContent" rows="8" placeholder="הקלד כאן את תוכן הכתבה המלא. השינויים נשמרים אוטומטית ברקע..." required oninput="triggerAutoSave()"></textarea>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- קטגוריה ותמונה -->
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-4">
-                                    <label for="editCategory" class="form-label fw-bold small text-muted">קטגוריה *</label>
-                                    <select class="form-select" id="editCategory" required onchange="triggerAutoSave()">
-                                        <option value="חדשות">חדשות</option>
-                                        <option value="פוליטיקה">פוליטיקה</option>
-                                        <option value="כלכלה">כלכלה</option>
-                                        <option value="ספורט">ספורט</option>
-                                        <option value="טכנולוגיה">טכנולוגיה</option>
-                                        <option value="תרבות">תרבות</option>
-                                        <option value="בריאות">בריאות</option>
-                                        <option value="דעות">דעות</option>
+                            <!-- עמודת צד: הגדרות פרסום ומדיה -->
+                            <div class="col-12 col-lg-4">
+                                <!-- כרטיס פעולות והגשה -->
+                                <div class="editor-sidebar-card">
+                                    <div class="fw-bold small text-muted mb-2 text-uppercase">
+                                        <i class="bi bi-send me-1"></i> פעולות הגשה
+                                    </div>
+                                    <button type="button" class="btn btn-success w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2 mb-2" id="submitApprovalBtn" onclick="submitCurrentForApproval()">
+                                        <i class="bi bi-send-check" id="submitApprovalIcon"></i>
+                                        <span id="submitApprovalText">הגש לאישור עורך</span>
+                                    </button>
+                                    <div class="small text-muted text-center">
+                                        <i class="bi bi-cloud-arrow-up text-primary me-1"></i> שמירה אוטומטית פעילה
+                                    </div>
+                                </div>
+
+                                <!-- כרטיס קטגוריה -->
+                                <div class="editor-sidebar-card">
+                                    <label for="editCategory" class="form-label fw-bold small text-muted mb-2">
+                                        <i class="bi bi-folder2-open me-1"></i> קטגוריית הכתבה *
+                                    </label>
+                                    <select class="form-select fw-semibold" id="editCategory" required onchange="triggerAutoSave()">
+                                        <option value="חדשות">📰 חדשות</option>
+                                        <option value="פוליטיקה">🏛️ פוליטיקה</option>
+                                        <option value="כלכלה">📈 כלכלה</option>
+                                        <option value="ספורט">⚽ ספורט</option>
+                                        <option value="טכנולוגיה">💻 טכנולוגיה</option>
+                                        <option value="תרבות">🎭 תרבות</option>
+                                        <option value="בריאות">🩺 בריאות</option>
+                                        <option value="דעות">💡 דעות</option>
                                     </select>
                                 </div>
 
-                                <div class="col-md-8">
-                                    <label for="editMainImage" class="form-label fw-bold small text-muted">כתובת תמונה ראשית (URL)</label>
-                                    <div class="input-group">
-                                        <input type="url" class="form-control" id="editMainImage" placeholder="https://..." oninput="updateImagePreview(); triggerAutoSave();">
-                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">תמונות לדוגמה</button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="setSampleImage('https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800')">עיתונות וחדשות</a></li>
-                                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="setSampleImage('https://images.unsplash.com/photo-1518770660439-4636190af475?w=800')">טכנולוגיה ומחשבים</a></li>
-                                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="setSampleImage('https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800')">כלכלה ושוק ההון</a></li>
-                                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="setSampleImage('https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800')">ספורט ואתלטיקה</a></li>
-                                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="setSampleImage('https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=800')">בריאות ומדע</a></li>
-                                        </ul>
+                                <!-- כרטיס תמונה ראשית -->
+                                <div class="editor-sidebar-card">
+                                    <label for="editMainImage" class="form-label fw-bold small text-muted mb-2">
+                                        <i class="bi bi-image me-1"></i> תמונה ראשית (URL)
+                                    </label>
+                                    <input type="url" class="form-control form-control-sm mb-2" id="editMainImage" placeholder="https://images.unsplash.com/..." oninput="updateImagePreview(); triggerAutoSave();">
+                                    
+                                    <!-- תגיות תמונה לבחירה מהירה -->
+                                    <div class="mb-2">
+                                        <span class="small text-muted d-block mb-1" style="font-size:0.75rem;">תמונות לדוגמה:</span>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            <button type="button" class="preset-badge-btn" onclick="setSampleImage('https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800')">חדשות</button>
+                                            <button type="button" class="preset-badge-btn" onclick="setSampleImage('https://images.unsplash.com/photo-1518770660439-4636190af475?w=800')">טכנולוגיה</button>
+                                            <button type="button" class="preset-badge-btn" onclick="setSampleImage('https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800')">כלכלה</button>
+                                            <button type="button" class="preset-badge-btn" onclick="setSampleImage('https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800')">ספורט</button>
+                                            <button type="button" class="preset-badge-btn" onclick="setSampleImage('https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=800')">בריאות</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- תצוגה מקדימה קומפקטית -->
+                                    <div class="d-none" id="imagePreviewContainer">
+                                        <div class="preview-img-box mt-2">
+                                            <img id="imagePreview" src="" alt="תצוגה מקדימה">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- תצוגה מקדימה של התמונה -->
-                            <div class="mb-3 d-none" id="imagePreviewContainer">
-                                <div class="position-relative d-inline-block rounded overflow-hidden border" style="max-height: 180px;">
-                                    <img id="imagePreview" src="" alt="תצוגה מקדימה" style="height: 180px; width: auto; object-fit: cover;">
-                                </div>
-                            </div>
-
-                            <!-- תקציר -->
-                            <div class="mb-3">
-                                <label for="editSummary" class="form-label fw-bold small text-muted">תקציר / כותרת משנה (Lead)</label>
-                                <textarea class="form-control" id="editSummary" rows="2" placeholder="תקציר קצר שיופיע בדף הבית..." oninput="triggerAutoSave()"></textarea>
-                            </div>
-
-                            <!-- תוכן מלא -->
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <label for="editContent" class="form-label fw-bold small text-muted mb-0">תוכן הכתבה המלא *</label>
-                                    <div class="d-flex gap-1">
-                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertFormatting('<b>', '</b>')" title="הדגש"><i class="bi bi-type-bold"></i></button>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertFormatting('<i>', '</i>')" title="נטוי"><i class="bi bi-type-italic"></i></button>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertFormatting('<h3>', '</h3>')" title="כותרת משנה"><i class="bi bi-type-h3"></i></button>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertFormatting('<blockquote>', '</blockquote>')" title="ציטוט"><i class="bi bi-quote"></i></button>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertFormatting('<p>', '</p>')" title="פסקה"><i class="bi bi-paragraph"></i></button>
-                                    </div>
-                                </div>
-                                <textarea class="form-control editor-textarea" id="editContent" rows="10" placeholder="הקלד כאן את תוכן הכתבה. השינויים נשמרים אוטומטית ברקע..." required oninput="triggerAutoSave()"></textarea>
-                            </div>
-
-                        </form>
-                    </div>
+                    </form>
 
                 </div>
 
                 <!-- תחתית המודאל ופעולות הגשה -->
-                <div class="modal-footer bg-white border-top justify-content-between">
-                    <div class="text-muted small">
-                        <i class="bi bi-cloud-check text-success me-1"></i> כל שינוי נשמר ברקע אוטומטית.
+                <div class="modal-footer bg-white border-top justify-content-between py-2 px-3">
+                    <div class="text-muted small d-flex align-items-center gap-1">
+                        <i class="bi bi-clock-history text-secondary"></i>
+                        <span id="footerAutosaveTime">השינויים נשמרים אוטומטית</span>
                     </div>
 
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal" onclick="closeEditorModal()">
+                        <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal" onclick="closeEditorModal()">
                             סגור
                         </button>
-                        
-                        <!-- כפתור הגשה דינמי (מתעדכן ל-"הגש מחדש" במקרה של תיקונים) -->
-                        <button type="button" class="btn btn-success fw-bold px-4 d-flex align-items-center gap-2" id="submitApprovalBtn" onclick="submitCurrentForApproval()">
-                            <i class="bi bi-send-check" id="submitApprovalIcon"></i>
-                            <span id="submitApprovalText">הגש לאישור עורך</span>
+                        <button type="button" class="btn btn-success fw-bold px-4 d-flex align-items-center gap-2 d-lg-none" onclick="submitCurrentForApproval()">
+                            <i class="bi bi-send-check"></i>
+                            <span>הגש לאישור</span>
                         </button>
                     </div>
                 </div>
@@ -916,7 +1107,7 @@
 
             // כפתור הגשה
             const submitBtn = document.getElementById('submitApprovalBtn');
-            submitBtn.className = 'btn btn-success fw-bold px-4 d-flex align-items-center gap-2';
+            submitBtn.className = 'btn btn-success w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2 mb-2';
             document.getElementById('submitApprovalText').innerText = 'הגש לאישור עורך';
             document.getElementById('submitApprovalIcon').className = 'bi bi-send-check';
 
@@ -972,12 +1163,12 @@
                     revText.innerText = art.editorFeedback || 'העורך ביקש לבצע תיקונים בכתבה זו.';
                     
                     // כפתור הגשה מחדש
-                    submitBtn.className = 'btn btn-danger fw-bold px-4 d-flex align-items-center gap-2';
+                    submitBtn.className = 'btn btn-danger w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2 mb-2';
                     submitText.innerText = 'הגש מחדש לאישור עורך';
                     submitIcon.className = 'bi bi-arrow-repeat';
                 } else {
                     revCallout.classList.add('d-none');
-                    submitBtn.className = 'btn btn-success fw-bold px-4 d-flex align-items-center gap-2';
+                    submitBtn.className = 'btn btn-success w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2 mb-2';
                     submitText.innerText = 'הגש לאישור עורך';
                     submitIcon.className = 'bi bi-send-check';
                 }
@@ -1021,7 +1212,13 @@
             updateAutoSaveIndicator('saving', 'שומר שינויים ברקע...');
 
             const token = getAuthToken();
-            const payload = { title, category, mainImage, summary, content };
+            const payload = { 
+                title: title || 'טיוטה ללא כותרת', 
+                category, 
+                mainImage, 
+                summary, 
+                content: content || '<p></p>' 
+            };
 
             try {
                 let url = articleId ? `/api/articles/${articleId}/autosave` : `/api/articles/autosave`;
@@ -1047,7 +1244,7 @@
                     const timeStr = new Date().toLocaleTimeString('he-IL');
                     updateAutoSaveIndicator('saved', `נשמר אוטומטית ברקע ב-${timeStr}`);
                 } else {
-                    updateAutoSaveIndicator('error', 'שגיאה בשמירה אוטומטית');
+                    updateAutoSaveIndicator('error', 'שמירה ברקע תתבצע בהמשך');
                 }
             } catch (err) {
                 console.error('AutoSave failed:', err);
@@ -1059,14 +1256,21 @@
 
         function updateAutoSaveIndicator(state, message) {
             const indicator = document.getElementById('autosaveIndicator');
-            indicator.className = `autosave-indicator autosave-${state}`;
-            let icon = 'bi-check-circle-fill';
+            if (indicator) {
+                indicator.className = `autosave-indicator autosave-${state}`;
+                let icon = 'bi-check-circle-fill';
 
-            if (state === 'saving') icon = 'spinner-border spinner-border-sm';
-            else if (state === 'dirty') icon = 'bi-pencil-fill';
-            else if (state === 'error') icon = 'bi-exclamation-triangle-fill';
+                if (state === 'saving') icon = 'spinner-border spinner-border-sm';
+                else if (state === 'dirty') icon = 'bi-pencil-fill';
+                else if (state === 'error') icon = 'bi-exclamation-triangle-fill';
 
-            indicator.innerHTML = `<i class="${icon}"></i> <span>${escapeHtml(message)}</span>`;
+                indicator.innerHTML = `<i class="${icon}"></i> <span>${escapeHtml(message)}</span>`;
+            }
+
+            const footerTime = document.getElementById('footerAutosaveTime');
+            if (footerTime && state === 'saved') {
+                footerTime.innerText = message;
+            }
         }
 
         function closeEditorModal() {

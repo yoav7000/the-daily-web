@@ -111,7 +111,7 @@ const autoSaveArticle = async (req, res, next) => {
             article = new Article({
                 title: cleanText(title) || 'טיוטה ללא כותרת',
                 summary: cleanText(summary),
-                content: sanitizeHtml(content),
+                content: sanitizeHtml(content) || '<p></p>',
                 category: category && ARTICLE_CATEGORIES.includes(category) ? category : ARTICLE_CATEGORIES[0],
                 mainImage: mainImage || DEFAULT_ARTICLE_IMAGE,
                 author: req.user._id,
@@ -146,7 +146,7 @@ const autoSaveArticle = async (req, res, next) => {
             // For unpublished articles, directly update the draft fields
             if (title !== undefined) article.title = cleanText(title);
             if (summary !== undefined) article.summary = cleanText(summary);
-            if (content !== undefined) article.content = sanitizeHtml(content);
+            if (content !== undefined) article.content = sanitizeHtml(content) || '<p></p>';
             if (category !== undefined && ARTICLE_CATEGORIES.includes(category)) article.category = category;
             if (mainImage !== undefined) article.mainImage = mainImage;
             article.lastAutoSavedAt = now;
