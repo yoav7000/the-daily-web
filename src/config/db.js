@@ -32,11 +32,15 @@ const connectDB = async () => {
 
     try {
         const conn = await mongoose.connect(process.env.MONGODB_URI || DEFAULT_URI, {
-            serverSelectionTimeoutMS: 5000
+            serverSelectionTimeoutMS: 2500
         });
         console.log(`[MongoDB] Connected to host: ${conn.connection.host}, database: ${conn.connection.name}`);
         return conn;
     } catch (error) {
+        if (process.env.NODE_ENV !== 'production') {
+            console.warn(`[MongoDB] Could not connect to local MongoDB (${error.message}). Falling back to temporary IN-MEMORY database...`);
+            return connectInMemory();
+        }
         throw new Error(
             `Could not connect to MongoDB (${error.message}). ` +
             'Start it with "docker compose up -d mongodb", or set USE_MEMORY_DB=true for a temporary dev database.'
