@@ -203,10 +203,142 @@ const getMe = async (req, res) => {
     });
 };
 
+/**
+ * List / search users with pagination (Editor only)
+ * GET /api/auth/users
+ */
+const getAllUsers = async (req, res, next) => {
+    try {
+        const { search, role } = req.query;
+        const query = {};
+
+        if (role && ASSIGNABLE_ROLES.includes(role)) {
+            query.role = role;
+        }
+
+        const trimmedSearch = cleanText(search);
+        if (trimmedSearch) {
+            query.$or = [
+                { username: { $regex: trimmedSearch, $options: 'i' } },
+                { fullName: { $regex: trimmedSearch, $options: 'i' } }
+            ];
+        }
+
+        const page = Math.max(1, parseInt(req.query.page, 10) || 1);
+        const limit = Math.min(100, Math.max(1, parseInt(req.query.limit, 10) || 50));
+        const skip = (page - 1) * limit;
+
+        const [users, totalCount] = await Promise.all([
+            User.find(query).select('-password').sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+            User.countDocuments(query)
+        ]);
+
+        return res.status(200).json({
+            success: true,
+            users,
+            pagination: {
+                totalCount,
+                currentPage: page,
+                totalPages: Math.ceil(totalCount / limit) || 1
+            }
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Get user by ID (Editor only)
+ * GET /api/auth/users/:id
+ */
+const getUserById = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.params.id).select('-password');
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'המשתמש לא נמצא' });
+        }
+        return res.status(200).json({ success: true, user });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Update user details or role (Editor only)
+ * PUT /api/auth/users/:id
+ */
+const updateUser = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.params.id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'המשתמש לא נמצא' });
+        }
+
+        if (req.body.fullName) {
+            user.fullName = cleanText(req.body.fullName);
+        }
+        if (req.body.role && ASSIGNABLE_ROLES.includes(req.body.role)) {
+            user.role = req.body.role;
+        }
+        if (typeof req.body.isActive === 'boolean') {
+            user.isActive = req.body.isActive;
+        }
+
+        await user.save();
+
+        logOperation('USER_UPDATED', {
+            userId: user._id,
+            updatedBy: req.user._id,
+            role: user.role
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'המשתמש עודכן בהצלחה',
+            user: toUserResponse(user)
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Delete user (Editor only)
+ * DELETE /api/auth/users/:id
+ */
+const deleteUser = async (req, res, next) => {
+    try {
+        if (req.user._id.toString() === req.params.id) {
+            return res.status(400).json({ success: false, message: 'לא ניתן למחוק את המשתמש של עצמך' });
+        }
+
+        const user = await User.findByIdAndDelete(req.params.id);
+        if (!user) {
+            return res.status(404).json({ success: false, message: 'המשתמש לא נמצא' });
+        }
+
+        logOperation('USER_DELETED', {
+            userId: user._id,
+            deletedBy: req.user._id
+        });
+
+        return res.status(200).json({
+            success: true,
+            message: 'המשתמש נמחק בהצלחה'
+        });
+    } catch (error) {
+        next(error);
+    }
+};
+
 module.exports = {
     register,
     createUser,
     login,
     logout,
-    getMe
+    getMe,
+    getAllUsers,
+    getUserById,
+    updateUser,
+    deleteUser
 };

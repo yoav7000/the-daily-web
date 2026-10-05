@@ -363,6 +363,14 @@
             margin: 1.5rem 0;
             border-radius: 4px;
         }
+
+        .footer-newspaper {
+            background-color: #121212;
+            color: #d1d5db;
+            padding: 40px 0 20px;
+            margin-top: 60px;
+            border-top: 3px double #374151;
+        }
     </style>
 </head>
 <body>
@@ -379,13 +387,9 @@
                     <i class="bi bi-cloud-sun text-warning"></i> תל אביב: <strong class="font-num">27°C</strong>
                 </span>
             </div>
-            <div class="d-flex align-items-center gap-3">
-                <a href="/analytics.html" class="text-decoration-none text-primary fw-bold">
-                    <i class="bi bi-graph-up-arrow me-1"></i> דשבורד Impact Analytics
-                </a>
-                <span class="text-muted">|</span>
-                <a href="/login.html" class="text-decoration-none text-secondary fw-semibold">
-                    <i class="bi bi-shield-check me-1"></i> כניסת כתבים ועורכים
+            <div class="d-flex align-items-center gap-3" id="topBarAuthArea">
+                <a href="/login.html?redirect=/portal.html" class="btn btn-dark btn-sm py-1 px-3 fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
+                    <i class="bi bi-person-lock"></i> כניסת עובדים
                 </a>
             </div>
         </div>
@@ -415,11 +419,48 @@
                 <a href="#" class="category-link" onclick="filterByCategory('בריאות')">בריאות</a>
                 <a href="#" class="category-link" onclick="filterByCategory('דעות')">דעות</a>
             </div>
-            <div class="d-none d-lg-block">
-                <span class="badge bg-danger fw-bold text-uppercase px-2 py-1">מהדורת קיץ 2026</span>
-            </div>
+            <button class="btn btn-outline-dark btn-sm d-inline-flex align-items-center gap-1 px-2 py-1 ms-2 flex-shrink-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#staffMenuOffcanvas" aria-label="תפריט ניווט">
+                <i class="bi bi-list fs-5"></i>
+            </button>
         </div>
     </nav>
+
+    <!-- Navigation Hamburger Menu Offcanvas -->
+    <div class="offcanvas offcanvas-end" tabindex="-1" id="staffMenuOffcanvas" aria-labelledby="staffMenuLabel">
+        <div class="offcanvas-header border-bottom">
+            <h5 class="offcanvas-title font-editorial fw-bold" id="staffMenuLabel">
+                <i class="bi bi-newspaper text-danger me-2"></i>תפריט העיתון
+            </h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="סגור"></button>
+        </div>
+        <div class="offcanvas-body p-0 d-flex flex-column">
+            <!-- Staff Section (Visible ONLY for authenticated staff) -->
+            <div id="offcanvasStaffSection" class="p-3 bg-light border-bottom" style="display: none;"></div>
+
+            <!-- Public Section -->
+            <div class="p-3">
+                <h6 class="text-uppercase small fw-bold text-muted mb-2"><i class="bi bi-compass me-1"></i>מדורים בעיתון</h6>
+                <div class="list-group list-group-flush">
+                    <a href="#" class="list-group-item list-group-item-action py-2" onclick="filterByCategory(''); bootstrap.Offcanvas.getInstance(document.getElementById('staffMenuOffcanvas')).hide();"><i class="bi bi-house me-2 text-muted"></i>ראשי</a>
+                    <a href="#" class="list-group-item list-group-item-action py-2" onclick="filterByCategory('חדשות'); bootstrap.Offcanvas.getInstance(document.getElementById('staffMenuOffcanvas')).hide();">חדשות</a>
+                    <a href="#" class="list-group-item list-group-item-action py-2" onclick="filterByCategory('פוליטיקה'); bootstrap.Offcanvas.getInstance(document.getElementById('staffMenuOffcanvas')).hide();">פוליטיקה</a>
+                    <a href="#" class="list-group-item list-group-item-action py-2" onclick="filterByCategory('כלכלה'); bootstrap.Offcanvas.getInstance(document.getElementById('staffMenuOffcanvas')).hide();">כלכלה</a>
+                    <a href="#" class="list-group-item list-group-item-action py-2" onclick="filterByCategory('טכנולוגיה'); bootstrap.Offcanvas.getInstance(document.getElementById('staffMenuOffcanvas')).hide();">טכנולוגיה</a>
+                    <a href="#" class="list-group-item list-group-item-action py-2" onclick="filterByCategory('ספורט'); bootstrap.Offcanvas.getInstance(document.getElementById('staffMenuOffcanvas')).hide();">ספורט</a>
+                    <a href="#" class="list-group-item list-group-item-action py-2" onclick="filterByCategory('תרבות'); bootstrap.Offcanvas.getInstance(document.getElementById('staffMenuOffcanvas')).hide();">תרבות</a>
+                    <a href="#" class="list-group-item list-group-item-action py-2" onclick="filterByCategory('בריאות'); bootstrap.Offcanvas.getInstance(document.getElementById('staffMenuOffcanvas')).hide();">בריאות</a>
+                    <a href="#" class="list-group-item list-group-item-action py-2" onclick="filterByCategory('דעות'); bootstrap.Offcanvas.getInstance(document.getElementById('staffMenuOffcanvas')).hide();">דעות</a>
+                </div>
+            </div>
+
+            <!-- Login / Logout Action Button -->
+            <div class="p-3 border-top mt-auto" id="offcanvasAuthFooter">
+                <a href="/login.html?redirect=/portal.html" class="btn btn-dark w-100 fw-bold d-flex align-items-center justify-content-center gap-2">
+                    <i class="bi bi-box-arrow-in-right"></i> התחברות לצוות המערכת
+                </a>
+            </div>
+        </div>
+    </div>
 
     <!-- 4. Breaking News Ticker Strip -->
     <div class="breaking-strip">
@@ -569,20 +610,12 @@
                     </div>
                 </div>
 
-                <!-- Editorial Team Banner -->
+                <!-- Editorial Team Info -->
                 <div class="sidebar-widget bg-light border-0">
                     <h5 class="fw-bold font-editorial text-dark mb-2">מערכת The Daily Web</h5>
-                    <p class="text-muted small mb-3">
+                    <p class="text-muted small mb-0">
                         פרויקט מסכם בפיתוח אפליקציות אינטרנט. המערכת כוללת ניהול כתבות, עריכה, איסוף צפיות אטומי בעומס, והגנת ספאם לתגובות.
                     </p>
-                    <div class="d-grid gap-2">
-                        <a href="/analytics.html" class="btn btn-outline-primary btn-sm fw-bold">
-                            <i class="bi bi-bar-chart-line me-1"></i> כניסה לגרף Impact Analytics
-                        </a>
-                        <a href="/test.html" class="btn btn-outline-secondary btn-sm fw-semibold">
-                            <i class="bi bi-tools me-1"></i> מעבדת בדיקת Workflow כתבים
-                        </a>
-                    </div>
                 </div>
             </div>
         </div>
@@ -654,6 +687,51 @@
         </div>
     </div>
 
+    <!-- Unified Footer -->
+    <footer class="footer-newspaper">
+        <div class="container-fluid px-lg-5">
+            <div class="row g-4 pb-4 border-bottom border-secondary mb-4">
+                <div class="col-lg-4">
+                    <h4 class="font-editorial text-white fw-bold h4 mb-2">The Daily Web</h4>
+                    <p class="text-secondary small mb-3">
+                        עיתון החדשות והתוכן הדיגיטלי המוביל בישראל. דיווחים שוטפים, פרשנויות עומק ומערכת עיתונאית מתקדמת.
+                    </p>
+                    <div class="badge bg-dark border border-secondary text-light py-2 px-3 small font-num">
+                        <i class="bi bi-shield-check text-success me-1"></i> Edition 2026 Live
+                    </div>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <h5 class="text-white fw-bold small text-uppercase mb-3">מדורים בעיתון</h5>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="#" onclick="filterByCategory('חדשות')" class="text-secondary text-decoration-none">חדשות</a></li>
+                        <li class="mb-2"><a href="#" onclick="filterByCategory('פוליטיקה')" class="text-secondary text-decoration-none">פוליטיקה</a></li>
+                        <li class="mb-2"><a href="#" onclick="filterByCategory('כלכלה')" class="text-secondary text-decoration-none">כלכלה</a></li>
+                        <li class="mb-2"><a href="#" onclick="filterByCategory('טכנולוגיה')" class="text-secondary text-decoration-none">טכנולוגיה</a></li>
+                        <li class="mb-2"><a href="#" onclick="filterByCategory('ספורט')" class="text-secondary text-decoration-none">ספורט</a></li>
+                    </ul>
+                </div>
+                <div class="col-6 col-lg-3">
+                    <h5 class="text-white fw-bold small text-uppercase mb-3">אודות המערכת</h5>
+                    <p class="text-secondary small mb-2">
+                        מערכת עיתון דיגיטלי מתקדמת התומכת בסינון לפי קטגוריות, תגובות בזמן אמת, איסוף נתוני קריאה וסקירת שינויים.
+                    </p>
+                </div>
+                <div class="col-lg-2">
+                    <h5 class="text-white fw-bold small text-uppercase mb-3">פרטי מערכת</h5>
+                    <ul class="list-unstyled small text-secondary">
+                        <li class="mb-2">The Daily Web Edition</li>
+                        <li class="mb-2">פרויקט יישומי אינטרנט</li>
+                        <li class="mb-2">כל הזכויות שמורות</li>
+                    </ul>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 text-secondary small">
+                <div>&copy; 2026 The Daily Web. כל הזכויות שמורות.</div>
+                <div class="font-num">Advanced Web Applications Project</div>
+            </div>
+        </div>
+    </footer>
+
     <!-- Bootstrap 5 JS Bundle via CDN -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
 
@@ -690,6 +768,7 @@
         // Initialize on DOM load
         document.addEventListener('DOMContentLoaded', async () => {
             updateCurrentDateDisplay();
+            await setupUserNavigation();
             await fetchWeather();
             await fetchTopArticles();
             await loadFeed(true);
@@ -704,6 +783,149 @@
             // Infinite Scroll Listener
             window.addEventListener('scroll', handleInfiniteScroll);
         });
+
+        // Setup User Auth State in Header and Offcanvas Menu
+        async function setupUserNavigation() {
+            const token = localStorage.getItem('token');
+            let user = null;
+            try {
+                user = JSON.parse(localStorage.getItem('user'));
+            } catch {}
+
+            const topBarAuth = document.getElementById('topBarAuthArea');
+            const staffSection = document.getElementById('offcanvasStaffSection');
+            const authFooter = document.getElementById('offcanvasAuthFooter');
+
+            if (token) {
+                try {
+                    const res = await fetch('/api/auth/me', {
+                        headers: { 'Authorization': `Bearer ${token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        user = data.user || data;
+                        localStorage.setItem('user', JSON.stringify(user));
+                    } else if (res.status === 401 || res.status === 403) {
+                        localStorage.removeItem('token');
+                        localStorage.removeItem('user');
+                        user = null;
+                    }
+                } catch {
+                    // Retain cached user in case of temporary network issue
+                }
+            } else {
+                user = null;
+            }
+
+            if (user && (user.role === 'reporter' || user.role === 'editor')) {
+                const isEditor = user.role === 'editor';
+                const roleLabel = isEditor ? 'עורך תוכן' : 'כתב מערכת';
+                const roleBadgeClass = isEditor ? 'bg-success text-white' : 'bg-primary text-white';
+                const deskHref = isEditor ? '/editor.html' : '/reporter.html';
+                const deskName = isEditor ? 'דסק עורכים' : 'דסק כתבים';
+
+                if (topBarAuth) {
+                    topBarAuth.innerHTML = `
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="badge ${roleBadgeClass} small px-2 py-1">${roleLabel}</span>
+                            <span class="small fw-bold text-dark d-none d-sm-inline">${escapeHtml(user.fullName || user.username)}</span>
+                            <a href="${deskHref}" class="btn btn-outline-dark btn-sm py-1 px-2 fw-semibold">
+                                <i class="bi bi-speedometer2 me-1"></i>${deskName}
+                            </a>
+                            <button type="button" class="btn btn-outline-danger btn-sm py-1 px-2" title="התנתקות" onclick="logoutStaffUser()">
+                                <i class="bi bi-box-arrow-left"></i>
+                            </button>
+                        </div>
+                    `;
+                }
+
+                if (staffSection) {
+                    staffSection.style.display = 'block';
+                    let staffLinks = '';
+
+                    if (isEditor) {
+                        staffLinks = `
+                            <a href="/editor.html" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2">
+                                <i class="bi bi-shield-check text-success"></i> דסק עורכים ראשי
+                            </a>
+                            <a href="/reporter.html" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2">
+                                <i class="bi bi-pencil-square text-primary"></i> דסק כתבים
+                            </a>
+                            <a href="/analytics.html" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2">
+                                <i class="bi bi-bar-chart-line text-warning"></i> Impact Analytics
+                            </a>
+                            <a href="/test.html" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2">
+                                <i class="bi bi-tools text-purple" style="color:#7c3aed"></i> מעבדת Workflow
+                            </a>
+                            <a href="/portal.html" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2">
+                                <i class="bi bi-grid-3x3-gap-fill text-danger"></i> פורטל עובדים
+                            </a>
+                        `;
+                    } else {
+                        staffLinks = `
+                            <a href="/reporter.html" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2">
+                                <i class="bi bi-pencil-square text-primary"></i> דסק כתבים
+                            </a>
+                            <a href="/portal.html" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2">
+                                <i class="bi bi-grid-3x3-gap-fill text-danger"></i> פורטל עובדים
+                            </a>
+                        `;
+                    }
+
+                    staffSection.innerHTML = `
+                        <div class="d-flex align-items-center gap-2 mb-2 pb-2 border-bottom">
+                            <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width:34px;height:34px;font-size:0.9rem;">
+                                ${(user.fullName || user.username || 'U').charAt(0)}
+                            </div>
+                            <div>
+                                <div class="fw-bold small text-dark">${escapeHtml(user.fullName || user.username)}</div>
+                                <span class="badge ${roleBadgeClass} small" style="font-size:0.7rem;">${roleLabel}</span>
+                            </div>
+                        </div>
+                        <h6 class="text-uppercase small fw-bold text-muted mb-2"><i class="bi bi-person-workspace me-1"></i>סביבות עבודה מורשות</h6>
+                        <div class="list-group list-group-flush">
+                            ${staffLinks}
+                        </div>
+                    `;
+                }
+
+                if (authFooter) {
+                    authFooter.innerHTML = `
+                        <button type="button" class="btn btn-outline-danger w-100 fw-bold d-flex align-items-center justify-content-center gap-2" onclick="logoutStaffUser()">
+                            <i class="bi bi-box-arrow-left"></i> התנתקות מהמערכת
+                        </button>
+                    `;
+                }
+            } else {
+                if (topBarAuth) {
+                    topBarAuth.innerHTML = `
+                        <a href="/login.html?redirect=/portal.html" class="btn btn-dark btn-sm py-1 px-3 fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
+                            <i class="bi bi-person-lock"></i> כניסת עובדים
+                        </a>
+                    `;
+                }
+                if (staffSection) {
+                    staffSection.style.display = 'none';
+                    staffSection.innerHTML = '';
+                }
+                if (authFooter) {
+                    authFooter.innerHTML = `
+                        <a href="/login.html?redirect=/portal.html" class="btn btn-dark w-100 fw-bold d-flex align-items-center justify-content-center gap-2">
+                            <i class="bi bi-box-arrow-in-right"></i> התחברות לצוות המערכת
+                        </a>
+                    `;
+                }
+            }
+        }
+
+        async function logoutStaffUser() {
+            try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+            } catch {}
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.reload();
+        }
 
         // Dynamic Header Date
         function updateCurrentDateDisplay() {
