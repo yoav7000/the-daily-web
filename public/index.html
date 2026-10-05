@@ -372,7 +372,7 @@
         <div class="container d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div class="d-flex align-items-center gap-3">
                 <span id="currentDateDisplay" class="fw-semibold">
-                    יום רביעי, 30 בספטמבר 2026 | י"ט בתשרי תשפ"ז
+                    יום רביעי, 7 באוקטובר 2026 | כ"ו בתשרי תשפ"ז
                 </span>
                 <span class="text-muted d-none d-md-inline">|</span>
                 <span id="topWeatherSnippet" class="d-none d-md-inline-flex align-items-center gap-1">
@@ -689,6 +689,7 @@
 
         // Initialize on DOM load
         document.addEventListener('DOMContentLoaded', async () => {
+            updateCurrentDateDisplay();
             await fetchWeather();
             await fetchTopArticles();
             await loadFeed(true);
@@ -703,6 +704,51 @@
             // Infinite Scroll Listener
             window.addEventListener('scroll', handleInfiniteScroll);
         });
+
+        // Dynamic Header Date
+        function updateCurrentDateDisplay() {
+            const dateEl = document.getElementById('currentDateDisplay');
+            if (!dateEl) return;
+            const now = new Date();
+            const greg = now.toLocaleDateString('he-IL', {
+                weekday: 'long',
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric'
+            });
+
+            try {
+                const parts = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
+                    day: 'numeric',
+                    month: 'long',
+                    year: 'numeric'
+                }).formatToParts(now);
+
+                let dayVal = '', monthVal = '', yearVal = '';
+                parts.forEach(p => {
+                    if (p.type === 'day') dayVal = p.value;
+                    if (p.type === 'month') monthVal = p.value;
+                    if (p.type === 'year') yearVal = p.value;
+                });
+
+                const dayMap = {
+                    1: "א'", 2: "ב'", 3: "ג'", 4: "ד'", 5: "ה'", 6: "ו'", 7: "ז'", 8: "ח'", 9: "ט'",
+                    10: "י'", 11: 'י"א', 12: 'י"ב', 13: 'י"ג', 14: 'י"ד', 15: 'ט"ו', 16: 'ט"ז', 17: 'י"ז', 18: 'י"ח', 19: 'י"ט',
+                    20: "כ'", 21: 'כ"א', 22: 'כ"ב', 23: 'כ"ג', 24: 'כ"ד', 25: 'כ"ה', 26: 'כ"ו', 27: 'כ"ז', 28: 'כ"ח', 29: 'כ"ט',
+                    30: "ל'"
+                };
+                const yearMap = {
+                    5784: 'תשפ"ד', 5785: 'תשפ"ה', 5786: 'תשפ"ו', 5787: 'תשפ"ז', 5788: 'תשפ"ח', 5789: 'תשפ"ט', 5790: 'תש"צ'
+                };
+
+                const hebDay = dayMap[parseInt(dayVal, 10)] || dayVal;
+                const hebYear = yearMap[parseInt(yearVal, 10)] || yearVal;
+                const hebDateStr = `${hebDay} ב${monthVal} ${hebYear}`;
+                dateEl.textContent = `${greg} | ${hebDateStr}`;
+            } catch {
+                dateEl.textContent = greg;
+            }
+        }
 
         // 1. Weather Widget Fetch
         async function fetchWeather() {

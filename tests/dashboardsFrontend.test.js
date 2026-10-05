@@ -1,16 +1,11 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
-
-dotenv.config();
 
 const app = require('../src/app');
 const User = require('../src/models/User');
 const Article = require('../src/models/Article');
 const { ARTICLE_STATUS, ARTICLE_CATEGORIES } = require('../src/constants/articleConstants');
-
-const MONGO_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/the-daily-web-test-frontend';
+const { connectTestDb, disconnectTestDb, createEditor } = require('./helpers/testEnv');
 
 let server;
 let baseUrl;
@@ -18,21 +13,9 @@ let reporterToken;
 let editorToken;
 let reporterUser;
 let editorUser;
-let mongod;
 
 test.before(async () => {
-    if (mongoose.connection.readyState === 0) {
-        try {
-            await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 1500 });
-        } catch (err) {
-            const { MongoMemoryServer } = require('mongodb-memory-server');
-            mongod = await MongoMemoryServer.create();
-            await mongoose.connect(mongod.getUri());
-        }
-    }
-
-    await Article.deleteMany({});
-    await User.deleteMany({});
+    await connectTestDb();
 
     await new Promise((resolve) => {
         server = app.listen(0, () => {
@@ -57,27 +40,14 @@ test.before(async () => {
     reporterToken = repData.token;
     reporterUser = repData.user;
 
-    const edRes = await fetch(`${baseUrl}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            username: 'editor_m4',
-            password: 'Password123!',
-            fullName: 'מיכל העורכת',
-            role: 'editor'
-        })
-    });
-    const edData = await edRes.json();
+    const edData = await createEditor('editor_m4', 'מיכל העורכת');
     editorToken = edData.token;
     editorUser = edData.user;
 });
 
 test.after(async () => {
     if (server) await new Promise(resolve => server.close(resolve));
-    await Article.deleteMany({});
-    await User.deleteMany({});
-    await mongoose.connection.close();
-    if (mongod) await mongod.stop();
+    await disconnectTestDb();
 });
 
 test('Dashboards Frontend & Review Workflow Integration Suite', async (t) => {

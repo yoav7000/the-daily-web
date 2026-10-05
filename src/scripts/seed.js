@@ -124,16 +124,27 @@ const commentSamples = [
     'ההסבר בהיר ומדויק, תודה רבה על המידע.'
 ];
 
-const seedDatabase = async () => {
-    try {
-        console.log('==================================================');
-        console.log('מתחיל הזנת נתוני דמה (Seeder) עבור The Daily Web');
+/**
+ * Wipes the database and fills it with demo data.
+ * Pass { connect: false } when mongoose is already connected (e.g. the in-memory dev database).
+ */
+const seedDatabase = async ({ connect = true } = {}) => {
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('Refusing to seed: this script deletes all data and must not run in production.');
+    }
+
+    console.log('==================================================');
+    console.log('מתחיל הזנת נתוני דמה (Seeder) עבור The Daily Web');
+    if (connect) {
         console.log('מתחבר ל-MongoDB:', MONGO_URI);
-        console.log('==================================================');
+    }
+    console.log('==================================================');
 
+    if (connect) {
         await mongoose.connect(MONGO_URI);
+    }
 
-        // 1. ניקוי נתונים קיימים
+    // 1. ניקוי נתונים קיימים
         console.log('מנקה אוספים קיימים...');
         await Promise.all([
             User.deleteMany({}),
@@ -279,144 +290,149 @@ const seedDatabase = async () => {
             });
         }
 
-        const insertedArticles = await Article.insertMany(articlesToInsert);
-        console.log(`נוצרו ${insertedArticles.length} כתבות במסד הנתונים.`);
+    const insertedArticles = await Article.insertMany(articlesToInsert);
+    console.log(`נוצרו ${insertedArticles.length} כתבות במסד הנתונים.`);
 
-        // 4. יצירת נתוני צפייה היסטוריים (ViewStat) עבור גרף ה-Impact Analytics
-        console.log('מייצר נתוני צפייה היסטוריים (ViewStat) לאורך ציר הזמן...');
-        const viewStatsToInsert = [];
+    // 4. יצירת נתוני צפייה היסטוריים (ViewStat) עבור גרף ה-Impact Analytics
+    console.log('מייצר נתוני צפייה היסטוריים (ViewStat) לאורך ציר הזמן...');
+    const viewStatsToInsert = [];
 
-        // כתבת הדגל (Showcase Article) להדגמת Impact Analytics מושלם מול המרצה:
-        // כתבה מס' 151 עברה 2 עדכונים: נבנה עבורה עקומת צפיות מפורטת לפני ואחרי כל עדכון
-        const showcaseArticle = insertedArticles.find(a => a.revisionsHistory && a.revisionsHistory.length >= 2);
+    // כתבת הדגל (Showcase Article) להדגמת Impact Analytics מושלם מול המרצה:
+    // כתבה מס' 151 עברה 2 עדכונים: נבנה עבורה עקומת צפיות מפורטת לפני ואחרי כל עדכון
+    const showcaseArticle = insertedArticles.find(a => a.revisionsHistory && a.revisionsHistory.length >= 2);
 
-        if (showcaseArticle) {
-            console.log(`מגדיר עקומת צפיות עשירה עבור כתבת הדגל: "${showcaseArticle.title}" (ID: ${showcaseArticle._id})`);
-            const startTime = new Date(showcaseArticle.publishedAt);
-            const update1Time = new Date(showcaseArticle.revisionsHistory[0].approvedAt);
-            const update2Time = new Date(showcaseArticle.revisionsHistory[1].approvedAt);
+    if (showcaseArticle) {
+        console.log(`מגדיר עקומת צפיות עשירה עבור כתבת הדגל: "${showcaseArticle.title}" (ID: ${showcaseArticle._id})`);
+        const startTime = new Date(showcaseArticle.publishedAt);
+        const update1Time = new Date(showcaseArticle.revisionsHistory[0].approvedAt);
+        const update2Time = new Date(showcaseArticle.revisionsHistory[1].approvedAt);
 
-            // יצירת דליים שעתיים על פני 7 ימים (168 שעות)
-            const hoursTotal = 7 * 24;
-            for (let h = 0; h < hoursTotal; h++) {
-                const currentBucketDate = new Date(startTime.getTime() + h * 60 * 60 * 1000);
-                if (currentBucketDate.getTime() > now) break;
+        // יצירת דליים שעתיים על פני 7 ימים (168 שעות)
+        const hoursTotal = 7 * 24;
+        for (let h = 0; h < hoursTotal; h++) {
+            const currentBucketDate = new Date(startTime.getTime() + h * 60 * 60 * 1000);
+            if (currentBucketDate.getTime() > now) break;
 
-                const timeBucket = getTimeBucketKey(currentBucketDate);
+            const timeBucket = getTimeBucketKey(currentBucketDate);
 
-                let hourlyViews = 20 + Math.floor(Math.random() * 25); // רמת צפיות בסיסית: 20-45 בשעה
+            let hourlyViews = 20 + Math.floor(Math.random() * 25); // רמת צפיות בסיסית: 20-45 בשעה
 
-                // קפיצת צפיות לאחר עדכון 1 (השפעת עדכון עורך 1)
-                if (currentBucketDate >= update1Time && currentBucketDate < update2Time) {
-                    hourlyViews = 80 + Math.floor(Math.random() * 60); // עלייה ל-80-140 בשעה
-                }
-
-                // קפיצת צפיות דרמטית לאחר עדכון 2 (השפעת עדכון עורך 2 - ויראליות)
-                if (currentBucketDate >= update2Time) {
-                    hourlyViews = 180 + Math.floor(Math.random() * 120); // עלייה ל-180-300 בשעה
-                }
-
-                viewStatsToInsert.push({
-                    article: showcaseArticle._id,
-                    viewedAt: currentBucketDate,
-                    timeBucket,
-                    viewCount: hourlyViews,
-                    notes: `צפיות שעתיות עבור כתבת דגל - שעה ${timeBucket}`
-                });
+            // קפיצת צפיות לאחר עדכון 1 (השפעת עדכון עורך 1)
+            if (currentBucketDate >= update1Time && currentBucketDate < update2Time) {
+                hourlyViews = 80 + Math.floor(Math.random() * 60); // עלייה ל-80-140 בשעה
             }
-        }
 
-        // יצירת צפיות כלליות לשאר הכתבות שפורסמו כדי שדירוג הכתבות הנצפות (Top) יהיה עשיר
-        const publishedArticles = insertedArticles.filter(a => a.status === ARTICLE_STATUS.PUBLISHED);
-        for (let j = 0; j < Math.min(publishedArticles.length, 80); j++) {
-            const art = publishedArticles[j];
-            if (showcaseArticle && art._id.equals(showcaseArticle._id)) continue;
-
-            const daysOfStats = 3;
-            for (let d = 0; d < daysOfStats; d++) {
-                const statDate = new Date(now - d * oneDayMs);
-                const timeBucket = getTimeBucketKey(statDate);
-                viewStatsToInsert.push({
-                    article: art._id,
-                    viewedAt: statDate,
-                    timeBucket,
-                    viewCount: Math.floor(Math.random() * 250) + 15,
-                    notes: `סטטיסטיקה מצרפית`
-                });
+            // קפיצת צפיות דרמטית לאחר עדכון 2 (השפעת עדכון עורך 2 - ויראליות)
+            if (currentBucketDate >= update2Time) {
+                hourlyViews = 180 + Math.floor(Math.random() * 120); // עלייה ל-180-300 בשעה
             }
+
+            viewStatsToInsert.push({
+                article: showcaseArticle._id,
+                viewedAt: currentBucketDate,
+                timeBucket,
+                viewCount: hourlyViews,
+                notes: `צפיות שעתיות עבור כתבת דגל - שעה ${timeBucket}`
+            });
         }
-
-        await ViewStat.insertMany(viewStatsToInsert);
-        console.log(`נוצרו ${viewStatsToInsert.length} רשומות סטטיסטיקה מצרפיות.`);
-
-        // 5. יצירת תגובות (Comments) על כתבות שפורסמו
-        console.log('מייצר תגובות קוראים מגוונות...');
-        const commentsToInsert = [];
-
-        // נוסיף לפחות 15-20 תגובות לכתבת הדגל
-        if (showcaseArticle) {
-            for (let c = 0; c < 18; c++) {
-                const author = commentAuthors[c % commentAuthors.length];
-                const text = commentSamples[c % commentSamples.length];
-                const commentDate = new Date(showcaseArticle.publishedAt.getTime() + (c + 1) * 4 * 60 * 60 * 1000);
-
-                commentsToInsert.push({
-                    article: showcaseArticle._id,
-                    authorName: author,
-                    content: text,
-                    clientIp: `192.168.1.${10 + (c % 20)}`,
-                    createdAt: commentDate
-                });
-            }
-        }
-
-        // נוסיף תגובות לעוד עשרות כתבות שפורסמו
-        for (let k = 0; k < 60; k++) {
-            const art = publishedArticles[k % publishedArticles.length];
-            const numComments = (k % 5) + 1;
-
-            for (let m = 0; m < numComments; m++) {
-                const author = commentAuthors[(k + m) % commentAuthors.length];
-                const text = commentSamples[(k + m) % commentSamples.length];
-
-                commentsToInsert.push({
-                    article: art._id,
-                    authorName: author,
-                    content: text,
-                    clientIp: `10.0.0.${(k * 3 + m) % 250 + 1}`,
-                    createdAt: new Date(now - ((k % 5) + 1) * 60 * 60 * 1000)
-                });
-            }
-        }
-
-        await Comment.insertMany(commentsToInsert);
-        console.log(`נוצרו ${commentsToInsert.length} תגובות קוראים.`);
-
-        // סיכום נתונים
-        console.log('==================================================');
-        console.log('הזנת נתוני הדמה הסתיימה בהצלחה מלאה!');
-        console.log('סיכום נתוני המערכת:');
-        console.log(`- משתמשים: ${createdUsers.length} (עורכים וכתבים עם סיסמה: password123)`);
-        console.log(`- סה"כ כתבות: ${insertedArticles.length}`);
-        console.log(`  * פורסמו (Published): ${insertedArticles.filter(a => a.status === ARTICLE_STATUS.PUBLISHED).length}`);
-        console.log(`  * טיוטות בהכנה (Draft): ${insertedArticles.filter(a => a.status === ARTICLE_STATUS.DRAFT).length}`);
-        console.log(`  * ממתינות לאישור (Pending): ${insertedArticles.filter(a => a.status === ARTICLE_STATUS.PENDING_APPROVAL).length}`);
-        console.log(`  * הוחזרו לתיקונים (Revision): ${insertedArticles.filter(a => a.status === ARTICLE_STATUS.REVISION_REQUESTED).length}`);
-        console.log(`  * כתבות עם היסטוריית עדכונים: 25 כתבות`);
-        console.log(`- רשומות סטטיסטיקה (ViewStat): ${viewStatsToInsert.length}`);
-        console.log(`- תגובות קוראים (Comments): ${commentsToInsert.length}`);
-        if (showcaseArticle) {
-            console.log(`🌟 כתבת דגל להדגמת Impact Analytics: "${showcaseArticle.title}"`);
-            console.log(`   ID: ${showcaseArticle._id}`);
-            console.log(`   קישור ישיר: http://localhost:3000/analytics.html?articleId=${showcaseArticle._id}`);
-        }
-        console.log('==================================================');
-
-        process.exit(0);
-    } catch (err) {
-        console.error('Fatal error during seeding:', err);
-        process.exit(1);
     }
+
+    // יצירת צפיות כלליות לשאר הכתבות שפורסמו כדי שדירוג הכתבות הנצפות (Top) יהיה עשיר
+    const publishedArticles = insertedArticles.filter(a => a.status === ARTICLE_STATUS.PUBLISHED);
+    for (let j = 0; j < Math.min(publishedArticles.length, 80); j++) {
+        const art = publishedArticles[j];
+        if (showcaseArticle && art._id.equals(showcaseArticle._id)) continue;
+
+        const daysOfStats = 3;
+        for (let d = 0; d < daysOfStats; d++) {
+            const statDate = new Date(now - d * oneDayMs);
+            const timeBucket = getTimeBucketKey(statDate);
+            viewStatsToInsert.push({
+                article: art._id,
+                viewedAt: statDate,
+                timeBucket,
+                viewCount: Math.floor(Math.random() * 250) + 15,
+                notes: `סטטיסטיקה מצרפית`
+            });
+        }
+    }
+
+    await ViewStat.insertMany(viewStatsToInsert);
+    console.log(`נוצרו ${viewStatsToInsert.length} רשומות סטטיסטיקה מצרפיות.`);
+
+    // 5. יצירת תגובות (Comments) על כתבות שפורסמו
+    console.log('מייצר תגובות קוראים מגוונות...');
+    const commentsToInsert = [];
+
+    // נוסיף לפחות 15-20 תגובות לכתבת הדגל
+    if (showcaseArticle) {
+        for (let c = 0; c < 18; c++) {
+            const author = commentAuthors[c % commentAuthors.length];
+            const text = commentSamples[c % commentSamples.length];
+            const commentDate = new Date(showcaseArticle.publishedAt.getTime() + (c + 1) * 4 * 60 * 60 * 1000);
+
+            commentsToInsert.push({
+                article: showcaseArticle._id,
+                authorName: author,
+                content: text,
+                clientIp: `192.168.1.${10 + (c % 20)}`,
+                createdAt: commentDate
+            });
+        }
+    }
+
+    // נוסיף תגובות לעוד עשרות כתבות שפורסמו
+    for (let k = 0; k < 60; k++) {
+        const art = publishedArticles[k % publishedArticles.length];
+        const numComments = (k % 5) + 1;
+
+        for (let m = 0; m < numComments; m++) {
+            const author = commentAuthors[(k + m) % commentAuthors.length];
+            const text = commentSamples[(k + m) % commentSamples.length];
+
+            commentsToInsert.push({
+                article: art._id,
+                authorName: author,
+                content: text,
+                clientIp: `10.0.0.${(k * 3 + m) % 250 + 1}`,
+                createdAt: new Date(now - ((k % 5) + 1) * 60 * 60 * 1000)
+            });
+        }
+    }
+
+    await Comment.insertMany(commentsToInsert);
+    console.log(`נוצרו ${commentsToInsert.length} תגובות קוראים.`);
+
+    // סיכום נתונים
+    console.log('==================================================');
+    console.log('הזנת נתוני הדמה הסתיימה בהצלחה מלאה!');
+    console.log('סיכום נתוני המערכת:');
+    console.log(`- משתמשים: ${createdUsers.length} (עורכים וכתבים עם סיסמה: password123)`);
+    console.log(`- סה"כ כתבות: ${insertedArticles.length}`);
+    console.log(`  * פורסמו (Published): ${insertedArticles.filter(a => a.status === ARTICLE_STATUS.PUBLISHED).length}`);
+    console.log(`  * טיוטות בהכנה (Draft): ${insertedArticles.filter(a => a.status === ARTICLE_STATUS.DRAFT).length}`);
+    console.log(`  * ממתינות לאישור (Pending): ${insertedArticles.filter(a => a.status === ARTICLE_STATUS.PENDING_APPROVAL).length}`);
+    console.log(`  * הוחזרו לתיקונים (Revision): ${insertedArticles.filter(a => a.status === ARTICLE_STATUS.REVISION_REQUESTED).length}`);
+    console.log(`  * כתבות עם היסטוריית עדכונים: 25 כתבות`);
+    console.log(`- רשומות סטטיסטיקה (ViewStat): ${viewStatsToInsert.length}`);
+    console.log(`- תגובות קוראים (Comments): ${commentsToInsert.length}`);
+    if (showcaseArticle) {
+        console.log(`🌟 כתבת דגל להדגמת Impact Analytics: "${showcaseArticle.title}"`);
+        console.log(`   ID: ${showcaseArticle._id}`);
+        console.log(`   קישור ישיר: http://localhost:3000/analytics.html?articleId=${showcaseArticle._id}`);
+    }
+    console.log('==================================================');
 };
 
-seedDatabase();
+module.exports = seedDatabase;
+
+// Run directly with: npm run seed
+if (require.main === module) {
+    seedDatabase()
+        .then(() => mongoose.disconnect())
+        .catch(async (err) => {
+            console.error('Fatal error during seeding:', err.message);
+            await mongoose.disconnect();
+            process.exit(1);
+        });
+}
