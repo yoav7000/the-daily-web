@@ -20,61 +20,108 @@ const generateToken = (user) => {
 };
 
 /**
- * Authentication middleware
- * Checks Bearer token in Authorization header, cookie or session
- * Survives server restarts.
+ * Resolve the logged-in user from a Bearer token, cookie, or server session.
+ * Returns null when no credentials were sent, throws when they are invalid.
+ */
+const resolveUser = async (req) => {
+    let token = null;
+
+    // 1. Authorization header
+    const authHeader = req.headers.authorization;
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+        token = authHeader.split(' ')[1];
+    }
+
+    // 2. Cookie (if cookie-parser is used)
+    if (!token && req.cookies && req.cookies.token) {
+        token = req.cookies.token;
+    }
+
+    // 3. Server-side session (stored in MongoDB, survives restarts)
+    if (!token && req.session && req.session.userId) {
+        const sessionUser = await User.findById(req.session.userId).select('-password');
+        if (sessionUser && sessionUser.isActive) {
+            return sessionUser;
+        }
+    }
+
+    // 4. Optional header for internal test environment (e.g. x-test-user-id)
+    if (!token && process.env.NODE_ENV === 'test' && req.headers['x-test-user-id']) {
+        const testUser = await User.findById(req.headers['x-test-user-id']);
+        if (testUser) {
+            return testUser;
+        }
+    }
+
+    if (!token) {
+        return null;
+    }
+
+    const decoded = jwt.verify(token, JWT_SECRET);
+    const user = await User.findById(decoded.id).select('-password');
+    if (!user || !user.isActive) {
+        const err = new Error('inactive');
+        err.inactive = true;
+        throw err;
+    }
+    return user;
+};
+
+/**
+ * Authentication middleware - rejects with 401 when there is no valid login.
  */
 const authenticate = async (req, res, next) => {
     try {
-        let token = null;
+        const user = await resolveUser(req);
 
-        // 1. Check Authorization header
-        const authHeader = req.headers.authorization;
-        if (authHeader && authHeader.startsWith('Bearer ')) {
-            token = authHeader.split(' ')[1];
-        }
-
-        // 2. Check cookies if cookie-parser / session is used
-        if (!token && req.cookies && req.cookies.token) {
-            token = req.cookies.token;
-        }
-
-        // 3. Optional header for internal test environment (e.g. x-test-user-id)
-        if (!token && process.env.NODE_ENV === 'test' && req.headers['x-test-user-id']) {
-            const testUser = await User.findById(req.headers['x-test-user-id']);
-            if (testUser) {
-                req.user = testUser;
-                return next();
-            }
-        }
-
-        if (!token) {
+        if (!user) {
             return res.status(401).json({
                 success: false,
                 message: 'אינך מחובר. נדרשת התחברות למערכת'
             });
         }
 
-        // Verify token
-        const decoded = jwt.verify(token, JWT_SECRET);
-        const user = await User.findById(decoded.id).select('-password');
-
-        if (!user || !user.isActive) {
+        req.user = user;
+        next();
+    } catch (error) {
+        if (error.inactive) {
             return res.status(401).json({
                 success: false,
                 message: 'המשתמש אינו קיים או אינו פעיל'
             });
         }
-
-        req.user = user;
-        next();
-    } catch (error) {
         return res.status(401).json({
             success: false,
             message: 'פג תוקף החיבור או שהטוקן אינו תקין',
             error: error.message
         });
     }
+};
+
+/**
+ * Optional authentication - never rejects. Anyone without a valid login is a guest.
+ */
+const optionalAuth = async (req, res, next) => {
+    try {
+        req.user = await resolveUser(req);
+    } catch (error) {
+        req.user = null;
+    }
+    req.role = req.user ? req.user.role : 'guest';
+    next();
+};
+
+/**
+ * Generic role guard, e.g. requireRole('editor') or requireRole('reporter', 'editor')
+ */
+const requireRole = (...roles) => (req, res, next) => {
+    if (!req.user || !roles.includes(req.user.role)) {
+        return res.status(403).json({
+            success: false,
+            message: 'אין לך הרשאה לבצע פעולה זו'
+        });
+    }
+    next();
 };
 
 /**
@@ -106,6 +153,8 @@ const requireEditor = (req, res, next) => {
 module.exports = {
     generateToken,
     authenticate,
+    optionalAuth,
+    requireRole,
     requireReporter,
     requireEditor
 };
