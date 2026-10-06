@@ -158,7 +158,17 @@ const getMyArticles = async (req, res, next) => {
         const query = { author: req.user._id };
 
         if (status) {
-            query.status = status;
+            if (status === 'draft' || status === 'בהכנה') {
+                query.status = { $in: ['draft', 'בהכנה'] };
+            } else if (status === 'pending_approval' || status === 'ממתינה לאישור עורך' || status === 'ממתינה לאישור') {
+                query.status = { $in: ['pending_approval', 'ממתינה לאישור עורך'] };
+            } else if (status === 'published' || status === 'פורסמה' || status === 'פורסמו') {
+                query.status = { $in: ['published', 'פורסמה'] };
+            } else if (status === 'revision_requested' || status === 'הוחזרה לתיקונים' || status === 'הוחזרו לתיקונים') {
+                query.status = { $in: ['revision_requested', 'הוחזרה לתיקונים'] };
+            } else {
+                query.status = status;
+            }
         }
 
         if (category) {
@@ -321,8 +331,16 @@ const getAllArticlesForEditor = async (req, res, next) => {
         if (status) {
             if (status === 'pending_update') {
                 // Articles that are published but have a draftVersion pending approval
-                query.status = ARTICLE_STATUS.PUBLISHED;
-                query['draftVersion.status'] = ARTICLE_STATUS.PENDING_APPROVAL;
+                query.status = { $in: [ARTICLE_STATUS.PUBLISHED, 'פורסמה'] };
+                query['draftVersion.status'] = { $in: [ARTICLE_STATUS.PENDING_APPROVAL, 'ממתינה לאישור עורך'] };
+            } else if (status === 'draft' || status === 'בהכנה') {
+                query.status = { $in: ['draft', 'בהכנה'] };
+            } else if (status === 'pending_approval' || status === 'ממתינה לאישור עורך' || status === 'ממתינה לאישור') {
+                query.status = { $in: ['pending_approval', 'ממתינה לאישור עורך'] };
+            } else if (status === 'published' || status === 'פורסמה' || status === 'פורסמו') {
+                query.status = { $in: ['published', 'פורסמה'] };
+            } else if (status === 'revision_requested' || status === 'הוחזרה לתיקונים' || status === 'הוחזרו לתיקונים') {
+                query.status = { $in: ['revision_requested', 'הוחזרה לתיקונים'] };
             } else {
                 query.status = status;
             }
@@ -407,7 +425,7 @@ const getArticleReviewDetails = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'הכתבה לא נמצאה' });
         }
 
-        const isPublishedUpdate = article.status === ARTICLE_STATUS.PUBLISHED && article.draftVersion;
+        const isPublishedUpdate = article.status === ARTICLE_STATUS.PUBLISHED && Boolean(article.draftVersion);
 
         return res.status(200).json({
             success: true,
