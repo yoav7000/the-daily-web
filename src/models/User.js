@@ -24,7 +24,7 @@ const userSchema = new mongoose.Schema({
     role: {
         type: String,
         enum: {
-            values: ['reporter', 'editor'],
+            values: ['guest', 'reporter', 'editor'],
             message: '{VALUE} is not a supported role'
         },
         default: 'reporter',
