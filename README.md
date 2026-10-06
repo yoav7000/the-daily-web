@@ -77,7 +77,8 @@ the-daily-web/
 │   ├── app.js                 # Express application initialization & middleware setup
 │   ├── server.js              # Server entrypoint and MongoDB connection
 │   ├── config/
-│   │   └── db.js              # Mongoose connection with event listeners and retry logic
+│   │   ├── db.js              # Mongoose connection with event listeners and retry logic
+│   │   └── session.js         # express-session with connect-mongo store (login survives restarts)
 │   ├── constants/
 │   │   └── articleConstants.js# Article statuses (Draft, Pending Approval, Published, Revision Requested)
 │   ├── models/
@@ -86,13 +87,13 @@ the-daily-web/
 │   │   ├── Comment.js         # Comment model with anti-spam indexing (3 comments/min limit)
 │   │   └── ViewStat.js        # View statistics model for Impact Analytics graph
 │   ├── middleware/
-│   │   ├── auth.js            # JWT auth & server restart persistence, role-based access control
+│   │   ├── auth.js            # Auth via JWT or Mongo-backed session, guest/reporter/editor role guards
 │   │   ├── commentRateLimiter.js # Anti-spam middleware: blocks >3 comments/min with restart persistence
 │   │   ├── errorHandler.js    # Centralized error handler and logging to error.log
-│   │   └── requestLogger.js   # Operational event logging to operations.log
+│   │   └── requestLogger.js   # HTTP access log (access.log) and operational events (operations.log)
 │   ├── controllers/
 │   │   ├── articleController.js   # Core article logic, auto-save, draft versioning, and editor approvals
-│   │   ├── authController.js      # Registration, login, and token generation
+│   │   ├── authController.js      # Registration, login, logout, and token/session handling
 │   │   ├── commentController.js   # Full CRUD for comments, text search, and pagination
 │   │   └── analyticsController.js # Scalable time-bucketed view tracking & Impact Analytics
 │   ├── routes/
