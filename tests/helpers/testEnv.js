@@ -14,6 +14,8 @@ const connectTestDb = async () => {
     await mongoose.connect(mongod.getUri());
 };
 
+const getTestDbUri = () => mongod.getUri();
+
 const disconnectTestDb = async () => {
     await mongoose.connection.close();
     if (mongod) {
@@ -36,4 +38,4 @@ const createUser = async (username, fullName, role) => {
 const createEditor = (username, fullName = 'עורכת בדיקה') => createUser(username, fullName, 'editor');
 const createReporter = (username, fullName = 'כתב בדיקה') => createUser(username, fullName, 'reporter');
 
-module.exports = { connectTestDb, disconnectTestDb, createEditor, createReporter };
+module.exports = { connectTestDb, disconnectTestDb, getTestDbUri, createEditor, createReporter };

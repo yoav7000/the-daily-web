@@ -257,3 +257,24 @@ test('Users: full CRUD and search for editors', async (t) => {
         assert.equal((await api('GET', `/api/users/${userId}`, { token: editor.token })).status, 404);
     });
 });
+
+test('Staff dashboards can load hundreds of articles at once, public lists stay capped', async () => {
+    const reporter = await User.findById(reporterId);
+    await Article.insertMany(Array.from({ length: 150 }, (_, i) => ({
+        title: `כתבת עומס ${i}`,
+        content: '<p>x</p>',
+        category: 'חדשות',
+        author: reporter._id,
+        status: ARTICLE_STATUS.PUBLISHED,
+        publishedAt: new Date(Date.now() - i * 1000)
+    })));
+
+    const mine = await api('GET', '/api/articles/my-articles?limit=300', { token: reporterToken });
+    assert.ok(mine.body.articles.length >= 150, 'the reporter dashboard asks for up to 300 and must get them all');
+
+    const all = await api('GET', '/api/articles/editor/all?limit=500', { token: editor.token });
+    assert.ok(all.body.articles.length >= 150);
+
+    const publicList = await api('GET', '/api/articles/public?limit=300');
+    assert.equal(publicList.body.articles.length, 100, 'public lists are capped at 100 per request');
+});
