@@ -15,6 +15,11 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
     <style>
+        /* Always reserve the space of the page scrollbar. Without it, buttons jump sideways whenever a filter
+           makes the page short enough for the scrollbar to disappear (and back). */
+        html {
+            overflow-y: scroll;
+        }
         :root {
             --font-editorial: 'Frank Ruhl Libre', serif;
             --font-sans: 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
