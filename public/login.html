@@ -234,11 +234,12 @@
 
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/common.js"></script>
 
     <script>
         // Check if user is already logged in
         document.addEventListener('DOMContentLoaded', async () => {
-            const token = localStorage.getItem('token') || getCookie('token');
+            const token = localStorage.getItem('token');
             if (token) {
                 try {
                     const res = await fetch('/api/auth/me', {
@@ -256,23 +257,10 @@
             }
         });
 
-        // Helper to set cookie for persistent server restart survival
-        function setCookie(name, value, days = 7) {
-            const expires = new Date(Date.now() + days * 864e5).toUTCString();
-            document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
-        }
-
-        function getCookie(name) {
-            return document.cookie.split('; ').reduce((r, v) => {
-                const parts = v.split('=');
-                return parts[0] === name ? decodeURIComponent(parts[1]) : r;
-            }, '');
-        }
-
         function showAlert(message, type = 'danger') {
             const alertEl = document.getElementById('authAlert');
             alertEl.className = `alert alert-${type} d-flex align-items-center gap-2`;
-            alertEl.innerHTML = `<i class="bi ${type === 'danger' ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill'}"></i> <div>${message}</div>`;
+            alertEl.innerHTML = `<i class="bi ${type === 'danger' ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill'}"></i> <div>${escapeHtml(message)}</div>`;
             alertEl.classList.remove('d-none');
         }
 
@@ -328,7 +316,6 @@
                 if (res.ok && data.success) {
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
-                    setCookie('token', data.token);
                     showAlert('התחברת בהצלחה! מעביר אותך לאזור העבודה...', 'success');
                     setTimeout(() => {
                         redirectByRole(data.user.role);
@@ -379,7 +366,6 @@
                 if (res.ok && data.success) {
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
-                    setCookie('token', data.token);
                     showAlert('החשבון נוצר בהצלחה! מעביר אותך...', 'success');
                     setTimeout(() => {
                         redirectByRole(data.user.role);
