@@ -1,7 +1,7 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('http');
-const { connectTestDb, disconnectTestDb } = require('./helpers/testEnv');
+const { connectTestDb, disconnectTestDb, createReporter } = require('./helpers/testEnv');
 
 let server;
 let baseUrl;
@@ -55,14 +55,10 @@ test.after(async () => {
 test('Session login, restart persistence and logout', async (t) => {
     let cookie;
 
-    await t.test('register opens a session cookie', async () => {
-        const res = await request('POST', '/api/auth/register', {
-            username: 'sessionuser',
-            password: 'password123',
-            fullName: 'Session User',
-            role: 'editor' // ignored: public sign-up always creates a reporter
-        });
-        assert.equal(res.status, 201);
+    await t.test('login opens a session cookie', async () => {
+        await createReporter('sessionuser', 'Session User');
+        const res = await request('POST', '/api/auth/login', { username: 'sessionuser', password: 'password123' });
+        assert.equal(res.status, 200);
         assert.equal(res.body.user.role, 'reporter');
         cookie = res.headers['set-cookie'][0].split(';')[0];
         assert.ok(cookie.startsWith('daily.sid='));

@@ -6,7 +6,7 @@ const User = require('../src/models/User');
 const Article = require('../src/models/Article');
 const Comment = require('../src/models/Comment');
 const ViewStat = require('../src/models/ViewStat');
-const { connectTestDb, disconnectTestDb, createEditor } = require('./helpers/testEnv');
+const { connectTestDb, disconnectTestDb, createEditor, createReporter } = require('./helpers/testEnv');
 const { ARTICLE_STATUS, ARTICLE_CATEGORIES } = require('../src/constants/articleConstants');
 const { recordViewInternal, getTimeBucketKey } = require('../src/controllers/analyticsController');
 
@@ -29,17 +29,7 @@ test.before(async () => {
     });
 
     // יצירת משתמשי בדיקה וקבלת Tokens
-    const regReporter = await fetch(`${baseUrl}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            username: `tester_rep_${Date.now()}`,
-            password: 'password123',
-            fullName: 'כתב בדיקה',
-            role: 'reporter'
-        })
-    });
-    const repData = await regReporter.json();
+    const repData = await createReporter(`tester_rep_${Date.now()}`, 'כתב בדיקה');
     reporterToken = repData.token;
 
     const edData = await createEditor(`tester_ed_${Date.now()}`, 'עורכת בדיקה');

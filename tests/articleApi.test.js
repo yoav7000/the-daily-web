@@ -5,7 +5,7 @@ const http = require('http');
 const app = require('../src/app');
 const Article = require('../src/models/Article');
 const User = require('../src/models/User');
-const { connectTestDb, disconnectTestDb, createEditor } = require('./helpers/testEnv');
+const { connectTestDb, disconnectTestDb, createEditor, createReporter } = require('./helpers/testEnv');
 
 let server;
 let baseUrl;
@@ -78,15 +78,9 @@ test('Complete Article RESTful API Flow', async (t) => {
     let editorToken = null;
     let articleId = null;
 
-    await t.test('1. Register reporter and editor', async () => {
-        const resRep = await request('POST', '/api/auth/register', {
-            username: 'reporter1',
-            password: 'password123',
-            fullName: 'ישראל ישראלי',
-            role: 'reporter'
-        });
-        assert.equal(resRep.status, 201);
-        reporterToken = resRep.body.token;
+    await t.test('1. Create reporter and editor accounts', async () => {
+        const reporter = await createReporter('reporter1', 'ישראל ישראלי');
+        reporterToken = reporter.token;
         assert.ok(reporterToken);
 
         const editor = await createEditor('editor1', 'רונית העורכת');

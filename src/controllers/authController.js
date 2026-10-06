@@ -4,24 +4,6 @@ const { logOperation } = require('../middleware/requestLogger');
 const { cleanText } = require('../utils/text');
 
 /**
- * Validates the shared fields of a new account.
- * Returns { error } with a Hebrew message, or { username, password, fullName } ready to save.
- */
-const readNewUserFields = async (body) => {
-    const username = cleanText(body.username).toLowerCase();
-    const fullName = cleanText(body.fullName);
-    const password = typeof body.password === 'string' ? body.password : '';
-
-    if (!username || !password || !fullName) {
-        return { error: 'שם משתמש, סיסמה ושם מלא הם שדות חובה' };
-    }
-    if (await User.exists({ username })) {
-        return { error: 'שם המשתמש כבר קיים במערכת' };
-    }
-    return { username, password, fullName };
-};
-
-/**
  * Opens a fresh server session for the user (a new session id on every login prevents session fixation)
  */
 const startSession = (req, user) => new Promise((resolve, reject) => {
@@ -43,39 +25,6 @@ const toUserResponse = (user) => ({
     fullName: user.fullName,
     role: user.role
 });
-
-/**
- * Public sign-up. Always creates a Reporter - editor accounts can only be created by an editor.
- * POST /api/auth/register
- */
-const register = async (req, res, next) => {
-    try {
-        const fields = await readNewUserFields(req.body);
-        if (fields.error) {
-            return res.status(400).json({ success: false, message: fields.error });
-        }
-
-        const user = await User.create({ ...fields, role: 'reporter' });
-
-        const token = generateToken(user);
-        await startSession(req, user);
-
-        logOperation('USER_REGISTERED', {
-            userId: user._id,
-            username: user.username,
-            role: user.role
-        });
-
-        return res.status(201).json({
-            success: true,
-            message: 'המשתמש נרשם בהצלחה',
-            token,
-            user: toUserResponse(user)
-        });
-    } catch (error) {
-        next(error);
-    }
-};
 
 /**
  * Login user (Reporter or Editor)
@@ -171,7 +120,6 @@ const getMe = async (req, res) => {
 };
 
 module.exports = {
-    register,
     login,
     logout,
     getMe
