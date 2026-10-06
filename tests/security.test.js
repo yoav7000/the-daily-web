@@ -6,7 +6,7 @@ const Article = require('../src/models/Article');
 const User = require('../src/models/User');
 const ViewStat = require('../src/models/ViewStat');
 const { ARTICLE_STATUS } = require('../src/constants/articleConstants');
-const { connectTestDb, disconnectTestDb, createEditor } = require('./helpers/testEnv');
+const { connectTestDb, disconnectTestDb, createEditor, createReporter } = require('./helpers/testEnv');
 
 let server;
 let baseUrl;
@@ -34,17 +34,13 @@ test.before(async () => {
 
     editorToken = (await createEditor('sec_editor')).token;
 
-    const res = await api('POST', '/api/auth/register', {
-        body: { username: 'sec_reporter', password: 'password123', fullName: 'כתב' }
-    });
-    reporterToken = (await res.json()).token;
-
-    const reporter = await User.findOne({ username: 'sec_reporter' });
+    const reporter = (await createReporter('sec_reporter', 'כתב')).user;
+    reporterToken = (await createReporter('sec_reporter2', 'כתב נוסף')).token;
     const article = await Article.create({
         title: 'כתבה לבדיקות אבטחה',
         content: '<p>תוכן</p>',
         category: 'טכנולוגיה',
-        author: reporter._id,
+        author: reporter.id,
         status: ARTICLE_STATUS.PUBLISHED,
         publishedAt: new Date()
     });
@@ -56,27 +52,27 @@ test.after(async () => {
     await disconnectTestDb();
 });
 
-test('Public sign-up can never create an editor', async () => {
+test('There is no public sign-up: accounts are only created by editors', async () => {
     const res = await api('POST', '/api/auth/register', {
         body: { username: 'sneaky', password: 'password123', fullName: 'Sneaky', role: 'editor' }
     });
-    assert.equal(res.status, 201);
-    assert.equal((await res.json()).user.role, 'reporter');
+    assert.equal(res.status, 404);
+    assert.equal(await User.exists({ username: 'sneaky' }), null);
 });
 
 test('Only an editor can create accounts with a role', async () => {
-    const asReporter = await api('POST', '/api/auth/users', {
+    const asReporter = await api('POST', '/api/users', {
         token: reporterToken,
         body: { username: 'x1', password: 'password123', fullName: 'X', role: 'editor' }
     });
     assert.equal(asReporter.status, 403);
 
-    const asGuest = await api('POST', '/api/auth/users', {
+    const asGuest = await api('POST', '/api/users', {
         body: { username: 'x2', password: 'password123', fullName: 'X', role: 'editor' }
     });
     assert.equal(asGuest.status, 401);
 
-    const asEditor = await api('POST', '/api/auth/users', {
+    const asEditor = await api('POST', '/api/users', {
         token: editorToken,
         body: { username: 'new_editor', password: 'password123', fullName: 'New Editor', role: 'editor' }
     });

@@ -42,9 +42,6 @@ const viewStatSchema = new mongoose.Schema({
 viewStatSchema.index({ article: 1, timeBucket: 1 }, { unique: true });
 viewStatSchema.index({ article: 1, viewedAt: 1 });
 
-// אינדקס טקסטואלי לחיפוש (CRUD Search)
-viewStatSchema.index({ timeBucket: 'text', notes: 'text' });
-
 const ViewStat = mongoose.model('ViewStat', viewStatSchema);
 
 module.exports = ViewStat;

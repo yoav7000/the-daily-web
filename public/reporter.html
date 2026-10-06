@@ -21,6 +21,11 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
     <style>
+        /* Always reserve the space of the page scrollbar. Without it, buttons jump sideways whenever a filter
+           makes the page short enough for the scrollbar to disappear (and back). */
+        html {
+            overflow-y: scroll;
+        }
         :root {
             --font-editorial: 'Frank Ruhl Libre', serif;
             --font-sans: 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -537,9 +542,6 @@
                 <a href="/analytics.html" class="category-link">
                     <i class="bi bi-bar-chart-line"></i> Impact Analytics
                 </a>
-                <a href="/test.html" class="category-link">
-                    <i class="bi bi-tools"></i> מעבדת Workflow
-                </a>
                 <a href="/portal.html" class="category-link">
                     <i class="bi bi-grid-3x3-gap-fill"></i> פורטל עובדים
                 </a>
@@ -672,7 +674,7 @@
                             <span id="autosaveStatusText">שמירה אוטומטית פעילה</span>
                         </div>
 
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" onclick="closeEditorModal()"></button>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
                 </div>
 
@@ -825,7 +827,7 @@
                     </div>
 
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal" onclick="closeEditorModal()">
+                        <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal">
                             סגור
                         </button>
                         <button type="button" class="btn btn-success fw-bold px-4 d-flex align-items-center gap-2 d-lg-none" onclick="submitCurrentForApproval()">
@@ -863,8 +865,10 @@
         let currentCategoryFilter = '';
         let currentSearchQuery = '';
         let autoSaveTimer = null;
-        let isSaving = false;
         let hasUnsavedChanges = false;
+        let changeCounter = 0;      // grows with every edit, so a save can tell whether the reporter kept typing meanwhile
+        let currentSave = null;     // the save that is running right now (only one at a time)
+        let listRequestId = 0;      // so an older answer never overwrites a newer article list
         let searchDebounceTimer = null;
         let modalInstance = null;
 
@@ -884,6 +888,8 @@
         // אתחול בעת טעינת העמוד
         document.addEventListener('DOMContentLoaded', async () => {
             modalInstance = new bootstrap.Modal(document.getElementById('articleEditModal'));
+            // however the editor is closed (X, "close", Esc, click outside): finish saving, then refresh the list
+            document.getElementById('articleEditModal').addEventListener('hidden.bs.modal', closeEditorModal);
             await verifySession();
             await loadMyArticles();
         });
@@ -930,9 +936,25 @@
             toast.show();
         }
 
+        // What the reporter is working on. For a published article that is being updated, the changes live in an
+        // unpublished draft (the public keeps seeing the approved text), so the list must show that draft.
+        function workingCopyOf(article) {
+            const draft = article.status === 'published' ? article.draftVersion : null;
+            if (!draft) return article;
+            return {
+                ...article,
+                title: draft.title ?? article.title,
+                summary: draft.summary ?? article.summary,
+                content: draft.content ?? article.content,
+                category: draft.category ?? article.category,
+                mainImage: draft.mainImage ?? article.mainImage
+            };
+        }
+
         // טעינת כתבות של הכתב מהשרת
         async function loadMyArticles() {
             const token = getAuthToken();
+            const requestId = ++listRequestId;
             try {
                 const res = await fetch('/api/articles/my-articles?limit=300', {
                     headers: { 'Authorization': `Bearer ${token}` }
@@ -941,6 +963,7 @@
                 if (!res.ok) throw new Error('Failed to load articles');
 
                 const data = await res.json();
+                if (requestId !== listRequestId) return; // a newer load was started, ignore this older answer
                 allMyArticles = data.articles || [];
                 updateMetrics();
                 applyLocalFilters();
@@ -1021,13 +1044,14 @@
 
             // 2. סינון לפי קטגוריה
             if (currentCategoryFilter) {
-                list = list.filter(a => a.category === currentCategoryFilter);
+                list = list.filter(a => workingCopyOf(a).category === currentCategoryFilter);
             }
 
             // 3. סינון לפי חיפוש טקסט
             if (currentSearchQuery) {
                 const q = currentSearchQuery.toLowerCase();
-                list = list.filter(a => {
+                list = list.filter(item => {
+                    const a = workingCopyOf(item);
                     return (a.title && a.title.toLowerCase().includes(q)) ||
                            (a.summary && a.summary.toLowerCase().includes(q)) ||
                            (a.content && a.content.toLowerCase().includes(q));
@@ -1061,7 +1085,8 @@
             }
 
             let html = '';
-            articles.forEach(article => {
+            articles.forEach(storedArticle => {
+                const article = workingCopyOf(storedArticle);
                 const statusName = STATUS_MAP[article.status] || article.status;
                 let statusClass = 'status-draft';
                 let statusIcon = 'bi-pencil';
@@ -1306,6 +1331,7 @@
 
         function triggerAutoSave() {
             hasUnsavedChanges = true;
+            changeCounter++;
             updateAutoSaveIndicator('dirty', 'שינויים לא נשמרו...');
 
             clearTimeout(autoSaveTimer);
@@ -1315,9 +1341,26 @@
             }, 1200);
         }
 
-        async function executeAutoSave() {
-            if (isSaving || !hasUnsavedChanges) return;
+        // Saves the form to the server. Only one save runs at a time. If the reporter kept typing while it was
+        // running, another save follows right away, so nothing typed is ever left unsaved. Returns when all is saved.
+        function executeAutoSave() {
+            if (!currentSave) {
+                currentSave = (async () => {
+                    try {
+                        while (hasUnsavedChanges) {
+                            if (!(await saveFormToServer())) break; // failed: keep the changes marked as unsaved
+                        }
+                    } finally {
+                        currentSave = null;
+                    }
+                })();
+            }
+            return currentSave;
+        }
 
+        // One save request. Returns false when it failed.
+        async function saveFormToServer() {
+            const changesAtStart = changeCounter;
             const articleId = document.getElementById('editArticleId').value;
             const title = document.getElementById('editTitle').value.trim();
             const category = document.getElementById('editCategory').value;
@@ -1325,23 +1368,19 @@
             const summary = document.getElementById('editSummary').value.trim();
             const content = document.getElementById('editContent').value;
 
-            if (!articleId && !title && !content) return;
+            if (!articleId && !title && !content) {
+                hasUnsavedChanges = false; // nothing written yet, nothing to save
+                return true;
+            }
 
-            isSaving = true;
             updateAutoSaveIndicator('saving', 'שומר שינויים ברקע...');
 
             const token = getAuthToken();
-            const payload = { 
-                title: title || 'טיוטה ללא כותרת', 
-                category, 
-                mainImage, 
-                summary, 
-                content: content || '<p></p>' 
-            };
+            const payload = { title, category, mainImage, summary, content };
 
             try {
-                let url = articleId ? `/api/articles/${articleId}/autosave` : `/api/articles/autosave`;
-                let method = articleId ? 'PUT' : 'POST';
+                const url = articleId ? `/api/articles/${articleId}/autosave` : `/api/articles/autosave`;
+                const method = articleId ? 'PUT' : 'POST';
 
                 const res = await fetch(url, {
                     method: method,
@@ -1355,21 +1394,28 @@
                 const data = await res.json();
 
                 if (res.ok && data.success) {
-                    hasUnsavedChanges = false;
+                    // only "saved" if nothing was typed while the request was running
+                    hasUnsavedChanges = changeCounter !== changesAtStart;
                     if (!articleId && data.articleId) {
                         document.getElementById('editArticleId').value = data.articleId;
                     }
 
                     const timeStr = new Date().toLocaleTimeString('he-IL');
                     updateAutoSaveIndicator('saved', `נשמר אוטומטית ברקע ב-${timeStr}`);
+                    return true;
+                }
+
+                if (res.status === 409) {
+                    // the article is locked while it waits for the editor: say why saving stopped
+                    updateAutoSaveIndicator('error', data.message);
                 } else {
                     updateAutoSaveIndicator('error', 'שמירה ברקע תתבצע בהמשך');
                 }
+                return false;
             } catch (err) {
                 console.error('AutoSave failed:', err);
                 updateAutoSaveIndicator('error', 'חיבור נותק, ינסה שוב...');
-            } finally {
-                isSaving = false;
+                return false;
             }
         }
 
@@ -1392,12 +1438,12 @@
             }
         }
 
-        function closeEditorModal() {
+        // Runs after the editor window is closed. The last save must finish BEFORE the list is reloaded,
+        // otherwise the list is fetched while the new text is still on its way and shows the old text.
+        async function closeEditorModal() {
             clearTimeout(autoSaveTimer);
-            if (hasUnsavedChanges) {
-                executeAutoSave();
-            }
-            loadMyArticles();
+            await executeAutoSave();
+            await loadMyArticles();
         }
 
         // הגשת כתבה לאישור עורך
@@ -1558,7 +1604,6 @@
             </div>
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 text-secondary small">
                 <div>&copy; 2026 The Daily Web. כל הזכויות שמורות.</div>
-                <div class="font-num">Advanced Web Applications Project</div>
             </div>
         </div>
     </footer>

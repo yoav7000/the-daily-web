@@ -3,10 +3,11 @@ const path = require('path');
 const dotenv = require('dotenv');
 
 // Load environment variables
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const articleRoutes = require('./routes/articleRoutes');
 const authRoutes = require('./routes/authRoutes');
+const userRoutes = require('./routes/userRoutes');
 const commentRoutes = require('./routes/commentRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const weatherRoutes = require('./routes/weatherRoutes');
@@ -19,6 +20,12 @@ const app = express();
 // View engine setup (EJS as mandated in course requirements)
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
+
+// Behind a reverse proxy (nginx, a cloud load balancer) set TRUST_PROXY to the number of proxies,
+// so req.ip is the real visitor. Never trust forwarding headers otherwise: clients can fake them.
+if (Number(process.env.TRUST_PROXY) > 0) {
+    app.set('trust proxy', Number(process.env.TRUST_PROXY));
+}
 
 // Core middleware
 app.use(express.json({ limit: '10mb' }));
@@ -46,6 +53,8 @@ app.get('/article/:id', articleController.renderArticlePage);
 
 // API Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/auth/users', userRoutes); // earlier address of the same endpoints, kept so existing clients keep working
 app.use('/api', commentRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/analytics', analyticsRoutes);
