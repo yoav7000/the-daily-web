@@ -21,9 +21,17 @@ let editorToken;
 let reporterToken;
 let testArticleId;
 
+let mongod;
+
 test.before(async () => {
     if (mongoose.connection.readyState === 0) {
-        await mongoose.connect(MONGO_URI);
+        try {
+            await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 1500 });
+        } catch (err) {
+            const { MongoMemoryServer } = require('mongodb-memory-server');
+            mongod = await MongoMemoryServer.create();
+            await mongoose.connect(mongod.getUri());
+        }
     }
 
     // ניקוי אוספים לצורך הרצת בדיקות מבודדת
@@ -329,4 +337,10 @@ test('Team Member 5: Scalable View Analytics & Impact Graph Test Suite', async (
         assert.equal(data.success, true);
         assert.ok(Array.isArray(data.topArticles));
     });
+});
+
+test.after(async () => {
+    if (server) await new Promise(resolve => server.close(resolve));
+    await mongoose.connection.close();
+    if (mongod) await mongod.stop();
 });

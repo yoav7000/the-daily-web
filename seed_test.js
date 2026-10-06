@@ -25,9 +25,49 @@ async function seed() {
         process.exit(1);
     }
 
-    let author = await User.findOne({ role: 'reporter' });
+    let author = await User.findOne({ username: 'dan_reporter' });
     if (!author) {
         author = await User.create({
+            fullName: 'דן שטרן',
+            username: 'dan_reporter',
+            password: 'password123',
+            role: 'reporter'
+        });
+    }
+
+    let authorAlt = await User.findOne({ username: 'reporter_dan' });
+    if (!authorAlt) {
+        await User.create({
+            fullName: 'דן הכתב',
+            username: 'reporter_dan',
+            password: 'password123',
+            role: 'reporter'
+        });
+    }
+
+    let editor = await User.findOne({ username: 'sarah_editor' });
+    if (!editor) {
+        await User.create({
+            fullName: 'שרה לוי',
+            username: 'sarah_editor',
+            password: 'password123',
+            role: 'editor'
+        });
+    }
+
+    let editorAlt = await User.findOne({ username: 'editor_sarah' });
+    if (!editorAlt) {
+        await User.create({
+            fullName: 'שרה העורכת',
+            username: 'editor_sarah',
+            password: 'password123',
+            role: 'editor'
+        });
+    }
+
+    let testUser = await User.findOne({ username: 'testreporter123' });
+    if (!testUser) {
+        await User.create({
             fullName: 'Test Reporter',
             username: 'testreporter123',
             email: 'test@example.com',
