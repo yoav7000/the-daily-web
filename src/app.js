@@ -10,7 +10,9 @@ const authRoutes = require('./routes/authRoutes');
 const commentRoutes = require('./routes/commentRoutes');
 const analyticsRoutes = require('./routes/analyticsRoutes');
 const weatherRoutes = require('./routes/weatherRoutes');
+const sessionMiddleware = require('./config/session');
 const { errorHandler } = require('./middleware/errorHandler');
+const { httpLogger } = require('./middleware/requestLogger');
 
 const app = express();
 
@@ -25,13 +27,13 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Static files (CSS, Vanilla JS client scripts, images)
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Request logging in development
+// Request logging (skipped in tests)
 if (process.env.NODE_ENV !== 'test') {
-    app.use((req, res, next) => {
-        console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
-        next();
-    });
+    app.use(httpLogger);
 }
+
+// Server-side sessions (MongoDB store) so logins survive a server restart
+app.use(sessionMiddleware);
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
