@@ -74,13 +74,37 @@ const categoryTemplates = {
 };
 
 const dummyImages = [
-    'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1559136555-9303baea8ebd?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1541872703-74c5e44368f9?auto=format&fit=crop&w=800&q=80',
     'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1508098682722-e99c43a406b2?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1489599849927-2ee91cede3ba?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1515694346937-94d85e41e6f0?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1510557880182-3d4d3cba35a5?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1503676260728-1c00da094a0b?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1559526324-4b87b5e36e44?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1579952363873-27f3bade9f55?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1446776811953-b23d57bd21aa?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1579783902614-a3fb3927b675?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1580582932707-520aed937b7b?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1635070041078-e363dbe005cb?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1436491865332-7a61a109cc05?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1461896836934-ffe607ba8211?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1495446815901-a7297e633e8d?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1590301157890-4810ed352733?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1550751827-4bd374c3f58b?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1575320181282-9afab399332c?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1560518883-ce09059eeffa?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1546519638-68e109498ffc?auto=format&fit=crop&w=800&q=80',
+    'https://images.unsplash.com/photo-1490645935967-10de6ba17061?auto=format&fit=crop&w=800&q=80',
     'https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?auto=format&fit=crop&w=800&q=80',
-    'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80'
+    'https://images.unsplash.com/photo-1501386761578-eac5c94b800a?auto=format&fit=crop&w=800&q=80'
 ];
 
 const commentAuthors = [
@@ -117,136 +141,154 @@ const seedDatabase = async ({ connect = true } = {}) => {
     console.log('==================================================');
 
     if (connect) {
-        await mongoose.connect(MONGO_URI);
+        await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 3000 });
     }
 
     // 1. ניקוי נתונים קיימים
-    console.log('מנקה אוספים קיימים...');
-    await Promise.all([
-        User.deleteMany({}),
-        Article.deleteMany({}),
-        Comment.deleteMany({}),
-        ViewStat.deleteMany({})
-    ]);
+        console.log('מנקה אוספים קיימים...');
+        await Promise.all([
+            User.deleteMany({}),
+            Article.deleteMany({}),
+            Comment.deleteMany({}),
+            ViewStat.deleteMany({})
+        ]);
 
-    // 2. יצירת משתמשי דמה (עורכים וכתבים עם סיסמה מוצפנת ב-bcrypt)
-    console.log('יוצר משתמשים (כתבים ועורכים)...');
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash('password123', salt);
+        // 2. יצירת משתמשי דמה (עורכים וכתבים עם סיסמה מוצפנת ב-bcrypt)
+        console.log('יוצר משתמשים (כתבים ועורכים)...');
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash('password123', salt);
 
-    const usersData = [
-        { username: 'sarah_editor', password: hashedPassword, fullName: 'שרה לוי', role: 'editor' },
-        { username: 'yossi_editor', password: hashedPassword, fullName: 'יוסי אדלר', role: 'editor' },
-        { username: 'dan_reporter', password: hashedPassword, fullName: 'דן שטרן', role: 'reporter' },
-        { username: 'michal_reporter', password: hashedPassword, fullName: 'מיכל כהן', role: 'reporter' },
-        { username: 'ron_reporter', password: hashedPassword, fullName: 'רון אברהמי', role: 'reporter' },
-        { username: 'noa_reporter', password: hashedPassword, fullName: 'נועה ברקוביץ', role: 'reporter' }
-    ];
+        const usersData = [
+            { username: 'sarah_editor', password: hashedPassword, fullName: 'שרה לוי', role: 'editor' },
+            { username: 'yossi_editor', password: hashedPassword, fullName: 'יוסי אדלר', role: 'editor' },
+            { username: 'dan_reporter', password: hashedPassword, fullName: 'דן שטרן', role: 'reporter' },
+            { username: 'michal_reporter', password: hashedPassword, fullName: 'מיכל כהן', role: 'reporter' },
+            { username: 'ron_reporter', password: hashedPassword, fullName: 'רון אברהמי', role: 'reporter' },
+            { username: 'noa_reporter', password: hashedPassword, fullName: 'נועה ברקוביץ', role: 'reporter' }
+        ];
 
-    // נשתמש ב-insertMany כדי לא להפעיל שוב pre-save hook של hashing
-    const createdUsers = await User.insertMany(usersData);
-    const editors = createdUsers.filter(u => u.role === 'editor');
-    const reporters = createdUsers.filter(u => u.role === 'reporter');
+        // נשתמש ב-insertMany כדי לא להפעיל שוב pre-save hook של hashing
+        const createdUsers = await User.insertMany(usersData);
+        const editors = createdUsers.filter(u => u.role === 'editor');
+        const reporters = createdUsers.filter(u => u.role === 'reporter');
 
-    console.log(`נוצרו ${createdUsers.length} משתמשים בהצלחה.`);
+        console.log(`נוצרו ${createdUsers.length} משתמשים בהצלחה.`);
 
-    // 3. יצירת 500+ כתבות במצבים ובקטגוריות שונות
-    console.log('יוצר 500+ כתבות במגוון קטגוריות וסטטוסים...');
-    const articlesToInsert = [];
-    const now = Date.now();
-    const oneDayMs = 24 * 60 * 60 * 1000;
+        // 3. יצירת 500+ כתבות במצבים ובקטגוריות שונות
+        console.log('יוצר 500+ כתבות במגוון קטגוריות וסטטוסים...');
+        const articlesToInsert = [];
+        const now = Date.now();
+        const oneDayMs = 24 * 60 * 60 * 1000;
 
-    const totalArticlesCount = 520; // מעל 500 כנדרש במפרט
+        const totalArticlesCount = 520; // מעל 500 כנדרש במפרט
 
-    // חלוקת סטטוסים לפי דרישות הפרויקט:
-    // ~370 פורסמו (מתוכן מספר כתבות שעברו כמה עדכונים)
-    // ~60 בהכנה (טיוטות)
-    // ~50 ממתינות לאישור עורך
-    // ~40 הוחזרו לתיקונים עם הערות עורך
+        // חלוקת סטטוסים לפי דרישות הפרויקט:
+        // ~370 פורסמו (מתוכן מספר כתבות שעברו כמה עדכונים)
+        // ~60 בהכנה (טיוטות)
+        // ~50 ממתינות לאישור עורך
+        // ~40 הוחזרו לתיקונים עם הערות עורך
 
-    for (let i = 1; i <= totalArticlesCount; i++) {
-        const categoryKeys = Object.keys(categoryTemplates);
-        const category = categoryKeys[i % categoryKeys.length];
-        const templates = categoryTemplates[category];
-        const baseTitle = templates[i % templates.length];
-        const author = reporters[i % reporters.length];
+        for (let i = 1; i <= totalArticlesCount; i++) {
+            const categoryKeys = Object.keys(categoryTemplates);
+            const category = categoryKeys[i % categoryKeys.length];
+            const templates = categoryTemplates[category];
+            const baseTitle = templates[i % templates.length];
+            const author = reporters[i % reporters.length];
 
-        const title = `${baseTitle} (מהדורה #${i})`;
-        const summary = `תקציר מקיף ומפורט עבור כתבה מספר ${i} בתחום ה-${category}. דיווח שוטף ועדכני מאת כתבי The Daily Web.`;
-        const content = `
-            <p>דיווח מיוחד: כתבה מספר ${i} עוסקת בנושא <strong>${title}</strong>.</p>
-            <p>האירועים האחרונים מעידים על תפנית משמעותית בתחום, וגורמים בכירים מוסרים כי נרשמת התעניינות רבה מצד גורמים בארץ ובעולם.</p>
-            <p>לדברי מומחים ומובילי דעה, המגמה הנוכחית עשויה להשפיע על המערכת כולה לאורך זמן. כתבי מערכת The Daily Web ימשיכו לעקוב ולדווח מקרוב.</p>
-        `;
-        const mainImage = dummyImages[i % dummyImages.length];
+            const title = `${baseTitle} (מהדורה #${i})`;
+            const summary = `תקציר מקיף ומפורט עבור כתבה מספר ${i} בתחום ה-${category}. דיווח שוטף ועדכני מאת כתבי The Daily Web.`;
+            const content = `
+                <p class="lead fw-bold mb-4" style="font-size: 1.25rem; line-height: 1.7; color: #1e293b;">
+                    ${summary}
+                </p>
+                <p style="margin-bottom: 1.4rem; font-size: 1.15rem; line-height: 1.8;">
+                    דיווח מיוחד: בהתפתחות משמעותית בתחום ה-${category}, גורמים בכירים מוסרים כי נרשמת התעניינות רבה מצד גורמים בארץ ובעולם סביב <strong>${title}</strong>. המהלך מסמן נקודת מפנה ומציב רף חדש של פעילות בענף.
+                </p>
+                <h3 class="fw-bold my-4" style="color: #0f172a; font-size: 1.4rem; border-right: 4px solid #dc2626; padding-right: 12px;">
+                    רקע והשתלשלות האירועים
+                </h3>
+                <p style="margin-bottom: 1.4rem; font-size: 1.15rem; line-height: 1.8;">
+                    במהלך השבועות האחרונים התקיימו מגעים קדחתניים ופגישות עבודה אינטנסיביות במטרה לגבש את המתווה הנוכחי. מומחים ומובילי דעה מעריכים כי המגמה הנוכחית עשויה להשפיע על המערכת כולה לאורך זמן, כאשר ההשפעות כבר מורגשות היטב בשטח.
+                </p>
+                <blockquote class="p-3 my-4 bg-light rounded-2 border-end border-3 border-danger" style="font-style: italic; font-size: 1.15rem; color: #334155;">
+                    ״אנו עדים לשינוי תפיסתי עמוק שמחייב היערכות מחודשת מכלל הגורמים הפועלים בזירה״, הדגיש גורם מקצועי המעורה בפרטים.
+                </blockquote>
+                <h3 class="fw-bold my-4" style="color: #0f172a; font-size: 1.4rem; border-right: 4px solid #2563eb; padding-right: 12px;">
+                    משמעויות והשלכות לעתיד
+                </h3>
+                <p style="margin-bottom: 1.4rem; font-size: 1.15rem; line-height: 1.8;">
+                    במבט קדימה, הציפיות הן להמשך התרחבות והעמקת הפעילות בחודשים הקרובים. כתבי מערכת The Daily Web ימשיכו לעקוב מקרוב אחר ההתפתחויות ויביאו דיווחים שוטפים ככל שיידרש.
+                </p>
+            `;
+            const mainImage = dummyImages[i % dummyImages.length];
 
-        let status = ARTICLE_STATUS.PUBLISHED;
-        let publishedAt = null;
-        let editorFeedback = null;
-        let revisionsHistory = [];
+            let status = ARTICLE_STATUS.PUBLISHED;
+            let publishedAt = null;
+            let editorFeedback = null;
+            let revisionsHistory = [];
 
-        if (i <= 60) {
-            // טיוטה בהכנה
-            status = ARTICLE_STATUS.DRAFT;
-        } else if (i <= 110) {
-            // ממתינה לאישור עורך
-            status = ARTICLE_STATUS.PENDING_APPROVAL;
-        } else if (i <= 150) {
-            // הוחזרה לתיקונים
-            status = ARTICLE_STATUS.REVISION_REQUESTED;
-            const feedbacks = [
-                'נא להוסיף מקורות נתונים מוסמכים עבור פסקת הפתיחה',
-                'יש לצרף ציטוט ישיר מפי המרואיין הראשי',
-                'הכותרת אינה תואמת את רוח הידיעה, נא לדייק את הניסוח',
-                'נא לערוך הגהה לשונית לפסקה האחרונה'
-            ];
-            editorFeedback = feedbacks[i % feedbacks.length];
-        } else {
-            // כתבה שפורסמה
-            status = ARTICLE_STATUS.PUBLISHED;
-            // תאריך פרסום בין 1 ל-14 ימים אחורה
-            const daysAgo = (i % 14) + 1;
-            publishedAt = new Date(now - daysAgo * oneDayMs);
+            if (i <= 60) {
+                // טיוטה בהכנה
+                status = ARTICLE_STATUS.DRAFT;
+            } else if (i <= 110) {
+                // ממתינה לאישור עורך
+                status = ARTICLE_STATUS.PENDING_APPROVAL;
+            } else if (i <= 150) {
+                // הוחזרה לתיקונים
+                status = ARTICLE_STATUS.REVISION_REQUESTED;
+                const feedbacks = [
+                    'נא להוסיף מקורות נתונים מוסמכים עבור פסקת הפתיחה',
+                    'יש לצרף ציטוט ישיר מפי המרואיין הראשי',
+                    'הכותרת אינה תואמת את רוח הידיעה, נא לדייק את הניסוח',
+                    'נא לערוך הגהה לשונית לפסקה האחרונה'
+                ];
+                editorFeedback = feedbacks[i % feedbacks.length];
+            } else {
+                // כתבה שפורסמה
+                status = ARTICLE_STATUS.PUBLISHED;
+                // תאריך פרסום בין 1 ל-14 ימים אחורה
+                const daysAgo = (i % 14) + 1;
+                publishedAt = new Date(now - daysAgo * oneDayMs);
 
-            // עבור 25 כתבות ראשונות שפורסמו - יצירת היסטוריית עדכונים מרובה עבור גרף Impact Analytics!
-            if (i >= 151 && i <= 175) {
-                const editorUser = editors[i % editors.length];
-                const firstPublishDate = new Date(now - 7 * oneDayMs);
-                publishedAt = firstPublishDate;
+                // עבור 25 כתבות ראשונות שפורסמו - יצירת היסטוריית עדכונים מרובה עבור גרף Impact Analytics!
+                if (i >= 151 && i <= 175) {
+                    const editorUser = editors[i % editors.length];
+                    const firstPublishDate = new Date(now - 7 * oneDayMs);
+                    publishedAt = firstPublishDate;
 
-                // עדכון גרסה 1: יומיים לאחר הפרסום
-                const updateDate1 = new Date(firstPublishDate.getTime() + 2 * oneDayMs);
-                revisionsHistory.push({
-                    approvedAt: updateDate1,
-                    approvedBy: editorUser._id,
-                    changesSummary: 'עדכון ראשוני עם נתוני שטח והצהרות רשמיות'
-                });
+                    // עדכון גרסה 1: יומיים לאחר הפרסום
+                    const updateDate1 = new Date(firstPublishDate.getTime() + 2 * oneDayMs);
+                    revisionsHistory.push({
+                        approvedAt: updateDate1,
+                        approvedBy: editorUser._id,
+                        changesSummary: 'עדכון ראשוני עם נתוני שטח והצהרות רשמיות'
+                    });
 
-                // עדכון גרסה 2: ארבעה ימים לאחר הפרסום
-                const updateDate2 = new Date(firstPublishDate.getTime() + 4 * oneDayMs);
-                revisionsHistory.push({
-                    approvedAt: updateDate2,
-                    approvedBy: editors[(i + 1) % editors.length]._id,
-                    changesSummary: 'הוספת תיעוד מצולם וראיון בלעדי עם מומחה בכיר'
-                });
+                    // עדכון גרסה 2: ארבעה ימים לאחר הפרסום
+                    const updateDate2 = new Date(firstPublishDate.getTime() + 4 * oneDayMs);
+                    revisionsHistory.push({
+                        approvedAt: updateDate2,
+                        approvedBy: editors[(i + 1) % editors.length]._id,
+                        changesSummary: 'הוספת תיעוד מצולם וראיון בלעדי עם מומחה בכיר'
+                    });
+                }
             }
-        }
 
-        articlesToInsert.push({
-            title,
-            summary,
-            content,
-            category,
-            mainImage,
-            author: author._id,
-            status,
-            editorFeedback,
-            publishedAt,
-            revisionsHistory,
-            createdAt: publishedAt || new Date(now - (i % 10) * oneDayMs),
-            updatedAt: new Date()
-        });
-    }
+            articlesToInsert.push({
+                title,
+                summary,
+                content,
+                category,
+                mainImage,
+                author: author._id,
+                status,
+                editorFeedback,
+                publishedAt,
+                revisionsHistory,
+                createdAt: publishedAt || new Date(now - (i % 10) * oneDayMs),
+                updatedAt: new Date()
+            });
+        }
 
     const insertedArticles = await Article.insertMany(articlesToInsert);
     console.log(`נוצרו ${insertedArticles.length} כתבות במסד הנתונים.`);
@@ -389,7 +431,10 @@ if (require.main === module) {
     seedDatabase()
         .then(() => mongoose.disconnect())
         .catch(async (err) => {
-            console.error('Fatal error during seeding:', err.message);
+            console.error('\n❌ שגיאה בהזנת הנתונים (Seeding Error):', err.message);
+            console.error('💡 ודא שמסד הנתונים MongoDB פועל כהלכה:');
+            console.error('   • הפעלת קונטיינר דרך Docker: docker compose up -d mongodb');
+            console.error('   • או ודא ששירות MongoDB מקומי פעיל, או עדכן את MONGODB_URI בקובץ .env');
             await mongoose.disconnect();
             process.exit(1);
         });
