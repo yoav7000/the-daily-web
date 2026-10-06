@@ -1,6 +1,6 @@
 const Article = require('../models/Article');
 const ViewStat = require('../models/ViewStat');
-const { ARTICLE_STATUS, ARTICLE_CATEGORIES } = require('../constants/articleConstants');
+const { ARTICLE_STATUS, ARTICLE_CATEGORIES, DEFAULT_ARTICLE_IMAGE } = require('../constants/articleConstants');
 const { logOperation } = require('../middleware/requestLogger');
 const { recordViewInternal } = require('./analyticsController');
 const { parsePagination, buildPagination } = require('../utils/pagination');
@@ -61,7 +61,7 @@ const createArticle = async (req, res, next) => {
             summary: cleanText(summary),
             content: sanitizeHtml(content),
             category,
-            mainImage: mainImage || '/images/default-article.jpg',
+            mainImage: mainImage || DEFAULT_ARTICLE_IMAGE,
             author: req.user._id,
             status: ARTICLE_STATUS.DRAFT
         });
@@ -113,7 +113,7 @@ const autoSaveArticle = async (req, res, next) => {
                 summary: cleanText(summary),
                 content: sanitizeHtml(content),
                 category: category && ARTICLE_CATEGORIES.includes(category) ? category : ARTICLE_CATEGORIES[0],
-                mainImage: mainImage || '/images/default-article.jpg',
+                mainImage: mainImage || DEFAULT_ARTICLE_IMAGE,
                 author: req.user._id,
                 status: ARTICLE_STATUS.DRAFT
             });
