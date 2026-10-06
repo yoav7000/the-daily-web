@@ -35,6 +35,9 @@ const register = async (req, res, next) => {
         await user.save();
 
         const token = generateToken(user);
+        if (req.session) {
+            req.session.userId = user._id.toString();
+        }
 
         logOperation('USER_REGISTERED', {
             userId: user._id,
@@ -89,7 +92,17 @@ const login = async (req, res, next) => {
             });
         }
 
+        if (!user.isActive) {
+            return res.status(401).json({
+                success: false,
+                message: 'המשתמש אינו פעיל'
+            });
+        }
+
         const token = generateToken(user);
+        if (req.session) {
+            req.session.userId = user._id.toString();
+        }
 
         logOperation('USER_LOGGED_IN', {
             userId: user._id,
@@ -114,6 +127,29 @@ const login = async (req, res, next) => {
 };
 
 /**
+ * Logout - destroys the server session
+ * POST /api/auth/logout
+ */
+const logout = (req, res, next) => {
+    const finish = () => {
+        res.clearCookie('daily.sid');
+        return res.status(200).json({ success: true, message: 'התנתקת בהצלחה' });
+    };
+
+    if (!req.session) {
+        return finish();
+    }
+
+    logOperation('USER_LOGGED_OUT', { userId: req.session.userId });
+    req.session.destroy((err) => {
+        if (err) {
+            return next(err);
+        }
+        finish();
+    });
+};
+
+/**
  * Get current authenticated user profile
  * GET /api/auth/me
  */
@@ -127,5 +163,6 @@ const getMe = async (req, res) => {
 module.exports = {
     register,
     login,
+    logout,
     getMe
 };
