@@ -22,7 +22,7 @@ router.get('/comments/:id', commentController.getCommentById);
 // ==========================================
 
 // קבלת כלל התגובות במערכת עם תמיכה בחיפוש
-router.get('/comments', commentController.getAllComments);
+router.get('/comments', authenticate, requireEditor, commentController.getAllComments);
 
 // עדכון תוכן תגובה (CRUD - Update)
 router.put('/comments/:id', authenticate, requireEditor, commentController.updateComment);
