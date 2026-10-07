@@ -1,7 +1,9 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'daily_web_jwt_secret_default_2026';
+const { getSecret } = require('../config/secrets');
+
+const JWT_SECRET = getSecret('JWT_SECRET');
 
 /**
  * Generate a signed JWT token
@@ -92,8 +94,7 @@ const authenticate = async (req, res, next) => {
         }
         return res.status(401).json({
             success: false,
-            message: 'פג תוקף החיבור או שהטוקן אינו תקין',
-            error: error.message
+            message: 'פג תוקף החיבור או שהטוקן אינו תקין'
         });
     }
 };

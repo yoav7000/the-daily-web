@@ -1,16 +1,11 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const mongoose = require('mongoose');
-const dotenv = require('dotenv');
 const http = require('http');
-
-dotenv.config();
 
 const app = require('../src/app');
 const Article = require('../src/models/Article');
 const User = require('../src/models/User');
-
-const MONGO_URI = process.env.MONGODB_URI_API || 'mongodb://127.0.0.1:27017/the-daily-web-test-api';
+const { connectTestDb, disconnectTestDb, createEditor } = require('./helpers/testEnv');
 
 let server;
 let baseUrl;
@@ -57,16 +52,8 @@ const request = (method, path, body = null, headers = {}) => {
     });
 };
 
-let mongod;
-
 test.before(async () => {
-    try {
-        await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 1500 });
-    } catch (err) {
-        const { MongoMemoryServer } = require('mongodb-memory-server');
-        mongod = await MongoMemoryServer.create();
-        await mongoose.connect(mongod.getUri());
-    }
+    await connectTestDb();
     await Article.deleteMany({});
     await User.deleteMany({});
 
@@ -82,11 +69,8 @@ test.before(async () => {
 test.after(async () => {
     await Article.deleteMany({});
     await User.deleteMany({});
-    await mongoose.connection.close();
-    if (mongod) {
-        await mongod.stop();
-    }
     await new Promise(resolve => server.close(resolve));
+    await disconnectTestDb();
 });
 
 test('Complete Article RESTful API Flow', async (t) => {
@@ -105,14 +89,8 @@ test('Complete Article RESTful API Flow', async (t) => {
         reporterToken = resRep.body.token;
         assert.ok(reporterToken);
 
-        const resEd = await request('POST', '/api/auth/register', {
-            username: 'editor1',
-            password: 'password123',
-            fullName: 'רונית העורכת',
-            role: 'editor'
-        });
-        assert.equal(resEd.status, 201);
-        editorToken = resEd.body.token;
+        const editor = await createEditor('editor1', 'רונית העורכת');
+        editorToken = editor.token;
         assert.ok(editorToken);
     });
 
