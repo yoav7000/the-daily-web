@@ -1,6 +1,7 @@
 const session = require('express-session');
 const MongoStore = require('connect-mongo');
 const mongoose = require('mongoose');
+const { getSecret } = require('./secrets');
 
 const SESSION_MAX_AGE_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
@@ -9,7 +10,7 @@ let handler = null;
 const buildHandler = () => {
     const options = {
         name: 'daily.sid',
-        secret: process.env.SESSION_SECRET || 'daily_web_session_secret_default_2026',
+        secret: getSecret('SESSION_SECRET'),
         resave: false,
         saveUninitialized: false,
         cookie: {
