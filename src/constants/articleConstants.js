@@ -28,8 +28,12 @@ const ARTICLE_CATEGORIES = [
     'דעות'
 ];
 
+// Shown when a reporter does not pick a main image
+const DEFAULT_ARTICLE_IMAGE = '/images/default-article.svg';
+
 module.exports = {
     ARTICLE_STATUS,
     ARTICLE_STATUS_LABELS_HE,
-    ARTICLE_CATEGORIES
+    ARTICLE_CATEGORIES,
+    DEFAULT_ARTICLE_IMAGE
 };

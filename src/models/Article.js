@@ -1,5 +1,5 @@
 const mongoose = require('mongoose');
-const { ARTICLE_STATUS, ARTICLE_CATEGORIES } = require('../constants/articleConstants');
+const { ARTICLE_STATUS, ARTICLE_CATEGORIES, DEFAULT_ARTICLE_IMAGE } = require('../constants/articleConstants');
 
 /**
  * Draft subdocument schema for editing published articles
@@ -94,7 +94,7 @@ const articleSchema = new mongoose.Schema({
     mainImage: {
         type: String,
         trim: true,
-        default: '/images/default-article.jpg'
+        default: DEFAULT_ARTICLE_IMAGE
     },
     author: {
         type: mongoose.Schema.Types.ObjectId,
