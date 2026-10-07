@@ -111,7 +111,6 @@ the-daily-web/
 
 ---
 
-<<<<<<< HEAD
 ## 📊 Core Features & Business Logic: Comments, Anti-Spam, Analytics & Seeder
 
 1. **Comments Model & Real-Time AJAX Submission:**
@@ -173,15 +172,3 @@ the-daily-web/
    - Click the *"בצע בדיקת הצפת ספאם"* button: show that 3 comments pass and the 4th is immediately blocked with HTTP 429 and a countdown timer.
 7. **Demonstrate Server Restart Resilience:**
    - Stop the server (`Ctrl+C`), start it again (`npm start`), and show that the spam block remains active!
-
----
-
-## 🎓 Demo Guide
-
-1. `npm run seed`, then `npm start`.
-2. Home page (`/`): scroll for infinite loading, try the search, category filter, and popularity sort.
-3. Log in at `/login.html` as `dan_reporter` (reporter dashboard) and `sarah_editor` (editor dashboard). Create an article, watch the auto-save indicator, and submit it for approval.
-4. As the editor, review the submission, return it with notes, then approve it. Edit a published article and use the diff view.
-5. Open `/analytics.html` and select the showcase article (*"…(מהדורה #151)"*) to see the views surge after each update.
-6. Post comments without reloading the page. The 4th comment within a minute is blocked with a countdown.
-7. Stop the server (`Ctrl+C`) and start it again. You stay logged in and the spam block is still active.
