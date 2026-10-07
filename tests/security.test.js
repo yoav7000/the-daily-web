@@ -65,18 +65,18 @@ test('Public sign-up can never create an editor', async () => {
 });
 
 test('Only an editor can create accounts with a role', async () => {
-    const asReporter = await api('POST', '/api/auth/users', {
+    const asReporter = await api('POST', '/api/users', {
         token: reporterToken,
         body: { username: 'x1', password: 'password123', fullName: 'X', role: 'editor' }
     });
     assert.equal(asReporter.status, 403);
 
-    const asGuest = await api('POST', '/api/auth/users', {
+    const asGuest = await api('POST', '/api/users', {
         body: { username: 'x2', password: 'password123', fullName: 'X', role: 'editor' }
     });
     assert.equal(asGuest.status, 401);
 
-    const asEditor = await api('POST', '/api/auth/users', {
+    const asEditor = await api('POST', '/api/users', {
         token: editorToken,
         body: { username: 'new_editor', password: 'password123', fullName: 'New Editor', role: 'editor' }
     });

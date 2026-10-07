@@ -65,9 +65,6 @@ userSchema.methods.toJSON = function () {
     return userObj;
 };
 
-// Text index for search
-userSchema.index({ username: 'text', fullName: 'text' });
-
 const User = mongoose.model('User', userSchema);
 
 module.exports = User;
