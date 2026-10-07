@@ -138,6 +138,17 @@ async function seed() {
         { title: 'ראיון בלעדי עם הזוכה בפרס ישראל', summary: 'פרופסור מאוניברסיטת תל אביב מספר על הדרך להישג', category: 'דעות' },
     ];
 
+    const categoryImages = {
+        'פוליטיקה': 'https://images.unsplash.com/photo-1540910419892-4a36d2c3266c?auto=format&fit=crop&w=800&q=80',
+        'טכנולוגיה': 'https://images.unsplash.com/photo-1518770660439-4636190af475?auto=format&fit=crop&w=800&q=80',
+        'כלכלה': 'https://images.unsplash.com/photo-1611974789855-9c2a0a7236a3?auto=format&fit=crop&w=800&q=80',
+        'ספורט': 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?auto=format&fit=crop&w=800&q=80',
+        'בריאות': 'https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?auto=format&fit=crop&w=800&q=80',
+        'חדשות': 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=800&q=80',
+        'דעות': 'https://images.unsplash.com/photo-1455390582262-044cdead277a?auto=format&fit=crop&w=800&q=80',
+        'תרבות': 'https://images.unsplash.com/photo-1460661419201-fd4cecdf8a8b?auto=format&fit=crop&w=800&q=80'
+    };
+
     console.log(`Seeding ${articles.length} articles...`);
 
     for (let i = 0; i < articles.length; i++) {
@@ -153,6 +164,7 @@ async function seed() {
             summary: a.summary,
             content: `<p>${a.summary}</p><p>זהו תוכן מלא של כתבה לצורך בדיקות. הכתבה עוסקת ב${a.category} ומציגה נקודות מבט שונות בנושא.</p><p>פסקה נוספת עם פרטים ומידע רלוונטי לקוראים.</p>`,
             category: a.category,
+            mainImage: categoryImages[a.category] || '/images/default-article.jpg',
             status: 'published',
             publishedAt: publishDate,
             author: author._id
