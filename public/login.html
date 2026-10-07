@@ -33,7 +33,7 @@
 
         body {
             font-family: var(--font-sans);
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            background-color: var(--news-bg-subtle);
             color: var(--news-ink);
             min-height: 100vh;
             display: flex;
@@ -44,31 +44,96 @@
         .font-editorial { font-family: var(--font-editorial); }
         .font-num { font-family: var(--font-num); }
 
+        /* 1. Top Utility Header */
+        .top-utility-bar {
+            background-color: #fafafa;
+            border-bottom: 1px solid var(--news-border);
+            font-size: 0.84rem;
+            color: var(--news-muted);
+        }
+
+        /* 2. Main Newspaper Masthead */
+        .newspaper-masthead {
+            text-align: center;
+            padding: 24px 0 16px;
+            background-color: #ffffff;
+            border-bottom: 3px double var(--news-dark);
+        }
+
+        .masthead-title {
+            font-family: var(--font-editorial);
+            font-size: 3.2rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            color: var(--news-dark);
+            text-decoration: none;
+            display: inline-block;
+            line-height: 1;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .masthead-tagline {
+            font-size: 0.92rem;
+            color: var(--news-muted);
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        /* 3. Category & Navigation Bar */
+        .category-nav-bar {
+            background-color: #ffffff;
+            border-bottom: 1px solid var(--news-border);
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+
+        .category-link {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--news-ink);
+            padding: 12px 14px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.15s, border-color 0.15s;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+        }
+
+        .category-link:hover, .category-link.active {
+            color: var(--news-red);
+            border-bottom-color: var(--news-red);
+        }
+
         .auth-container {
-            max-width: 480px;
+            max-width: 520px;
             width: 100%;
-            margin: auto;
-            padding: 20px;
+            margin: 40px auto;
+            padding: 0 20px;
         }
 
         .auth-card {
             background: #ffffff;
-            border-radius: 16px;
-            box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.3), 0 8px 10px -6px rgb(0 0 0 / 0.3);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);
+            border: 1px solid var(--news-border);
             overflow: hidden;
         }
 
         .auth-header {
             background: #ffffff;
-            padding: 28px 24px 20px;
+            padding: 24px 24px 18px;
             text-align: center;
             border-bottom: 1px solid var(--news-border);
         }
 
         .auth-brand {
             font-family: var(--font-editorial);
-            font-size: 2.2rem;
+            font-size: 1.8rem;
             font-weight: 900;
             color: var(--news-dark);
             text-decoration: none;
@@ -78,7 +143,7 @@
 
         .auth-subtitle {
             color: var(--news-muted);
-            font-size: 0.92rem;
+            font-size: 0.9rem;
             margin-top: 4px;
         }
 
@@ -92,25 +157,24 @@
         }
 
         .form-control:focus {
-            border-color: var(--news-blue);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+            border-color: var(--news-dark);
+            box-shadow: 0 0 0 2px rgba(17, 24, 39, 0.12);
         }
 
         .btn-submit {
-            background: linear-gradient(135deg, #1d4ed8, #2563eb);
-            border: none;
+            background-color: var(--news-dark);
+            border: 1px solid var(--news-dark);
             color: #ffffff;
             font-weight: 700;
             padding: 12px;
-            border-radius: 8px;
-            font-size: 1.05rem;
-            transition: transform 0.15s, box-shadow 0.15s;
+            border-radius: 6px;
+            font-size: 1rem;
+            transition: background-color 0.15s, border-color 0.15s;
         }
 
         .btn-submit:hover {
-            background: linear-gradient(135deg, #1e40af, #1d4ed8);
-            transform: translateY(-1px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+            background-color: #000000;
+            border-color: #000000;
             color: #ffffff;
         }
 
@@ -123,26 +187,72 @@
         }
 
         .nav-tabs .nav-link.active {
-            color: var(--news-blue);
-            border-bottom: 2px solid var(--news-blue);
+            color: var(--news-dark);
+            border-bottom: 2px solid var(--news-dark);
             background: transparent;
+        }
+
+        .footer-newspaper {
+            background-color: #121212;
+            color: #d1d5db;
+            padding: 40px 0 20px;
+            margin-top: auto;
+            border-top: 3px double #374151;
         }
     </style>
 </head>
 <body>
 
-    <div class="auth-container">
-        <!-- Top Back Link -->
-        <div class="text-center mb-3">
-            <a href="/" class="text-light text-decoration-none opacity-75 hover-opacity-100 d-inline-flex align-items-center gap-1">
-                <i class="bi bi-arrow-right"></i> חזרה לעמוד הבית של The Daily Web
-            </a>
+    <!-- 1. Top Utility Header -->
+    <div class="top-utility-bar py-1">
+        <div class="container-fluid px-lg-5 d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-3">
+                <span id="currentDateDisplay" class="fw-semibold">
+                    טוען תאריך עדכני...
+                </span>
+                <span class="text-muted d-none d-md-inline">|</span>
+                <span id="topWeatherSnippet" class="d-none d-md-inline-flex align-items-center gap-1">
+                    <i class="bi bi-cloud-sun text-warning"></i> תל אביב: <strong class="font-num">27°C</strong>
+                </span>
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <a href="/" class="text-decoration-none text-dark fw-semibold small">
+                    <i class="bi bi-house-door me-1"></i> חזרה לשער העיתון הראשי
+                </a>
+            </div>
         </div>
+    </div>
 
+    <!-- 2. Master Newspaper Masthead -->
+    <header class="newspaper-masthead">
+        <div class="container text-center">
+            <a href="/" class="masthead-title">The Daily Web</a>
+            <div class="masthead-tagline">
+                פורטל הזדהות ורישום • כניסה מאובטחת לכתבים, עורכים וצוות המערכת
+            </div>
+        </div>
+    </header>
+
+    <!-- 3. Navigation Bar -->
+    <nav class="category-nav-bar">
+        <div class="container-fluid px-lg-5 d-flex justify-content-between align-items-center">
+            <div class="d-flex align-items-center gap-2">
+                <a href="/" class="category-link">
+                    <i class="bi bi-arrow-right"></i> שער העיתון
+                </a>
+            </div>
+            <div class="category-link active text-danger fw-bold">
+                <i class="bi bi-person-lock me-1"></i> כניסת עובדים (התחברות)
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Auth Card Container -->
+    <main class="auth-container flex-grow-1">
         <div class="auth-card">
             <div class="auth-header">
-                <a href="/" class="auth-brand">The Daily Web</a>
-                <div class="auth-subtitle">פורטל ניהול, כתיבה ועריכה למערכת העיתון</div>
+                <div class="auth-brand">The Daily Web</div>
+                <div class="auth-subtitle">הזן פרטי עובד לכניסה למערכת. הגישה לסביבות העבודה מותנית בהתחברות בלבד.</div>
             </div>
 
             <!-- Tab Navigation (Login vs Register) -->
@@ -196,6 +306,22 @@
                             </button>
                         </form>
 
+                        <!-- Quick Demo Fillers for Live Presentation -->
+                        <div class="mt-4 pt-3 border-top">
+                            <div class="text-muted small fw-semibold mb-2 text-center">התחברות מהירה למשתמשי הדגמה (Seeded):</div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-outline-primary btn-sm w-100 py-2 fw-semibold" onclick="fillDemoLogin('dan_reporter', 'password123')">
+                                        <i class="bi bi-pencil-square d-block fs-6 mb-1"></i> כתב: דן שטרן
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-outline-success btn-sm w-100 py-2 fw-semibold" onclick="fillDemoLogin('sarah_editor', 'password123')">
+                                        <i class="bi bi-shield-check d-block fs-6 mb-1"></i> עורכת: שרה לוי
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- 2. REGISTER PANEL -->
@@ -226,19 +352,52 @@
                 </div>
             </div>
         </div>
+    </main>
 
-        <div class="text-center mt-3 text-light opacity-50 small font-num">
-            The Daily Web System &copy; 2026
+    <!-- Unified Footer -->
+    <footer class="footer-newspaper">
+        <div class="container-fluid px-lg-5">
+            <div class="row g-4 pb-4 border-bottom border-secondary mb-4">
+                <div class="col-lg-6">
+                    <h4 class="font-editorial text-white fw-bold h4 mb-2">The Daily Web</h4>
+                    <p class="text-secondary small mb-3">
+                        עיתון החדשות והתוכן הדיגיטלי המוביל בישראל. שער הזדהות מאובטח לעורכים וכתבים.
+                    </p>
+                    <div class="badge bg-dark border border-secondary text-light py-2 px-3 small font-num">
+                        <i class="bi bi-shield-lock text-success me-1"></i> Staff Authentication Gateway
+                    </div>
+                </div>
+                <div class="col-lg-6 text-lg-end">
+                    <a href="/" class="btn btn-outline-light btn-sm px-3">
+                        <i class="bi bi-house me-1"></i> חזרה לשער העיתון הראשי
+                    </a>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 text-secondary small">
+                <div>&copy; 2026 The Daily Web. כל הזכויות שמורות.</div>
+                <div class="font-num">Advanced Web Applications Project</div>
+            </div>
         </div>
-    </div>
+    </footer>
 
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
     <script src="/js/common.js"></script>
 
     <script>
+        function redirectAfterLogin(user) {
+            const urlParams = new URLSearchParams(window.location.search);
+            const redirectUrl = urlParams.get('redirect');
+            if (redirectUrl) {
+                window.location.href = redirectUrl;
+                return;
+            }
+            window.location.href = '/portal.html';
+        }
+
         // Check if user is already logged in
         document.addEventListener('DOMContentLoaded', async () => {
+            updateDateDisplay();
             const token = localStorage.getItem('token');
             if (token) {
                 try {
@@ -248,8 +407,10 @@
                     if (res.ok) {
                         const data = await res.json();
                         if (data.user) {
-                            redirectByRole(data.user.role);
+                            redirectAfterLogin(data.user);
                         }
+                    } else {
+                        clearLocalLogin();
                     }
                 } catch (e) {
                     console.log('Session check skipped');
@@ -270,22 +431,16 @@
             alertEl.innerHTML = '';
         }
 
-        function redirectByRole(role) {
-            if (role === 'editor') {
-                window.location.href = '/editor.html';
-            } else {
-                window.location.href = '/reporter.html';
-            }
-        }
-
         // Toggle Password Visibility
         const toggleLoginPassword = document.getElementById('toggleLoginPassword');
         const loginPasswordInput = document.getElementById('loginPassword');
-        toggleLoginPassword.addEventListener('click', () => {
-            const type = loginPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-            loginPasswordInput.setAttribute('type', type);
-            toggleLoginPassword.innerHTML = type === 'password' ? '<i class="bi bi-eye"></i>' : '<i class="bi bi-eye-slash"></i>';
-        });
+        if (toggleLoginPassword && loginPasswordInput) {
+            toggleLoginPassword.addEventListener('click', () => {
+                const type = loginPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+                loginPasswordInput.setAttribute('type', type);
+                toggleLoginPassword.innerHTML = type === 'password' ? '<i class="bi bi-eye"></i>' : '<i class="bi bi-eye-slash"></i>';
+            });
+        }
 
         // Handle Login Submission
         document.getElementById('loginForm').addEventListener('submit', async (e) => {
@@ -316,9 +471,9 @@
                 if (res.ok && data.success) {
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
-                    showAlert('התחברת בהצלחה! מעביר אותך לאזור העבודה...', 'success');
+                    showAlert('התחברת בהצלחה! מעביר אותך...', 'success');
                     setTimeout(() => {
-                        redirectByRole(data.user.role);
+                        redirectAfterLogin(data.user);
                     }, 500);
                 } else {
                     showAlert(data.message || 'שם משתמש או סיסמה שגויים');
@@ -368,7 +523,7 @@
                     localStorage.setItem('user', JSON.stringify(data.user));
                     showAlert('החשבון נוצר בהצלחה! מעביר אותך...', 'success');
                     setTimeout(() => {
-                        redirectByRole(data.user.role);
+                        redirectAfterLogin(data.user);
                     }, 600);
                 } else {
                     showAlert(data.message || 'שגיאה ביצירת החשבון');
@@ -380,6 +535,38 @@
                 submitBtn.innerHTML = '<span>צור חשבון והתחבר</span> <i class="bi bi-check-circle"></i>';
             }
         });
+
+        // Fill credentials for demo users and trigger login
+        function fillDemoLogin(username, password) {
+            document.getElementById('loginUsername').value = username;
+            document.getElementById('loginPassword').value = password;
+            document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+        }
+
+        // Dynamic Date Calculation
+        function updateDateDisplay() {
+            try {
+                const now = new Date();
+                const gregorianFormatter = new Intl.DateTimeFormat('he-IL', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                const gregStr = gregorianFormatter.format(now);
+                let hebrewStr = '';
+                try {
+                    const hebrewFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                    hebrewStr = hebrewFormatter.format(now);
+                } catch(e) {}
+                const el = document.getElementById('currentDateDisplay');
+                if (el) el.innerText = hebrewStr ? `${gregStr} | ${hebrewStr}` : gregStr;
+            } catch(e) {}
+        }
     </script>
 </body>
 </html>

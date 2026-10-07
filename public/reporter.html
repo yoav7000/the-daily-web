@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Daily Web — סביבת עבודה לכתב</title>
 
+    <script>
+        if (!localStorage.getItem('token')) {
+            window.location.replace('/login.html?redirect=' + encodeURIComponent(window.location.pathname));
+        }
+    </script>
+
     <!-- פונטים של גוגל -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -44,7 +50,80 @@
         .font-editorial { font-family: var(--font-editorial); }
         .font-num { font-family: var(--font-num); }
 
-        /* סרגל עליון */
+        /* 1. Top Utility Header */
+        .top-utility-bar {
+            background-color: #fafafa;
+            border-bottom: 1px solid var(--news-border);
+            font-size: 0.84rem;
+            color: var(--news-muted);
+        }
+
+        /* 2. Main Newspaper Masthead */
+        .newspaper-masthead {
+            text-align: center;
+            padding: 24px 0 16px;
+            background-color: #ffffff;
+            border-bottom: 3px double var(--news-dark);
+        }
+
+        .masthead-title {
+            font-family: var(--font-editorial);
+            font-size: 3.2rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            color: var(--news-dark);
+            text-decoration: none;
+            display: inline-block;
+            line-height: 1;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .masthead-tagline {
+            font-size: 0.92rem;
+            color: var(--news-muted);
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        /* 3. Category & Navigation Bar */
+        .category-nav-bar {
+            background-color: #ffffff;
+            border-bottom: 1px solid var(--news-border);
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+
+        .category-link {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--news-ink);
+            padding: 12px 14px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.15s, border-color 0.15s;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+        }
+
+        .category-link:hover, .category-link.active {
+            color: var(--news-red);
+            border-bottom-color: var(--news-red);
+        }
+
+        .footer-newspaper {
+            background-color: #121212;
+            color: #d1d5db;
+            padding: 40px 0 20px;
+            margin-top: 60px;
+            border-top: 3px double #374151;
+        }
+
+        /* סרגל עליון ישן לגיבוי */
         .workspace-navbar {
             background-color: #ffffff;
             border-bottom: 1px solid var(--news-border);
@@ -221,57 +300,206 @@
             border-radius: 4px;
         }
 
+        /* חלון כתיבת ועריכת כתבה - מותאם למסכים ומודרני */
+        .editor-modal-dialog {
+            max-width: 1040px;
+            margin: 1.25rem auto;
+        }
+
+        .editor-modal-content {
+            border: 1px solid var(--news-border);
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12);
+            overflow: hidden;
+            max-height: 92vh;
+            display: flex;
+            flex-direction: column;
+        }
+
         .editor-modal-header {
             background-color: #ffffff;
             border-bottom: 1px solid var(--news-border);
-            padding: 16px 24px;
+            padding: 14px 22px;
+            flex-shrink: 0;
         }
 
         .editor-modal-body {
             background-color: #f8fafc;
-            padding: 24px;
+            padding: 20px 22px;
+            overflow-y: auto;
+            flex-grow: 1;
         }
 
-        .editor-paper {
+        .editor-canvas-card {
             background: #ffffff;
             border: 1px solid var(--news-border);
-            border-radius: 10px;
-            padding: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            border-radius: 12px;
+            padding: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
         }
 
-        .editor-textarea {
-            font-size: 1.05rem;
-            line-height: 1.7;
-            min-height: 280px;
-            font-family: inherit;
+        .editor-sidebar-card {
+            background: #ffffff;
+            border: 1px solid var(--news-border);
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+            margin-bottom: 16px;
+        }
+
+        .editor-headline-input {
+            font-family: var(--font-editorial);
+            font-size: 1.45rem;
+            font-weight: 800;
+            line-height: 1.3;
+            border: 1px solid var(--news-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--news-dark);
+            background: #ffffff;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .editor-headline-input:focus {
+            border-color: var(--news-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+            outline: none;
+        }
+
+        .editor-lead-input {
+            font-size: 0.98rem;
+            line-height: 1.5;
+            border: 1px solid var(--news-border);
+            border-radius: 8px;
+            padding: 10px 14px;
+            color: var(--news-ink);
+            resize: vertical;
+        }
+
+        .editor-toolbar {
+            background-color: #f1f5f9;
+            border: 1px solid var(--news-border);
+            border-bottom: none;
+            border-radius: 8px 8px 0 0;
+            padding: 6px 10px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            flex-wrap: wrap;
+        }
+
+        .editor-tool-btn {
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            color: #334155;
+            border-radius: 6px;
+            padding: 3px 9px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .editor-tool-btn:hover {
+            background-color: #e2e8f0;
+            color: #0f172a;
+        }
+
+        .editor-content-area {
+            font-family: var(--font-sans);
+            font-size: 1.02rem;
+            line-height: 1.75;
+            min-height: 220px;
+            max-height: 360px;
+            border: 1px solid var(--news-border);
+            border-radius: 0 0 8px 8px;
+            padding: 14px 16px;
+            color: var(--news-dark);
+            resize: vertical;
+        }
+
+        .editor-content-area:focus {
+            border-color: var(--news-blue);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+            outline: none;
+        }
+
+        .preset-badge-btn {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 20px;
+            border: 1px solid #cbd5e1;
+            background: #ffffff;
+            color: #475569;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .preset-badge-btn:hover {
+            background-color: var(--news-blue);
+            border-color: var(--news-blue);
+            color: #ffffff;
+        }
+
+        .preview-img-box {
+            width: 100%;
+            height: 120px;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 1px solid var(--news-border);
+            background-color: #e2e8f0;
+        }
+
+        .preview-img-box img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        @media (max-width: 991.98px) {
+            .editor-modal-dialog {
+                margin: 0.5rem;
+                max-width: 100%;
+            }
+            .editor-modal-body {
+                padding: 14px;
+            }
+            .editor-canvas-card, .editor-sidebar-card {
+                padding: 14px;
+            }
         }
     </style>
 </head>
 <body>
 
-    <!-- סרגל ניווט עליון -->
-    <nav class="workspace-navbar py-2">
-        <div class="container-fluid px-4 d-flex justify-content-between align-items-center">
+    <!-- 1. Top Utility Header -->
+    <div class="top-utility-bar py-1">
+        <div class="container-fluid px-lg-5 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div class="d-flex align-items-center gap-3">
-                <a href="/" class="brand-logo">The Daily Web</a>
+                <span id="currentDateDisplay" class="fw-semibold">
+                    יום רביעי, 7 באוקטובר 2026 | כ"ו בתשרי תשפ"ז
+                </span>
+                <span class="text-muted d-none d-md-inline">|</span>
+                <span id="topWeatherSnippet" class="d-none d-md-inline-flex align-items-center gap-1">
+                    <i class="bi bi-cloud-sun text-warning"></i> תל אביב: <strong class="font-num">27°C</strong>
+                </span>
                 <span class="role-badge-reporter d-flex align-items-center gap-1">
                     <i class="bi bi-pencil-square"></i> אזור עבודה לכתב
                 </span>
             </div>
-
             <div class="d-flex align-items-center gap-3">
-                <a href="/" class="btn btn-sm btn-outline-secondary d-none d-md-inline-flex align-items-center gap-1">
-                    <i class="bi bi-house"></i> מעבר לאתר הראשי
+                <a href="/portal.html" class="btn btn-dark btn-sm py-1 px-3 fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
+                    <i class="bi bi-grid-3x3-gap-fill text-warning"></i> פורטל עובדים
                 </a>
-                <a href="/analytics.html" class="btn btn-sm btn-outline-primary d-none d-md-inline-flex align-items-center gap-1">
-                    <i class="bi bi-graph-up"></i> נתוני צפייה (Analytics)
-                </a>
-                
+                <span class="text-muted">|</span>
                 <div class="dropdown">
                     <button class="btn btn-sm btn-light border dropdown-toggle d-flex align-items-center gap-2 fw-semibold" type="button" id="userMenuBtn" data-bs-toggle="dropdown">
                         <i class="bi bi-person-circle text-primary"></i>
-                        <span id="navUserName">טוען משתמש...</span>
+                        <span id="navUserName">טוען כתב...</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userMenuBtn">
                         <li class="px-3 py-1 small text-muted">מחובר ככתב מערכת</li>
@@ -279,6 +507,42 @@
                         <li><a class="dropdown-item text-danger fw-bold" href="javascript:void(0)" onclick="logout()"><i class="bi bi-box-arrow-left me-1"></i> התנתק</a></li>
                     </ul>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Master Newspaper Masthead -->
+    <header class="newspaper-masthead">
+        <div class="container text-center">
+            <a href="/" class="masthead-title">The Daily Web</a>
+            <div class="masthead-tagline">
+                סביבת עבודה לכתב • יצירת תוכן, עריכה, שמירה אוטומטית ברקע והגשה לעורך
+            </div>
+        </div>
+    </header>
+
+    <!-- 3. Central Navigation Bar -->
+    <nav class="category-nav-bar mb-3">
+        <div class="container-fluid px-lg-5">
+            <div class="d-flex overflow-auto py-1 align-items-center justify-content-start justify-content-md-center gap-1">
+                <a href="/" class="category-link">
+                    <i class="bi bi-newspaper"></i> שער העיתון
+                </a>
+                <a href="/reporter.html" class="category-link active">
+                    <i class="bi bi-pencil-square text-danger"></i> סביבת כתבים
+                </a>
+                <a href="/editor.html" class="category-link">
+                    <i class="bi bi-shield-check"></i> דסק עורכים
+                </a>
+                <a href="/analytics.html" class="category-link">
+                    <i class="bi bi-bar-chart-line"></i> Impact Analytics
+                </a>
+                <a href="/test.html" class="category-link">
+                    <i class="bi bi-tools"></i> מעבדת Workflow
+                </a>
+                <a href="/portal.html" class="category-link">
+                    <i class="bi bi-grid-3x3-gap-fill"></i> פורטל עובדים
+                </a>
             </div>
         </div>
     </nav>
@@ -390,17 +654,18 @@
 
     <!-- מודאל: עריכה וכתיבת כתבה -->
     <div class="modal fade" id="articleEditModal" tabindex="-1" aria-labelledby="articleEditModalLabel" aria-hidden="true" data-bs-backdrop="static">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable">
-            <div class="modal-content">
+        <div class="modal-dialog editor-modal-dialog modal-dialog-scrollable">
+            <div class="modal-content editor-modal-content">
                 
                 <!-- כותרת המודאל עם אינדיקטור שמירה אוטומטית -->
-                <div class="editor-modal-header d-flex justify-content-between align-items-center flex-wrap gap-2">
-                    <div class="d-flex align-items-center gap-3">
-                        <h5 class="modal-title fw-bold font-editorial mb-0" id="articleEditModalLabel">עריכת כתבה</h5>
+                <div class="editor-modal-header d-flex justify-content-between align-items-center gap-2">
+                    <div class="d-flex align-items-center gap-2 flex-wrap">
+                        <i class="bi bi-pencil-square text-primary fs-5"></i>
+                        <h5 class="modal-title fw-bold font-editorial mb-0" id="articleEditModalLabel">כתיבת כתבה חדשה</h5>
                         <span class="status-badge status-draft" id="modalStatusBadge">בהכנה</span>
                     </div>
 
-                    <div class="d-flex align-items-center gap-3">
+                    <div class="d-flex align-items-center gap-2">
                         <!-- אינדיקטור שמירה אוטומטית -->
                         <div class="autosave-indicator autosave-saved" id="autosaveIndicator">
                             <i class="bi bi-check-circle-fill"></i>
@@ -415,114 +680,157 @@
                 <div class="editor-modal-body">
 
                     <!-- התראת עריכת כתבה שפורסמה -->
-                    <div class="alert alert-info d-flex align-items-center gap-2 d-none" id="modalPublishedWarning">
+                    <div class="alert alert-info py-2 px-3 d-flex align-items-center gap-2 d-none mb-3" id="modalPublishedWarning">
                         <i class="bi bi-info-circle-fill fs-5"></i>
-                        <div>
-                            <strong>שים לב:</strong> הכתבה כבר פורסמה לציבור. עריכתה נשמרת כטיוטה ברקע ואינה משנה את התוכן הפורסם באתר עד לאישור העורך.
+                        <div class="small">
+                            <strong>שים לב:</strong> הכתבה כבר פורסמה לציבור. עריכתה נשמרת כטיוטה ברקע ואינה משנה את התוכן המוצג באתר עד לאישור העורך.
                         </div>
                     </div>
 
                     <!-- התראת הערת עורך כשהכתבה הוחזרה לתיקונים -->
                     <div class="revision-callout d-none mb-3" id="modalRevisionCallout">
-                        <div class="d-flex align-items-center justify-content-between mb-1">
-                            <div class="d-flex align-items-center gap-2 text-danger fw-bold">
-                                <i class="bi bi-chat-left-quote-fill fs-5"></i>
-                                <span>הערת עורך – מה נדרש לתקן:</span>
-                            </div>
+                        <div class="d-flex align-items-center gap-2 text-danger fw-bold mb-1">
+                            <i class="bi bi-chat-left-quote-fill fs-5"></i>
+                            <span>הערת עורך – מה נדרש לתקן:</span>
                         </div>
-                        <div class="text-dark fs-6 mt-1 p-2 bg-white rounded border border-danger-subtle" id="modalRevisionFeedbackText"></div>
+                        <div class="text-dark fs-6 p-2 bg-white rounded border border-danger-subtle" id="modalRevisionFeedbackText"></div>
                     </div>
 
-                    <div class="editor-paper">
-                        <form id="articleForm">
-                            <input type="hidden" id="editArticleId" value="">
+                    <form id="articleForm" onsubmit="return false;">
+                        <input type="hidden" id="editArticleId" value="">
 
-                            <!-- כותרת -->
-                            <div class="mb-3">
-                                <label for="editTitle" class="form-label fw-bold small text-muted">כותרת הכתבה *</label>
-                                <input type="text" class="form-control form-control-lg fw-bold" id="editTitle" placeholder="הזן כותרת מושכת..." required oninput="triggerAutoSave()">
+                        <div class="row g-3">
+                            <!-- עמודה ראשית: שטח הכתיבה העיתונאי -->
+                            <div class="col-12 col-lg-8">
+                                <div class="editor-canvas-card">
+                                    <!-- כותרת -->
+                                    <div class="mb-3">
+                                        <label for="editTitle" class="form-label fw-bold small text-muted d-flex justify-content-between">
+                                            <span><i class="bi bi-fonts me-1"></i> כותרת הכתבה *</span>
+                                            <span class="text-secondary fw-normal">הכותרת הראשית</span>
+                                        </label>
+                                        <input type="text" class="form-control editor-headline-input" id="editTitle" placeholder="הזן כותרת מושכת וברורה..." required oninput="triggerAutoSave()">
+                                    </div>
+
+                                    <!-- תקציר -->
+                                    <div class="mb-3">
+                                        <label for="editSummary" class="form-label fw-bold small text-muted d-flex justify-content-between">
+                                            <span><i class="bi bi-card-text me-1"></i> תקציר / כותרת משנה (Lead)</span>
+                                            <span class="text-secondary fw-normal">מבוא מקדים</span>
+                                        </label>
+                                        <textarea class="form-control editor-lead-input" id="editSummary" rows="2" placeholder="תקציר קצר שיופיע בדף הבית, במבזקים ובתוצאות חיפוש..." oninput="triggerAutoSave()"></textarea>
+                                    </div>
+
+                                    <!-- תוכן מלא עם סרגל עיצוב עשיר -->
+                                    <div>
+                                        <label for="editContent" class="form-label fw-bold small text-muted mb-1">
+                                            <i class="bi bi-text-paragraph me-1"></i> גוף הכתבה המלא *
+                                        </label>
+                                        
+                                        <!-- סרגל כפתורי עיצוב מודרני -->
+                                        <div class="editor-toolbar">
+                                            <button type="button" class="editor-tool-btn" onclick="insertFormatting('<b>', '</b>')" title="הדגשה">
+                                                <i class="bi bi-type-bold"></i> <span>מודגש</span>
+                                            </button>
+                                            <button type="button" class="editor-tool-btn" onclick="insertFormatting('<i>', '</i>')" title="נטוי">
+                                                <i class="bi bi-type-italic"></i> <span>נטוי</span>
+                                            </button>
+                                            <button type="button" class="editor-tool-btn" onclick="insertFormatting('<h3>', '</h3>')" title="כותרת משנה">
+                                                <i class="bi bi-type-h3"></i> <span>כותרת משנה</span>
+                                            </button>
+                                            <button type="button" class="editor-tool-btn" onclick="insertFormatting('<blockquote>', '</blockquote>')" title="ציטוט עיתונאי">
+                                                <i class="bi bi-quote"></i> <span>ציטוט</span>
+                                            </button>
+                                            <button type="button" class="editor-tool-btn" onclick="insertFormatting('<p>', '</p>')" title="פסקה">
+                                                <i class="bi bi-paragraph"></i> <span>פסקה</span>
+                                            </button>
+                                        </div>
+
+                                        <textarea class="form-control editor-content-area" id="editContent" rows="8" placeholder="הקלד כאן את תוכן הכתבה המלא. השינויים נשמרים אוטומטית ברקע..." required oninput="triggerAutoSave()"></textarea>
+                                    </div>
+                                </div>
                             </div>
 
-                            <!-- קטגוריה ותמונה -->
-                            <div class="row g-3 mb-3">
-                                <div class="col-md-4">
-                                    <label for="editCategory" class="form-label fw-bold small text-muted">קטגוריה *</label>
-                                    <select class="form-select" id="editCategory" required onchange="triggerAutoSave()">
-                                        <option value="חדשות">חדשות</option>
-                                        <option value="פוליטיקה">פוליטיקה</option>
-                                        <option value="כלכלה">כלכלה</option>
-                                        <option value="ספורט">ספורט</option>
-                                        <option value="טכנולוגיה">טכנולוגיה</option>
-                                        <option value="תרבות">תרבות</option>
-                                        <option value="בריאות">בריאות</option>
-                                        <option value="דעות">דעות</option>
+                            <!-- עמודת צד: הגדרות פרסום ומדיה -->
+                            <div class="col-12 col-lg-4">
+                                <!-- כרטיס פעולות והגשה -->
+                                <div class="editor-sidebar-card">
+                                    <div class="fw-bold small text-muted mb-2 text-uppercase">
+                                        <i class="bi bi-send me-1"></i> פעולות הגשה
+                                    </div>
+                                    <button type="button" class="btn btn-success w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2 mb-2" id="submitApprovalBtn" onclick="submitCurrentForApproval()">
+                                        <i class="bi bi-send-check" id="submitApprovalIcon"></i>
+                                        <span id="submitApprovalText">הגש לאישור עורך</span>
+                                    </button>
+                                    <div class="small text-muted text-center">
+                                        <i class="bi bi-cloud-arrow-up text-primary me-1"></i> שמירה אוטומטית פעילה
+                                    </div>
+                                </div>
+
+                                <!-- כרטיס קטגוריה -->
+                                <div class="editor-sidebar-card">
+                                    <label for="editCategory" class="form-label fw-bold small text-muted mb-2">
+                                        <i class="bi bi-folder2-open me-1"></i> קטגוריית הכתבה *
+                                    </label>
+                                    <select class="form-select fw-semibold" id="editCategory" required onchange="triggerAutoSave()">
+                                        <option value="חדשות">📰 חדשות</option>
+                                        <option value="פוליטיקה">🏛️ פוליטיקה</option>
+                                        <option value="כלכלה">📈 כלכלה</option>
+                                        <option value="ספורט">⚽ ספורט</option>
+                                        <option value="טכנולוגיה">💻 טכנולוגיה</option>
+                                        <option value="תרבות">🎭 תרבות</option>
+                                        <option value="בריאות">🩺 בריאות</option>
+                                        <option value="דעות">💡 דעות</option>
                                     </select>
                                 </div>
 
-                                <div class="col-md-8">
-                                    <label for="editMainImage" class="form-label fw-bold small text-muted">כתובת תמונה ראשית (URL)</label>
-                                    <div class="input-group">
-                                        <input type="url" class="form-control" id="editMainImage" placeholder="https://..." oninput="updateImagePreview(); triggerAutoSave();">
-                                        <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">תמונות לדוגמה</button>
-                                        <ul class="dropdown-menu dropdown-menu-end">
-                                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="setSampleImage('https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800')">עיתונות וחדשות</a></li>
-                                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="setSampleImage('https://images.unsplash.com/photo-1518770660439-4636190af475?w=800')">טכנולוגיה ומחשבים</a></li>
-                                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="setSampleImage('https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800')">כלכלה ושוק ההון</a></li>
-                                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="setSampleImage('https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800')">ספורט ואתלטיקה</a></li>
-                                            <li><a class="dropdown-item" href="javascript:void(0)" onclick="setSampleImage('https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=800')">בריאות ומדע</a></li>
-                                        </ul>
+                                <!-- כרטיס תמונה ראשית -->
+                                <div class="editor-sidebar-card">
+                                    <label for="editMainImage" class="form-label fw-bold small text-muted mb-2">
+                                        <i class="bi bi-image me-1"></i> תמונה ראשית (URL)
+                                    </label>
+                                    <input type="url" class="form-control form-control-sm mb-2" id="editMainImage" placeholder="https://images.unsplash.com/..." oninput="updateImagePreview(); triggerAutoSave();">
+                                    
+                                    <!-- תגיות תמונה לבחירה מהירה -->
+                                    <div class="mb-2">
+                                        <span class="small text-muted d-block mb-1" style="font-size:0.75rem;">תמונות לדוגמה:</span>
+                                        <div class="d-flex flex-wrap gap-1">
+                                            <button type="button" class="preset-badge-btn" onclick="setSampleImage('https://images.unsplash.com/photo-1585829365295-ab7cd400c167?w=800')">חדשות</button>
+                                            <button type="button" class="preset-badge-btn" onclick="setSampleImage('https://images.unsplash.com/photo-1518770660439-4636190af475?w=800')">טכנולוגיה</button>
+                                            <button type="button" class="preset-badge-btn" onclick="setSampleImage('https://images.unsplash.com/photo-1590283603385-17ffb3a7f29f?w=800')">כלכלה</button>
+                                            <button type="button" class="preset-badge-btn" onclick="setSampleImage('https://images.unsplash.com/photo-1461896836934-ffe607ba8211?w=800')">ספורט</button>
+                                            <button type="button" class="preset-badge-btn" onclick="setSampleImage('https://images.unsplash.com/photo-1507676184212-d03ab07a01bf?w=800')">בריאות</button>
+                                        </div>
+                                    </div>
+
+                                    <!-- תצוגה מקדימה קומפקטית -->
+                                    <div class="d-none" id="imagePreviewContainer">
+                                        <div class="preview-img-box mt-2">
+                                            <img id="imagePreview" src="" alt="תצוגה מקדימה">
+                                        </div>
                                     </div>
                                 </div>
                             </div>
+                        </div>
 
-                            <!-- תצוגה מקדימה של התמונה -->
-                            <div class="mb-3 d-none" id="imagePreviewContainer">
-                                <div class="position-relative d-inline-block rounded overflow-hidden border" style="max-height: 180px;">
-                                    <img id="imagePreview" src="" alt="תצוגה מקדימה" style="height: 180px; width: auto; object-fit: cover;">
-                                </div>
-                            </div>
-
-                            <!-- תקציר -->
-                            <div class="mb-3">
-                                <label for="editSummary" class="form-label fw-bold small text-muted">תקציר / כותרת משנה (Lead)</label>
-                                <textarea class="form-control" id="editSummary" rows="2" placeholder="תקציר קצר שיופיע בדף הבית..." oninput="triggerAutoSave()"></textarea>
-                            </div>
-
-                            <!-- תוכן מלא -->
-                            <div class="mb-3">
-                                <div class="d-flex justify-content-between align-items-center mb-1">
-                                    <label for="editContent" class="form-label fw-bold small text-muted mb-0">תוכן הכתבה המלא *</label>
-                                    <div class="d-flex gap-1">
-                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertFormatting('<b>', '</b>')" title="הדגש"><i class="bi bi-type-bold"></i></button>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertFormatting('<i>', '</i>')" title="נטוי"><i class="bi bi-type-italic"></i></button>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertFormatting('<h3>', '</h3>')" title="כותרת משנה"><i class="bi bi-type-h3"></i></button>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertFormatting('<blockquote>', '</blockquote>')" title="ציטוט"><i class="bi bi-quote"></i></button>
-                                        <button type="button" class="btn btn-sm btn-outline-secondary py-0 px-2" onclick="insertFormatting('<p>', '</p>')" title="פסקה"><i class="bi bi-paragraph"></i></button>
-                                    </div>
-                                </div>
-                                <textarea class="form-control editor-textarea" id="editContent" rows="10" placeholder="הקלד כאן את תוכן הכתבה. השינויים נשמרים אוטומטית ברקע..." required oninput="triggerAutoSave()"></textarea>
-                            </div>
-
-                        </form>
-                    </div>
+                    </form>
 
                 </div>
 
                 <!-- תחתית המודאל ופעולות הגשה -->
-                <div class="modal-footer bg-white border-top justify-content-between">
-                    <div class="text-muted small">
-                        <i class="bi bi-cloud-check text-success me-1"></i> כל שינוי נשמר ברקע אוטומטית.
+                <div class="modal-footer bg-white border-top justify-content-between py-2 px-3">
+                    <div class="text-muted small d-flex align-items-center gap-1">
+                        <i class="bi bi-clock-history text-secondary"></i>
+                        <span id="footerAutosaveTime">השינויים נשמרים אוטומטית</span>
                     </div>
 
                     <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-secondary px-3" data-bs-dismiss="modal" onclick="closeEditorModal()">
+                        <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal" onclick="closeEditorModal()">
                             סגור
                         </button>
-                        
-                        <!-- כפתור הגשה דינמי (מתעדכן ל-"הגש מחדש" במקרה של תיקונים) -->
-                        <button type="button" class="btn btn-success fw-bold px-4 d-flex align-items-center gap-2" id="submitApprovalBtn" onclick="submitCurrentForApproval()">
-                            <i class="bi bi-send-check" id="submitApprovalIcon"></i>
-                            <span id="submitApprovalText">הגש לאישור עורך</span>
+                        <button type="button" class="btn btn-success fw-bold px-4 d-flex align-items-center gap-2 d-lg-none" onclick="submitCurrentForApproval()">
+                            <i class="bi bi-send-check"></i>
+                            <span>הגש לאישור</span>
                         </button>
                     </div>
                 </div>
@@ -584,7 +892,7 @@
         async function verifySession() {
             const token = getAuthToken();
             if (!token) {
-                window.location.href = '/login.html';
+                window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
                 return;
             }
 
@@ -595,7 +903,7 @@
 
                 if (!res.ok) {
                     clearLocalLogin();
-                    window.location.href = '/login.html';
+                    window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
                     return;
                 }
 
@@ -604,6 +912,8 @@
                 document.getElementById('navUserName').innerText = currentUser.fullName || currentUser.username;
             } catch (err) {
                 console.error('Session verify error:', err);
+                clearLocalLogin();
+                window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
             }
         }
 
@@ -916,7 +1226,7 @@
 
             // כפתור הגשה
             const submitBtn = document.getElementById('submitApprovalBtn');
-            submitBtn.className = 'btn btn-success fw-bold px-4 d-flex align-items-center gap-2';
+            submitBtn.className = 'btn btn-success w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2 mb-2';
             document.getElementById('submitApprovalText').innerText = 'הגש לאישור עורך';
             document.getElementById('submitApprovalIcon').className = 'bi bi-send-check';
 
@@ -972,12 +1282,12 @@
                     revText.innerText = art.editorFeedback || 'העורך ביקש לבצע תיקונים בכתבה זו.';
                     
                     // כפתור הגשה מחדש
-                    submitBtn.className = 'btn btn-danger fw-bold px-4 d-flex align-items-center gap-2';
+                    submitBtn.className = 'btn btn-danger w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2 mb-2';
                     submitText.innerText = 'הגש מחדש לאישור עורך';
                     submitIcon.className = 'bi bi-arrow-repeat';
                 } else {
                     revCallout.classList.add('d-none');
-                    submitBtn.className = 'btn btn-success fw-bold px-4 d-flex align-items-center gap-2';
+                    submitBtn.className = 'btn btn-success w-100 fw-bold py-2 shadow-sm d-flex align-items-center justify-content-center gap-2 mb-2';
                     submitText.innerText = 'הגש לאישור עורך';
                     submitIcon.className = 'bi bi-send-check';
                 }
@@ -1021,7 +1331,13 @@
             updateAutoSaveIndicator('saving', 'שומר שינויים ברקע...');
 
             const token = getAuthToken();
-            const payload = { title, category, mainImage, summary, content };
+            const payload = { 
+                title: title || 'טיוטה ללא כותרת', 
+                category, 
+                mainImage, 
+                summary, 
+                content: content || '<p></p>' 
+            };
 
             try {
                 let url = articleId ? `/api/articles/${articleId}/autosave` : `/api/articles/autosave`;
@@ -1047,7 +1363,12 @@
                     const timeStr = new Date().toLocaleTimeString('he-IL');
                     updateAutoSaveIndicator('saved', `נשמר אוטומטית ברקע ב-${timeStr}`);
                 } else {
-                    updateAutoSaveIndicator('error', data.message || 'שגיאה בשמירה אוטומטית');
+                    if (res.status === 409) {
+                        // the article is locked while it waits for the editor: say why saving stopped
+                        updateAutoSaveIndicator('error', data.message);
+                    } else {
+                        updateAutoSaveIndicator('error', 'שמירה ברקע תתבצע בהמשך');
+                    }
                 }
             } catch (err) {
                 console.error('AutoSave failed:', err);
@@ -1059,14 +1380,21 @@
 
         function updateAutoSaveIndicator(state, message) {
             const indicator = document.getElementById('autosaveIndicator');
-            indicator.className = `autosave-indicator autosave-${state}`;
-            let icon = 'bi-check-circle-fill';
+            if (indicator) {
+                indicator.className = `autosave-indicator autosave-${state}`;
+                let icon = 'bi-check-circle-fill';
 
-            if (state === 'saving') icon = 'spinner-border spinner-border-sm';
-            else if (state === 'dirty') icon = 'bi-pencil-fill';
-            else if (state === 'error') icon = 'bi-exclamation-triangle-fill';
+                if (state === 'saving') icon = 'spinner-border spinner-border-sm';
+                else if (state === 'dirty') icon = 'bi-pencil-fill';
+                else if (state === 'error') icon = 'bi-exclamation-triangle-fill';
 
-            indicator.innerHTML = `<i class="${icon}"></i> <span>${escapeHtml(message)}</span>`;
+                indicator.innerHTML = `<i class="${icon}"></i> <span>${escapeHtml(message)}</span>`;
+            }
+
+            const footerTime = document.getElementById('footerAutosaveTime');
+            if (footerTime && state === 'saved') {
+                footerTime.innerText = message;
+            }
         }
 
         function closeEditorModal() {
@@ -1159,6 +1487,85 @@
             textarea.setSelectionRange(start + startTag.length, end + startTag.length);
             triggerAutoSave();
         }
+
+        // Dynamic Date Calculation
+        function updateDateDisplay() {
+            try {
+                const now = new Date();
+                const gregorianFormatter = new Intl.DateTimeFormat('he-IL', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                const gregStr = gregorianFormatter.format(now);
+                let hebrewStr = '';
+                try {
+                    const hebrewFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                    hebrewStr = hebrewFormatter.format(now);
+                } catch(e) {}
+                const el = document.getElementById('currentDateDisplay');
+                if (el) el.innerText = hebrewStr ? `${gregStr} | ${hebrewStr}` : gregStr;
+            } catch(e) {}
+        }
+        document.addEventListener('DOMContentLoaded', updateDateDisplay);
     </script>
+
+    <!-- Unified Footer -->
+    <footer class="footer-newspaper">
+        <div class="container-fluid px-lg-5">
+            <div class="row g-4 pb-4 border-bottom border-secondary mb-4">
+                <div class="col-lg-4">
+                    <h4 class="font-editorial text-white fw-bold h4 mb-2">The Daily Web</h4>
+                    <p class="text-secondary small mb-3">
+                        עיתון החדשות והתוכן הדיגיטלי המוביל בישראל. דסק כתבים ומערכת ניהול תוכן עם שמירה אוטומטית ברקע.
+                    </p>
+                    <div class="badge bg-dark border border-secondary text-light py-2 px-3 small font-num">
+                        <i class="bi bi-shield-check text-success me-1"></i> Reporter Desk Suite
+                    </div>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <h5 class="text-white fw-bold small text-uppercase mb-3">סביבות עבודה</h5>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="/" class="text-secondary text-decoration-none">שער העיתון</a></li>
+                        <li class="mb-2"><a href="/editor.html" class="text-secondary text-decoration-none">דסק עורכים</a></li>
+                        <li class="mb-2"><a href="/analytics.html" class="text-secondary text-decoration-none">Impact Analytics</a></li>
+                        <li class="mb-2"><a href="/portal.html" class="text-secondary text-decoration-none">פורטל עובדים</a></li>
+                    </ul>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <h5 class="text-white fw-bold small text-uppercase mb-3">דסקים ונושאים</h5>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="/?category=חדשות" class="text-secondary text-decoration-none">חדשות</a></li>
+                        <li class="mb-2"><a href="/?category=פוליטיקה" class="text-secondary text-decoration-none">פוליטיקה</a></li>
+                        <li class="mb-2"><a href="/?category=כלכלה" class="text-secondary text-decoration-none">כלכלה</a></li>
+                        <li class="mb-2"><a href="/?category=טכנולוגיה" class="text-secondary text-decoration-none">טכנולוגיה</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-4">
+                    <h5 class="text-white fw-bold small text-uppercase mb-3">מרכז העובדים</h5>
+                    <p class="text-secondary small mb-2">
+                        כניסה מהירה ומעבר בין כל דסקי המערכת:
+                    </p>
+                    <div class="d-flex gap-2">
+                        <a href="/portal.html" class="btn btn-warning text-dark fw-bold btn-sm px-3">
+                            <i class="bi bi-grid-3x3-gap-fill me-1"></i> פורטל עובדים
+                        </a>
+                        <a href="javascript:void(0)" onclick="logout()" class="btn btn-outline-danger btn-sm px-3">
+                            <i class="bi bi-box-arrow-left me-1"></i> התנתקות
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 text-secondary small">
+                <div>&copy; 2026 The Daily Web. כל הזכויות שמורות.</div>
+                <div class="font-num">Advanced Web Applications Project</div>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>

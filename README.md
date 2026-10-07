@@ -88,9 +88,10 @@ the-daily-web/
 │   ├── reporter.html            # Reporter dashboard (own articles, editor with auto-save)
 │   ├── editor.html              # Editor dashboard (review, diff view, approve / return)
 │   ├── analytics.html           # Impact Analytics graph (Chart.js) and comments demo
+│   ├── test.html                # Interactive visual testing workbench (auto-save & review)
 │   ├── js/common.js             # Shared client helpers (escapeHtml, token, logout)
 │   ├── js/comments.js           # Comment list helpers (add a comment without reloading the list)
-│   └── images/                  # Default article image
+│   └── images/                  # Default article image and SVG assets
 ├── src/
 │   ├── app.js                   # Express setup, middleware, routes
 │   ├── server.js                # Entry point
@@ -112,14 +113,14 @@ the-daily-web/
 
 ---
 
-## 💡 Features & Business Logic
+## 📊 Core Features & Business Logic: Comments, Anti-Spam, Analytics & Seeder
 
 ### Users, roles & security
 - Roles: **Guest** (not logged in), **Reporter**, **Editor**. Roles are enforced on the server (`requireRole`, `requireReporter`, `requireEditor`); reporters can only touch their own articles.
 - Passwords are hashed with `bcrypt`.
 - Logins are kept in a server session stored in MongoDB (`connect-mongo`), so they survive a server restart. The dashboards authenticate with a signed token, and the server accepts the session cookie as well.
 - Public sign-up always creates a reporter. Editors are created by another editor or with `npm run create-editor`.
-- **User management (editors only):** `GET /api/users?search=&role=` (list and search by part of the name), `GET /api/users/:id`, `POST /api/users`, `PUT /api/users/:id` (name, role, active flag, password), `DELETE /api/users/:id`. The last active editor cannot be removed, and a user who wrote articles is deactivated instead of deleted.
+- **User management (editors only):** `GET /api/users?search=&role=` (list and search by part of the name), `GET /api/users/:id`, `POST /api/users`, `PUT /api/users/:id` (name, role, active flag, password), `DELETE /api/users/:id` (also reachable under `/api/auth/users`). The last active editor cannot be removed, and a user who wrote articles is deactivated instead of deleted.
 - Article HTML is sanitized on save (small allowlist of tags, safe links only), and the dashboards escape all text they render.
 - Centralized error handling, with errors in `logs/error.log`, HTTP requests in `logs/access.log`, and operational events in `logs/operations.log`.
 
@@ -143,12 +144,30 @@ the-daily-web/
 
 ---
 
-## 🎓 Demo Guide
+## 🎓 Oral Defense Demonstration Guide (מדריך להדגמה בפני המרצה)
 
-1. `npm run seed`, then `npm start`.
-2. Home page (`/`): scroll for infinite loading, try the search, category filter, and popularity sort.
-3. Log in at `/login.html` as `dan_reporter` (reporter dashboard) and `sarah_editor` (editor dashboard). Create an article, watch the auto-save indicator, and submit it for approval.
-4. As the editor, review the submission, return it with notes, then approve it. Edit a published article and use the diff view.
-5. Open `/analytics.html` and select the showcase article (*"…(מהדורה #151)"*) to see the views surge after each update.
-6. Post comments without reloading the page. The 4th comment within a minute is blocked with a countdown.
-7. Stop the server (`Ctrl+C`) and start it again. You stay logged in and the spam block is still active.
+1. **Seed the Database:**
+   ```bash
+   npm run seed
+   ```
+2. **Start the Application:**
+   ```bash
+   npm start
+   ```
+3. **Open the Dashboards & Workbenches:**
+   - **Main News Portal:** `http://localhost:3000/`
+   - **Staff Login:** `http://localhost:3000/login.html`
+   - **Reporter Workspace:** `http://localhost:3000/reporter.html`
+   - **Editor-in-Chief CMS:** `http://localhost:3000/editor.html`
+   - **Article Workflow Workbench:** `http://localhost:3000/test.html`
+   - **Impact Analytics & Comments Lab:** `http://localhost:3000/analytics.html`
+4. **Demonstrate Impact Analytics:**
+   - Select the showcase article (*"דעה: החוסן הכלכלי של ישראל מול אתגרי השעה (מהדורה #151)"*).
+   - Point out the metrics cards showing pre-update vs. post-update views and percentage growth.
+   - Show the Chart.js curve highlighting the surge in readership following editorial updates.
+5. **Demonstrate Real-Time AJAX Comments:**
+   - Add a comment in the form and show that it appears instantly without reloading the page.
+6. **Demonstrate Anti-Spam (3 comments/min limit):**
+   - Click the *"בצע בדיקת הצפת ספאם"* button: show that 3 comments pass and the 4th is immediately blocked with HTTP 429 and a countdown timer.
+7. **Demonstrate Server Restart Resilience:**
+   - Stop the server (`Ctrl+C`), start it again (`npm start`), and show that the spam block remains active!

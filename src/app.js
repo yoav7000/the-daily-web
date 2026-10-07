@@ -54,6 +54,7 @@ app.get('/article/:id', articleController.renderArticlePage);
 // API Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/auth/users', userRoutes); // earlier address of the same endpoints, kept so existing clients keep working
 app.use('/api', commentRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/analytics', analyticsRoutes);
