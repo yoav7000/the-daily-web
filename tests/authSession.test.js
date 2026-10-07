@@ -64,9 +64,10 @@ test('Session login, restart persistence and logout', async (t) => {
             username: 'sessionuser',
             password: 'password123',
             fullName: 'Session User',
-            role: 'editor'
+            role: 'editor' // ignored: public sign-up always creates a reporter
         });
         assert.equal(res.status, 201);
+        assert.equal(res.body.user.role, 'reporter');
         cookie = res.headers['set-cookie'][0].split(';')[0];
         assert.ok(cookie.startsWith('daily.sid='));
     });
@@ -82,7 +83,7 @@ test('Session login, restart persistence and logout', async (t) => {
         await startApp();
         const res = await request('GET', '/api/auth/me', null, { Cookie: cookie });
         assert.equal(res.status, 200);
-        assert.equal(res.body.user.role, 'editor');
+        assert.equal(res.body.user.role, 'reporter');
     });
 
     await t.test('logout kills the session', async () => {

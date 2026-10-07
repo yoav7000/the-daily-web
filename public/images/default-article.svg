@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" role="img" aria-label="The Daily Web">
+  <rect width="800" height="450" fill="#e9edf3"/>
+  <rect x="300" y="150" width="200" height="150" rx="10" fill="none" stroke="#9aa6b8" stroke-width="8"/>
+  <path d="M320 280l50-60 40 40 30-30 40 50z" fill="#9aa6b8"/>
+  <circle cx="440" cy="190" r="14" fill="#9aa6b8"/>
+</svg>

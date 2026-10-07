@@ -114,22 +114,6 @@
             color: #ffffff;
         }
 
-        .quick-login-card {
-            background: #f8fafc;
-            border: 1px dashed #cbd5e1;
-            border-radius: 10px;
-            padding: 14px;
-            margin-top: 20px;
-        }
-
-        .quick-btn {
-            font-size: 0.85rem;
-            font-weight: 600;
-            border-radius: 6px;
-            padding: 6px 12px;
-            transition: all 0.15s;
-        }
-
         .nav-tabs .nav-link {
             font-weight: 700;
             color: var(--news-muted);
@@ -212,21 +196,20 @@
                             </button>
                         </form>
 
-                        <!-- Quick Demo Logins for fast grading & testing -->
-                        <div class="quick-login-card">
-                            <div class="fw-bold small text-muted mb-2 d-flex align-items-center gap-1">
-                                <i class="bi bi-lightning-charge-fill text-warning"></i> התחברות מהירה להדגמה ובדיקה:
-                            </div>
-                            <div class="d-flex flex-wrap gap-2">
-                                <button type="button" class="btn btn-outline-primary quick-btn" onclick="quickLogin('dan_reporter', 'password123', 'reporter', 'דן שטרן')">
-                                    <i class="bi bi-pen me-1"></i> כתב (דן)
-                                </button>
-                                <button type="button" class="btn btn-outline-success quick-btn" onclick="quickLogin('sarah_editor', 'password123', 'editor', 'שרה לוי')">
-                                    <i class="bi bi-award me-1"></i> עורכת (שרה)
-                                </button>
-                                <button type="button" class="btn btn-outline-secondary quick-btn" onclick="quickLogin('testreporter123', 'Password123!', 'reporter', 'Test Reporter')">
-                                    <i class="bi bi-person-badge me-1"></i> כתב Seeder
-                                </button>
+                        <!-- Quick Demo Fillers for Live Presentation -->
+                        <div class="mt-4 pt-3 border-top">
+                            <div class="text-muted small fw-semibold mb-2 text-center">התחברות מהירה למשתמשי הדגמה (Seeded):</div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-outline-primary btn-sm w-100 py-2 fw-semibold" onclick="fillDemoLogin('dan_reporter', 'password123')">
+                                        <i class="bi bi-pencil-square d-block fs-6 mb-1"></i> כתב: דן שטרן
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-outline-success btn-sm w-100 py-2 fw-semibold" onclick="fillDemoLogin('sarah_editor', 'password123')">
+                                        <i class="bi bi-shield-check d-block fs-6 mb-1"></i> עורכת: שרה לוי
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -249,24 +232,6 @@
                                 <label for="regPassword"><i class="bi bi-lock me-1"></i> סיסמה (לפחות 6 תווים)</label>
                             </div>
 
-                            <div class="mb-3">
-                                <label class="form-label small fw-bold text-muted mb-1">תפקיד במערכת:</label>
-                                <div class="row g-2">
-                                    <div class="col-6">
-                                        <input type="radio" class="btn-check" name="regRole" id="roleReporter" value="reporter" checked>
-                                        <label class="btn btn-outline-primary w-100 py-2 fw-semibold" for="roleReporter">
-                                            <i class="bi bi-pencil-square d-block fs-5"></i> כתב (Reporter)
-                                        </label>
-                                    </div>
-                                    <div class="col-6">
-                                        <input type="radio" class="btn-check" name="regRole" id="roleEditor" value="editor">
-                                        <label class="btn btn-outline-success w-100 py-2 fw-semibold" for="roleEditor">
-                                            <i class="bi bi-shield-lock d-block fs-5"></i> עורך (Editor)
-                                        </label>
-                                    </div>
-                                </div>
-                            </div>
-
                             <button type="submit" class="btn btn-submit w-100 d-flex align-items-center justify-content-center gap-2" id="regSubmitBtn">
                                 <span>צור חשבון והתחבר</span>
                                 <i class="bi bi-check-circle"></i>
@@ -279,17 +244,18 @@
         </div>
 
         <div class="text-center mt-3 text-light opacity-50 small font-num">
-            The Daily Web System &copy; 2026 • Group 4 Workspace Frontend
+            The Daily Web System &copy; 2026
         </div>
     </div>
 
     <!-- Bootstrap 5 JS Bundle -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/common.js"></script>
 
     <script>
         // Check if user is already logged in
         document.addEventListener('DOMContentLoaded', async () => {
-            const token = localStorage.getItem('token') || getCookie('token');
+            const token = localStorage.getItem('token');
             if (token) {
                 try {
                     const res = await fetch('/api/auth/me', {
@@ -307,23 +273,10 @@
             }
         });
 
-        // Helper to set cookie for persistent server restart survival
-        function setCookie(name, value, days = 7) {
-            const expires = new Date(Date.now() + days * 864e5).toUTCString();
-            document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/; SameSite=Lax`;
-        }
-
-        function getCookie(name) {
-            return document.cookie.split('; ').reduce((r, v) => {
-                const parts = v.split('=');
-                return parts[0] === name ? decodeURIComponent(parts[1]) : r;
-            }, '');
-        }
-
         function showAlert(message, type = 'danger') {
             const alertEl = document.getElementById('authAlert');
             alertEl.className = `alert alert-${type} d-flex align-items-center gap-2`;
-            alertEl.innerHTML = `<i class="bi ${type === 'danger' ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill'}"></i> <div>${message}</div>`;
+            alertEl.innerHTML = `<i class="bi ${type === 'danger' ? 'bi-exclamation-triangle-fill' : 'bi-check-circle-fill'}"></i> <div>${escapeHtml(message)}</div>`;
             alertEl.classList.remove('d-none');
         }
 
@@ -379,7 +332,6 @@
                 if (res.ok && data.success) {
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
-                    setCookie('token', data.token);
                     showAlert('התחברת בהצלחה! מעביר אותך לאזור העבודה...', 'success');
                     setTimeout(() => {
                         redirectByRole(data.user.role);
@@ -403,7 +355,6 @@
             const fullName = document.getElementById('regFullName').value.trim();
             const username = document.getElementById('regUsername').value.trim();
             const password = document.getElementById('regPassword').value;
-            const role = document.querySelector('input[name="regRole"]:checked').value;
             const submitBtn = document.getElementById('regSubmitBtn');
 
             if (!fullName || !username || !password) {
@@ -423,7 +374,7 @@
                 const res = await fetch('/api/auth/register', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fullName, username, password, role })
+                    body: JSON.stringify({ fullName, username, password })
                 });
 
                 const data = await res.json();
@@ -431,7 +382,6 @@
                 if (res.ok && data.success) {
                     localStorage.setItem('token', data.token);
                     localStorage.setItem('user', JSON.stringify(data.user));
-                    setCookie('token', data.token);
                     showAlert('החשבון נוצר בהצלחה! מעביר אותך...', 'success');
                     setTimeout(() => {
                         redirectByRole(data.user.role);
@@ -447,55 +397,11 @@
             }
         });
 
-        // Quick demo filler & smart submitter (with auto-register fallback)
-        async function quickLogin(username, password, role = 'reporter', fullName = 'משתמש דמה') {
-            clearAlert();
-            const submitBtn = document.getElementById('loginSubmitBtn');
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> מתחבר...';
+        // Fill credentials for demo users and trigger login
+        function fillDemoLogin(username, password) {
             document.getElementById('loginUsername').value = username;
             document.getElementById('loginPassword').value = password;
-
-            try {
-                // 1. Try direct login
-                let res = await fetch('/api/auth/login', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-                let data = await res.json();
-
-                // 2. If user doesn't exist yet in DB, register immediately
-                if (!res.ok) {
-                    const regRes = await fetch('/api/auth/register', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ username, password, role, fullName })
-                    });
-                    const regData = await regRes.json();
-                    if (regRes.ok && regData.success) {
-                        data = regData;
-                        res = regRes;
-                    }
-                }
-
-                if (data.success && data.token) {
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    setCookie('token', data.token);
-                    showAlert('התחברת בהצלחה! מעביר אותך לאזור העבודה...', 'success');
-                    setTimeout(() => {
-                        redirectByRole(data.user.role);
-                    }, 400);
-                } else {
-                    showAlert(data.message || 'שם משתמש או סיסמה שגויים');
-                }
-            } catch (err) {
-                showAlert('אירעה שגיאה בהתחברות. ודא שהשרת רץ כראוי.');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<span>התחבר למערכת</span> <i class="bi bi-arrow-left"></i>';
-            }
+            document.getElementById('loginForm').dispatchEvent(new Event('submit'));
         }
     </script>
 </body>

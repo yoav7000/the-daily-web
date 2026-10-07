@@ -2,6 +2,10 @@ const ViewStat = require('../models/ViewStat');
 const Article = require('../models/Article');
 const { ARTICLE_STATUS } = require('../constants/articleConstants');
 const { logOperation } = require('../middleware/requestLogger');
+const { parsePagination, buildPagination } = require('../utils/pagination');
+const { cleanText } = require('../utils/text');
+
+const isValidViewCount = (value) => Number.isInteger(value) && value >= 0;
 
 /**
  * פונקציית עזר ליצירת מפתח דלי זמן שעתי
@@ -219,13 +223,17 @@ const createViewStat = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'מזהה כתבה נדרש' });
         }
 
-        const bucket = timeBucket || getTimeBucketKey(new Date());
+        if (!isValidViewCount(Number(viewCount))) {
+            return res.status(400).json({ success: false, message: 'כמות צפיות חייבת להיות מספר שלם שאינו שלילי' });
+        }
+
+        const bucket = cleanText(timeBucket) || getTimeBucketKey(new Date());
 
         const stat = new ViewStat({
             article: articleId,
             timeBucket: bucket,
             viewCount: Number(viewCount),
-            notes: notes || `רשומה ידנית עבור דלי ${bucket}`
+            notes: cleanText(notes) || `רשומה ידנית עבור דלי ${bucket}`
         });
 
         await stat.save();
@@ -252,25 +260,25 @@ const createViewStat = async (req, res, next) => {
  */
 const getAllViewStats = async (req, res, next) => {
     try {
-        const { page = 1, limit = 50, search, articleId } = req.query;
+        const { search, articleId } = req.query;
         const query = {};
 
         if (articleId) {
-            query.article = articleId;
+            query.article = cleanText(articleId);
         }
 
-        if (search && search.trim()) {
-            query.$text = { $search: search.trim() };
+        if (cleanText(search)) {
+            query.$text = { $search: cleanText(search) };
         }
 
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const { page, limit, skip } = parsePagination(req.query, 50);
 
         const [stats, totalCount] = await Promise.all([
             ViewStat.find(query)
                 .populate('article', 'title category')
                 .sort({ viewedAt: -1 })
                 .skip(skip)
-                .limit(parseInt(limit))
+                .limit(limit)
                 .lean(),
             ViewStat.countDocuments(query)
         ]);
@@ -278,11 +286,7 @@ const getAllViewStats = async (req, res, next) => {
         return res.status(200).json({
             success: true,
             stats,
-            pagination: {
-                totalCount,
-                currentPage: parseInt(page),
-                totalPages: Math.ceil(totalCount / parseInt(limit))
-            }
+            pagination: buildPagination(totalCount, page, limit)
         });
     } catch (error) {
         next(error);
@@ -320,11 +324,14 @@ const updateViewStat = async (req, res, next) => {
         }
 
         if (viewCount !== undefined) {
+            if (!isValidViewCount(Number(viewCount))) {
+                return res.status(400).json({ success: false, message: 'כמות צפיות חייבת להיות מספר שלם שאינו שלילי' });
+            }
             stat.viewCount = Number(viewCount);
         }
 
         if (notes !== undefined) {
-            stat.notes = notes.trim();
+            stat.notes = cleanText(notes);
         }
 
         await stat.save();
@@ -371,7 +378,7 @@ const deleteViewStat = async (req, res, next) => {
  */
 const getTopArticles = async (req, res, next) => {
     try {
-        const { limit = 10 } = req.query;
+        const { limit } = parsePagination(req.query, 10);
 
         const topArticles = await ViewStat.aggregate([
             {
@@ -381,7 +388,6 @@ const getTopArticles = async (req, res, next) => {
                 }
             },
             { $sort: { totalViews: -1 } },
-            { $limit: parseInt(limit) },
             {
                 $lookup: {
                     from: 'articles',
@@ -391,6 +397,8 @@ const getTopArticles = async (req, res, next) => {
                 }
             },
             { $unwind: '$articleDetails' },
+            { $match: { 'articleDetails.status': ARTICLE_STATUS.PUBLISHED } },
+            { $limit: limit },
             {
                 $project: {
                     _id: 1,

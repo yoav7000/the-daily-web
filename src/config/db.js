@@ -1,35 +1,50 @@
 const mongoose = require('mongoose');
 
+const DEFAULT_URI = 'mongodb://127.0.0.1:27017/the-daily-web';
+
 /**
- * Connect to MongoDB with retry logic and event listeners.
+ * Throwaway in-memory MongoDB filled with the demo data. Opt-in for development
+ * (USE_MEMORY_DB=true) on a machine without MongoDB; everything is lost when the server stops.
+ */
+const connectInMemory = async () => {
+    if (process.env.NODE_ENV === 'production') {
+        throw new Error('USE_MEMORY_DB cannot be used in production.');
+    }
+
+    const { MongoMemoryServer } = require('mongodb-memory-server');
+    const seedDatabase = require('../scripts/seed');
+
+    const mongoServer = await MongoMemoryServer.create();
+    const conn = await mongoose.connect(mongoServer.getUri());
+    console.log('[MongoDB] Connected to a temporary IN-MEMORY database (data is lost on exit).');
+
+    await seedDatabase({ connect: false });
+    return conn;
+};
+
+/**
+ * Connect to MongoDB (MONGODB_URI, or a local instance by default).
  */
 const connectDB = async () => {
-    let mongoURI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/the-daily-web';
+    if (process.env.USE_MEMORY_DB === 'true') {
+        return connectInMemory();
+    }
 
     try {
-        const conn = await mongoose.connect(mongoURI, {
-            serverSelectionTimeoutMS: 2000
+        const conn = await mongoose.connect(process.env.MONGODB_URI || DEFAULT_URI, {
+            serverSelectionTimeoutMS: 2500
         });
-
-        console.log(`[MongoDB] Connected successfully to host: ${conn.connection.host}, database: ${conn.connection.name}`);
+        console.log(`[MongoDB] Connected to host: ${conn.connection.host}, database: ${conn.connection.name}`);
         return conn;
     } catch (error) {
-        console.warn(`[MongoDB] Connection error: ${error.message}. Starting IN-MEMORY fallback...`);
-        try {
-            const { MongoMemoryServer } = require('mongodb-memory-server');
-            const mongoServer = await MongoMemoryServer.create();
-            mongoURI = mongoServer.getUri();
-            
-            const conn = await mongoose.connect(mongoURI);
-            console.log(`[MongoDB] Connected to IN-MEMORY database successfully.`);
-            
-            // Seed DB with test articles
-            const seedTestData = require('../../seed_test');
-            await seedTestData();
-            return conn;
-        } catch (memError) {
-            throw memError;
+        if (process.env.NODE_ENV !== 'production') {
+            console.warn(`[MongoDB] Could not connect to local MongoDB (${error.message}). Falling back to temporary IN-MEMORY database...`);
+            return connectInMemory();
         }
+        throw new Error(
+            `Could not connect to MongoDB (${error.message}). ` +
+            'Start it with "docker compose up -d mongodb", or set USE_MEMORY_DB=true for a temporary dev database.'
+        );
     }
 };
 
