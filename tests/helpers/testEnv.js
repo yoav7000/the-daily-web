@@ -22,14 +22,18 @@ const disconnectTestDb = async () => {
 };
 
 /**
- * Editors cannot self-register, so tests create them directly in the database.
+ * There is no public sign-up: accounts are created by editors (or the seed script),
+ * so tests create their users directly in the database.
  */
-const createEditor = async (username, fullName = 'עורכת בדיקה') => {
-    const user = await User.create({ username, password: 'password123', fullName, role: 'editor' });
+const createUser = async (username, fullName, role) => {
+    const user = await User.create({ username, password: 'password123', fullName, role });
     return {
         token: generateToken(user),
         user: { id: user._id, username: user.username, fullName: user.fullName, role: user.role }
     };
 };
 
-module.exports = { connectTestDb, disconnectTestDb, createEditor };
+const createEditor = (username, fullName = 'עורכת בדיקה') => createUser(username, fullName, 'editor');
+const createReporter = (username, fullName = 'כתב בדיקה') => createUser(username, fullName, 'reporter');
+
+module.exports = { connectTestDb, disconnectTestDb, createEditor, createReporter };

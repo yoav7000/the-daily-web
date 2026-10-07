@@ -178,19 +178,6 @@
             color: #ffffff;
         }
 
-        .nav-tabs .nav-link {
-            font-weight: 700;
-            color: var(--news-muted);
-            border: none;
-            border-bottom: 2px solid transparent;
-            padding: 10px 16px;
-        }
-
-        .nav-tabs .nav-link.active {
-            color: var(--news-dark);
-            border-bottom: 2px solid var(--news-dark);
-            background: transparent;
-        }
 
         .footer-newspaper {
             background-color: #121212;
@@ -255,101 +242,29 @@
                 <div class="auth-subtitle">הזן פרטי עובד לכניסה למערכת. הגישה לסביבות העבודה מותנית בהתחברות בלבד.</div>
             </div>
 
-            <!-- Tab Navigation (Login vs Register) -->
-            <ul class="nav nav-tabs nav-fill px-3 pt-2" id="authTabs" role="tablist">
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link active" id="login-tab" data-bs-toggle="tab" data-bs-target="#login-panel" type="button" role="tab">
-                        <i class="bi bi-box-arrow-in-right me-1"></i> התחברות
-                    </button>
-                </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="register-tab" data-bs-toggle="tab" data-bs-target="#register-panel" type="button" role="tab">
-                        <i class="bi bi-person-plus me-1"></i> הרשמת עובד חדש
-                    </button>
-                </li>
-            </ul>
-
             <div class="auth-body">
                 <!-- Alert Message Box -->
                 <div id="authAlert" class="alert d-none" role="alert"></div>
 
-                <div class="tab-content" id="authTabContent">
-                    
-                    <!-- 1. LOGIN PANEL -->
-                    <div class="tab-pane fade show active" id="login-panel" role="tabpanel">
-                        <form id="loginForm">
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" id="loginUsername" placeholder="שם משתמש" required autocomplete="username">
-                                <label for="loginUsername"><i class="bi bi-person me-1"></i> שם משתמש</label>
-                            </div>
-
-                            <div class="form-floating mb-3 position-relative">
-                                <input type="password" class="form-control" id="loginPassword" placeholder="סיסמה" required autocomplete="current-password">
-                                <label for="loginPassword"><i class="bi bi-lock me-1"></i> סיסמה</label>
-                                <button type="button" class="btn btn-link position-absolute top-50 end-0 translate-middle-y text-muted text-decoration-none me-2" id="toggleLoginPassword">
-                                    <i class="bi bi-eye"></i>
-                                </button>
-                            </div>
-
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" id="rememberMe" checked>
-                                    <label class="form-check-label text-muted small" for="rememberMe">
-                                        זכור אותי במכשיר זה
-                                    </label>
-                                </div>
-                            </div>
-
-                            <button type="submit" class="btn btn-submit w-100 d-flex align-items-center justify-content-center gap-2" id="loginSubmitBtn">
-                                <span>התחבר למערכת</span>
-                                <i class="bi bi-arrow-left"></i>
-                            </button>
-                        </form>
-
-                        <!-- Quick Demo Fillers for Live Presentation -->
-                        <div class="mt-4 pt-3 border-top">
-                            <div class="text-muted small fw-semibold mb-2 text-center">התחברות מהירה למשתמשי הדגמה (Seeded):</div>
-                            <div class="row g-2">
-                                <div class="col-6">
-                                    <button type="button" class="btn btn-outline-primary btn-sm w-100 py-2 fw-semibold" onclick="fillDemoLogin('dan_reporter', 'password123')">
-                                        <i class="bi bi-pencil-square d-block fs-6 mb-1"></i> כתב: דן שטרן
-                                    </button>
-                                </div>
-                                <div class="col-6">
-                                    <button type="button" class="btn btn-outline-success btn-sm w-100 py-2 fw-semibold" onclick="fillDemoLogin('sarah_editor', 'password123')">
-                                        <i class="bi bi-shield-check d-block fs-6 mb-1"></i> עורכת: שרה לוי
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                <form id="loginForm">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control" id="loginUsername" placeholder="שם משתמש" required autocomplete="username">
+                        <label for="loginUsername"><i class="bi bi-person me-1"></i> שם משתמש</label>
                     </div>
 
-                    <!-- 2. REGISTER PANEL -->
-                    <div class="tab-pane fade" id="register-panel" role="tabpanel">
-                        <form id="registerForm">
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" id="regFullName" placeholder="שם מלא" required>
-                                <label for="regFullName"><i class="bi bi-card-heading me-1"></i> שם מלא</label>
-                            </div>
-
-                            <div class="form-floating mb-3">
-                                <input type="text" class="form-control" id="regUsername" placeholder="שם משתמש" required autocomplete="username">
-                                <label for="regUsername"><i class="bi bi-person me-1"></i> שם משתמש</label>
-                            </div>
-
-                            <div class="form-floating mb-3">
-                                <input type="password" class="form-control" id="regPassword" placeholder="סיסמה" required autocomplete="new-password">
-                                <label for="regPassword"><i class="bi bi-lock me-1"></i> סיסמה (לפחות 6 תווים)</label>
-                            </div>
-
-                            <button type="submit" class="btn btn-submit w-100 d-flex align-items-center justify-content-center gap-2" id="regSubmitBtn">
-                                <span>צור חשבון והתחבר</span>
-                                <i class="bi bi-check-circle"></i>
-                            </button>
-                        </form>
+                    <div class="form-floating mb-3 position-relative">
+                        <input type="password" class="form-control" id="loginPassword" placeholder="סיסמה" required autocomplete="current-password">
+                        <label for="loginPassword"><i class="bi bi-lock me-1"></i> סיסמה</label>
+                        <button type="button" class="btn btn-link position-absolute top-50 end-0 translate-middle-y text-muted text-decoration-none me-2" id="toggleLoginPassword">
+                            <i class="bi bi-eye"></i>
+                        </button>
                     </div>
 
-                </div>
+                    <button type="submit" class="btn btn-submit w-100 d-flex align-items-center justify-content-center gap-2" id="loginSubmitBtn">
+                        <span>התחבר למערכת</span>
+                        <i class="bi bi-arrow-left"></i>
+                    </button>
+                </form>
             </div>
         </div>
     </main>
@@ -375,7 +290,6 @@
             </div>
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 text-secondary small">
                 <div>&copy; 2026 The Daily Web. כל הזכויות שמורות.</div>
-                <div class="font-num">Advanced Web Applications Project</div>
             </div>
         </div>
     </footer>
@@ -388,7 +302,8 @@
         function redirectAfterLogin(user) {
             const urlParams = new URLSearchParams(window.location.search);
             const redirectUrl = urlParams.get('redirect');
-            if (redirectUrl) {
+            // only follow paths inside this site ("/editor.html"), never another address ("https://..." or "//host")
+            if (redirectUrl && redirectUrl.startsWith('/') && !redirectUrl.startsWith('//') && !redirectUrl.includes('\\')) {
                 window.location.href = redirectUrl;
                 return;
             }
@@ -451,11 +366,7 @@
             const password = document.getElementById('loginPassword').value;
             const submitBtn = document.getElementById('loginSubmitBtn');
 
-            if (!username || !password) {
-                showAlert('נא להזין שם משתמש וסיסמה');
-                return;
-            }
-
+            // the server decides whether the credentials are valid (and says why not)
             submitBtn.disabled = true;
             submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> מתחבר...';
 
@@ -470,7 +381,6 @@
 
                 if (res.ok && data.success) {
                     localStorage.setItem('token', data.token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
                     showAlert('התחברת בהצלחה! מעביר אותך...', 'success');
                     setTimeout(() => {
                         redirectAfterLogin(data.user);
@@ -485,63 +395,6 @@
                 submitBtn.innerHTML = '<span>התחבר למערכת</span> <i class="bi bi-arrow-left"></i>';
             }
         });
-
-        // Handle Register Submission
-        document.getElementById('registerForm').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            clearAlert();
-
-            const fullName = document.getElementById('regFullName').value.trim();
-            const username = document.getElementById('regUsername').value.trim();
-            const password = document.getElementById('regPassword').value;
-            const submitBtn = document.getElementById('regSubmitBtn');
-
-            if (!fullName || !username || !password) {
-                showAlert('נא למלא את כל השדות');
-                return;
-            }
-
-            if (password.length < 6) {
-                showAlert('הסיסמה חייבת להכיל לפחות 6 תווים');
-                return;
-            }
-
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> יוצר חשבון...';
-
-            try {
-                const res = await fetch('/api/auth/register', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ fullName, username, password })
-                });
-
-                const data = await res.json();
-
-                if (res.ok && data.success) {
-                    localStorage.setItem('token', data.token);
-                    localStorage.setItem('user', JSON.stringify(data.user));
-                    showAlert('החשבון נוצר בהצלחה! מעביר אותך...', 'success');
-                    setTimeout(() => {
-                        redirectAfterLogin(data.user);
-                    }, 600);
-                } else {
-                    showAlert(data.message || 'שגיאה ביצירת החשבון');
-                }
-            } catch (err) {
-                showAlert('אירעה שגיאה ברישום. נסה שוב מאוחר יותר.');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<span>צור חשבון והתחבר</span> <i class="bi bi-check-circle"></i>';
-            }
-        });
-
-        // Fill credentials for demo users and trigger login
-        function fillDemoLogin(username, password) {
-            document.getElementById('loginUsername').value = username;
-            document.getElementById('loginPassword').value = password;
-            document.getElementById('loginForm').dispatchEvent(new Event('submit'));
-        }
 
         // Dynamic Date Calculation
         function updateDateDisplay() {
