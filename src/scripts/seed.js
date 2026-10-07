@@ -141,7 +141,7 @@ const seedDatabase = async ({ connect = true } = {}) => {
     console.log('==================================================');
 
     if (connect) {
-        await mongoose.connect(MONGO_URI);
+        await mongoose.connect(MONGO_URI, { serverSelectionTimeoutMS: 3000 });
     }
 
     // 1. ניקוי נתונים קיימים
@@ -431,7 +431,10 @@ if (require.main === module) {
     seedDatabase()
         .then(() => mongoose.disconnect())
         .catch(async (err) => {
-            console.error('Fatal error during seeding:', err.message);
+            console.error('\n❌ שגיאה בהזנת הנתונים (Seeding Error):', err.message);
+            console.error('💡 ודא שמסד הנתונים MongoDB פועל כהלכה:');
+            console.error('   • הפעלת קונטיינר דרך Docker: docker compose up -d mongodb');
+            console.error('   • או ודא ששירות MongoDB מקומי פעיל, או עדכן את MONGODB_URI בקובץ .env');
             await mongoose.disconnect();
             process.exit(1);
         });
