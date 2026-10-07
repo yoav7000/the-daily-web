@@ -1,12 +1,14 @@
 const DEFAULT_LIMIT = 20;
 const MAX_LIMIT = 100;
+// Dashboards for logged-in staff load their whole list at once and filter it in the browser
+const MAX_STAFF_LIMIT = 500;
 
 /**
  * Reads page/limit from a query string, falling back to safe defaults and capping the limit.
  */
-const parsePagination = (query, defaultLimit = DEFAULT_LIMIT) => {
+const parsePagination = (query, defaultLimit = DEFAULT_LIMIT, maxLimit = MAX_LIMIT) => {
     const page = Math.max(parseInt(query.page, 10) || 1, 1);
-    const limit = Math.min(Math.max(parseInt(query.limit, 10) || defaultLimit, 1), MAX_LIMIT);
+    const limit = Math.min(Math.max(parseInt(query.limit, 10) || defaultLimit, 1), maxLimit);
     return { page, limit, skip: (page - 1) * limit };
 };
 
@@ -16,4 +18,4 @@ const buildPagination = (totalCount, page, limit) => ({
     totalPages: Math.ceil(totalCount / limit)
 });
 
-module.exports = { parsePagination, buildPagination };
+module.exports = { parsePagination, buildPagination, MAX_STAFF_LIMIT };

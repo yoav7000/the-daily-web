@@ -1,8 +1,7 @@
 const mongoose = require('mongoose');
 const dotenv = require('dotenv');
-const bcrypt = require('bcryptjs');
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const User = require('../models/User');
 const Article = require('../models/Article');
@@ -153,21 +152,19 @@ const seedDatabase = async ({ connect = true } = {}) => {
             ViewStat.deleteMany({})
         ]);
 
-        // 2. יצירת משתמשי דמה (עורכים וכתבים עם סיסמה מוצפנת ב-bcrypt)
+        // 2. יצירת משתמשי דמה (עורכים וכתבים). המודל מצפין את הסיסמאות ב-bcrypt לפני השמירה
         console.log('יוצר משתמשים (כתבים ועורכים)...');
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash('password123', salt);
+        const demoPassword = 'password123';
 
         const usersData = [
-            { username: 'sarah_editor', password: hashedPassword, fullName: 'שרה לוי', role: 'editor' },
-            { username: 'yossi_editor', password: hashedPassword, fullName: 'יוסי אדלר', role: 'editor' },
-            { username: 'dan_reporter', password: hashedPassword, fullName: 'דן שטרן', role: 'reporter' },
-            { username: 'michal_reporter', password: hashedPassword, fullName: 'מיכל כהן', role: 'reporter' },
-            { username: 'ron_reporter', password: hashedPassword, fullName: 'רון אברהמי', role: 'reporter' },
-            { username: 'noa_reporter', password: hashedPassword, fullName: 'נועה ברקוביץ', role: 'reporter' }
+            { username: 'sarah_editor', password: demoPassword, fullName: 'שרה לוי', role: 'editor' },
+            { username: 'yossi_editor', password: demoPassword, fullName: 'יוסי אדלר', role: 'editor' },
+            { username: 'dan_reporter', password: demoPassword, fullName: 'דן שטרן', role: 'reporter' },
+            { username: 'michal_reporter', password: demoPassword, fullName: 'מיכל כהן', role: 'reporter' },
+            { username: 'ron_reporter', password: demoPassword, fullName: 'רון אברהמי', role: 'reporter' },
+            { username: 'noa_reporter', password: demoPassword, fullName: 'נועה ברקוביץ', role: 'reporter' }
         ];
 
-        // נשתמש ב-insertMany כדי לא להפעיל שוב pre-save hook של hashing
         const createdUsers = await User.insertMany(usersData);
         const editors = createdUsers.filter(u => u.role === 'editor');
         const reporters = createdUsers.filter(u => u.role === 'reporter');

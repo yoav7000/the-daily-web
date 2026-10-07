@@ -3,9 +3,10 @@ const ViewStat = require('../models/ViewStat');
 const { ARTICLE_STATUS, ARTICLE_CATEGORIES, DEFAULT_ARTICLE_IMAGE } = require('../constants/articleConstants');
 const { logOperation } = require('../middleware/requestLogger');
 const { recordViewInternal } = require('./analyticsController');
-const { parsePagination, buildPagination } = require('../utils/pagination');
+const { parsePagination, buildPagination, MAX_STAFF_LIMIT } = require('../utils/pagination');
 const { normalizeStatus } = require('../utils/statusFilter');
 const { cleanText } = require('../utils/text');
+const { buildSearchFilter } = require('../utils/search');
 const { sanitizeHtml } = require('../utils/sanitizeHtml');
 
 /**
@@ -25,6 +26,19 @@ const toPublicArticle = (article) => ({
     author: article.author,
     publishedAt: article.publishedAt
 });
+
+/**
+ * An article waiting for the editor is locked: edits after submitting would change what the editor reviews.
+ * It becomes editable again when the editor returns it for revisions.
+ */
+const isLockedForEditing = (article) => {
+    if (article.status === ARTICLE_STATUS.PENDING_APPROVAL) {
+        return true;
+    }
+    return article.status === ARTICLE_STATUS.PUBLISHED
+        && Boolean(article.draftVersion)
+        && article.draftVersion.status === ARTICLE_STATUS.PENDING_APPROVAL;
+};
 
 const canModifyArticle = (article, user) => {
     if (user.role === 'editor') return true;
@@ -106,6 +120,13 @@ const autoSaveArticle = async (req, res, next) => {
             if (!canModifyArticle(article, req.user)) {
                 return res.status(403).json({ success: false, message: 'אין לך הרשאה לערוך כתבה זו' });
             }
+
+            if (isLockedForEditing(article)) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'הכתבה ממתינה לאישור עורך ונעולה לעריכה עד שהעורך יחזיר אותה או יאשר אותה'
+                });
+            }
         } else {
             // If no ID provided, initialize a new draft article
             article = new Article({
@@ -184,11 +205,9 @@ const getMyArticles = async (req, res, next) => {
             query.category = cleanText(category);
         }
 
-        if (cleanText(search)) {
-            query.$text = { $search: cleanText(search) };
-        }
+        Object.assign(query, buildSearchFilter(search, ['title', 'summary']));
 
-        const { page, limit, skip } = parsePagination(req.query);
+        const { page, limit, skip } = parsePagination(req.query, 20, MAX_STAFF_LIMIT);
         const [articles, totalCount] = await Promise.all([
             Article.find(query)
                 .sort({ updatedAt: -1 })
@@ -349,11 +368,9 @@ const getAllArticlesForEditor = async (req, res, next) => {
             query.author = cleanText(author);
         }
 
-        if (cleanText(search)) {
-            query.$text = { $search: cleanText(search) };
-        }
+        Object.assign(query, buildSearchFilter(search, ['title', 'summary']));
 
-        const { page, limit, skip } = parsePagination(req.query);
+        const { page, limit, skip } = parsePagination(req.query, 20, MAX_STAFF_LIMIT);
         const [articles, totalCount] = await Promise.all([
             Article.find(query)
                 .populate('author', 'fullName username role')
@@ -699,9 +716,7 @@ const getPublicArticles = async (req, res, next) => {
             query.category = cleanText(category);
         }
 
-        if (cleanText(search)) {
-            query.$text = { $search: cleanText(search) };
-        }
+        Object.assign(query, buildSearchFilter(search, ['title', 'summary']));
 
         let sortOption = { publishedAt: -1 };
         if (sort === 'oldest') {

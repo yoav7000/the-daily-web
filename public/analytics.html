@@ -24,6 +24,11 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <style>
+        /* Always reserve the space of the page scrollbar. Without it, buttons jump sideways whenever a filter
+           makes the page short enough for the scrollbar to disappear (and back). */
+        html {
+            overflow-y: scroll;
+        }
         :root {
             --font-editorial: 'Frank Ruhl Libre', serif;
             --font-sans: 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -360,36 +365,11 @@
             font-size: 0.85rem;
         }
 
-        /* Custom Anti-Spam Banner */
-        .rate-limit-card {
-            display: none;
-            background: var(--danger-subtle);
-            border: 1px solid #fca5a5;
-            border-radius: var(--radius-md);
-            padding: 14px 18px;
-            color: #991b1b;
-            font-size: 0.9rem;
-            animation: fadeIn 0.3s ease;
-        }
-
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(-4px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
-        /* Console Output Box */
-        .console-stream {
-            background-color: #090d16;
-            color: #38bdf8;
-            font-family: var(--font-mono);
-            font-size: 0.8rem;
-            padding: 14px;
-            border-radius: 8px;
-            max-height: 180px;
-            overflow-y: auto;
-            white-space: pre-wrap;
-            border: 1px solid #1e293b;
-        }
     </style>
 </head>
 <body>
@@ -404,10 +384,6 @@
                 <span class="text-muted d-none d-md-inline">|</span>
                 <span id="topWeatherSnippet" class="d-none d-md-inline-flex align-items-center gap-1">
                     <i class="bi bi-cloud-sun text-warning"></i> תל אביב: <strong class="font-num">27°C</strong>
-                </span>
-                <span class="badge bg-light text-muted border py-1 px-2 d-none d-md-inline-flex align-items-center gap-1">
-                    <span class="spinner-grow spinner-grow-sm text-success" style="width: 8px; height: 8px;"></span>
-                    <span>שרת פעיל (MongoDB)</span>
                 </span>
             </div>
             <div class="d-flex align-items-center gap-2">
@@ -448,9 +424,6 @@
                 <a href="/editor.html" class="category-link">
                     <i class="bi bi-shield-check"></i> דסק עורכים
                 </a>
-                <a href="/test.html" class="category-link">
-                    <i class="bi bi-tools"></i> מעבדת Workflow
-                </a>
                 <a href="/portal.html" class="category-link">
                     <i class="bi bi-grid-3x3-gap-fill"></i> פורטל עובדים
                 </a>
@@ -473,12 +446,6 @@
                 </div>
 
                 <div class="col-lg-7 col-md-12 d-flex align-items-end justify-content-lg-end flex-wrap gap-2 pt-2 pt-lg-0">
-                    <button class="btn btn-primary fw-semibold d-inline-flex align-items-center gap-2" onclick="simulateViews(1)">
-                        <i class="bi bi-eye"></i> +1 צפיית קורא
-                    </button>
-                    <button class="btn btn-outline-primary fw-semibold d-inline-flex align-items-center gap-2" onclick="simulateViews(10)">
-                        <i class="bi bi-lightning-charge"></i> +10 צפיות מהירות
-                    </button>
                     <button class="btn btn-light border fw-semibold text-secondary d-inline-flex align-items-center gap-2" onclick="loadAnalyticsForSelectedArticle()">
                         <i class="bi bi-arrow-clockwise"></i> רענן נתונים
                     </button>
@@ -546,7 +513,7 @@
                             <h2 class="fs-5 fw-bold text-dark m-0">
                                 <i class="bi bi-graph-up text-primary me-2"></i>עקומת צפיות לאורך ציר הזמן
                             </h2>
-                            <p class="text-muted small m-0">מעקב רציף לפי דליי זמן שעתיים (Time-Bucket Aggregation)</p>
+                            <p class="text-muted small m-0">מעקב רציף לפי דליי זמן (שעה, ובכתבות ותיקות יום או שבוע). שעות בלי צפיות מוצגות כ-0.</p>
                         </div>
                         <div class="d-flex align-items-center gap-3">
                             <span class="small text-muted d-flex align-items-center gap-1">
@@ -554,8 +521,16 @@
                                 צפיות שוטפות
                             </span>
                             <span class="small text-muted d-flex align-items-center gap-1">
+                                <span style="display:inline-block; width:10px; height:10px; background:#16a34a; border-radius:50%;"></span>
+                                פרסום ראשוני
+                            </span>
+                            <span class="small text-muted d-flex align-items-center gap-1">
                                 <span style="display:inline-block; width:10px; height:10px; background:#d97706; border-radius:50%;"></span>
                                 אישור עדכון עורך
+                            </span>
+                            <span class="small text-muted d-flex align-items-center gap-1">
+                                <span style="display:inline-block; width:14px; height:10px; background:rgba(217, 119, 6, 0.15); border-radius:2px;"></span>
+                                אחרי העדכון האחרון
                             </span>
                         </div>
                     </div>
@@ -577,88 +552,6 @@
                     <div id="milestonesTimeline" class="mt-2">
                         <div class="text-muted small text-center py-4">טוען נתוני גרסאות...</div>
                     </div>
-                </div>
-            </div>
-        </section>
-
-        <!-- 5. Real-Time AJAX Comments & Anti-Spam Defense Lab -->
-        <section class="row g-4">
-            <!-- Comments Module -->
-            <div class="col-lg-6">
-                <div class="analytics-card p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <h2 class="fs-5 fw-bold text-dark m-0">
-                            <i class="bi bi-chat-left-dots text-primary me-2"></i>תגובות קוראים (AJAX ללא רענון)
-                        </h2>
-                        <span id="commentsCountBadge" class="badge bg-light text-primary border fw-bold px-3 py-2">
-                            0 תגובות
-                        </span>
-                    </div>
-
-                    <!-- Anti-Spam Notification Banner -->
-                    <div id="rateLimitBanner" class="rate-limit-card mb-3">
-                        <div class="d-flex align-items-center gap-2">
-                            <i class="bi bi-shield-slash fs-4 text-danger"></i>
-                            <div>
-                                <strong class="d-block">חסימת ספאם הופעלה (Server-Side 429)!</strong>
-                                <span>ניתן לפרסם עד 3 תגובות בדקה מאותו מכשיר. המגבלה תשתחרר <strong id="countdownTimer"></strong>.</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Add Comment Form -->
-                    <div class="p-3 bg-light rounded-3 mb-3 border">
-                        <div class="mb-2">
-                            <input type="text" id="commentAuthor" class="form-control" placeholder="שם מלא / כינוי המגיב..." maxlength="100">
-                        </div>
-                        <div class="mb-2">
-                            <textarea id="commentContent" class="form-control" rows="3" placeholder="כתבו תגובה... (דרישת פרויקט: עדכון מיידי ברשימה ללא טעינה מחדש של הדף)" maxlength="1000"></textarea>
-                        </div>
-                        <div class="d-flex justify-content-between align-items-center">
-                            <button id="submitCommentBtn" class="btn btn-success fw-semibold px-4 d-inline-flex align-items-center gap-2" onclick="submitCommentAJAX()">
-                                <i class="bi bi-send"></i> פרסם תגובה (AJAX)
-                            </button>
-                            <span class="text-muted small">
-                                <i class="bi bi-shield-check text-success"></i> מגבלת ספאם: 3/דקה
-                            </span>
-                        </div>
-                    </div>
-
-                    <!-- Comments Stream -->
-                    <div id="commentsStream" class="comments-stream pe-2">
-                        <div class="text-center text-muted py-4 small">טוען תגובות...</div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Anti-Spam & Server Restart Demonstration Lab -->
-            <div class="col-lg-6">
-                <div class="analytics-card p-4">
-                    <h2 class="fs-5 fw-bold text-dark mb-2">
-                        <i class="bi bi-shield-lock text-danger me-2"></i>בדיקת חסימת ספאם ועמידות ל-Restart
-                    </h2>
-                    <p class="text-muted small mb-3">
-                        דרישת הקורס: אורח מוגבל ל-3 תגובות בדקה מאותו מכשיר. השרת מבצע שאילתת <code>countDocuments</code> 
-                        ישירות מול MongoDB, ולכן המגבלה **אינה מתאפסת גם בעת Restart של השרת**.
-                    </p>
-
-                    <div class="p-3 bg-light rounded-3 border mb-3">
-                        <div class="fw-bold text-dark small mb-1">
-                            <i class="bi bi-lightning text-warning me-1"></i> הדגמה מול המרצה (Stress Test):
-                        </div>
-                        <p class="text-muted small mb-2">
-                            לחיצה על הכפתור תשלח 4 תגובות ברצף מהיר. 3 הראשונות יאושרו, וה-4 תיחסם ב-<code>HTTP 429 Too Many Requests</code>:
-                        </p>
-                        <button class="btn btn-danger btn-sm fw-semibold px-3 d-inline-flex align-items-center gap-2" onclick="triggerSpamTest()">
-                            <i class="bi bi-bug"></i> הרץ בדיקת הצפת ספאם (4 תגובות רצופות)
-                        </button>
-                    </div>
-
-                    <div class="mb-2 d-flex justify-content-between align-items-center">
-                        <span class="small fw-bold text-muted">יומן קריאות שרת בזמן אמת:</span>
-                        <span class="badge bg-dark font-mono text-info small">Terminal Stream</span>
-                    </div>
-                    <div id="spamTestLog" class="console-stream">מוכן להדגמה...</div>
                 </div>
             </div>
         </section>
@@ -742,7 +635,6 @@
                     renderMilestonesTimeline(data.milestones);
                 }
 
-                await fetchAndDisplayComments(activeArticleId);
             } catch (err) {
                 console.error('Failed to load article analytics:', err);
             }
@@ -774,6 +666,61 @@
             }
         }
 
+        // Marks the publication and every editor-approved update on the graph itself:
+        // a dashed vertical line at each point in time, and a tinted area after the last update
+        const MILESTONE_COLORS = { INITIAL_PUBLISH: '#16a34a', REVISION_UPDATE: '#d97706' };
+
+        const milestoneMarkersPlugin = {
+            id: 'milestoneMarkers',
+            beforeDatasetsDraw(chart, args, options) {
+                const milestones = options.milestones || [];
+                const updates = milestones.filter(m => m.type === 'REVISION_UPDATE');
+                if (updates.length === 0) return;
+
+                const { ctx, chartArea, scales } = chart;
+                const x = scales.x.getPixelForValue(updates[updates.length - 1].pointIndex);
+                ctx.save();
+                ctx.fillStyle = 'rgba(217, 119, 6, 0.08)';
+                ctx.fillRect(x, chartArea.top, chartArea.right - x, chartArea.bottom - chartArea.top);
+                ctx.restore();
+            },
+            afterDatasetsDraw(chart, args, options) {
+                const milestones = options.milestones || [];
+                const { ctx, chartArea, scales } = chart;
+
+                milestones.forEach((m, i) => {
+                    const x = scales.x.getPixelForValue(m.pointIndex);
+                    const color = MILESTONE_COLORS[m.type] || '#64748b';
+                    const text = m.type === 'INITIAL_PUBLISH' ? 'פרסום' : m.title.replace('עדכון גרסה ', 'עדכון ');
+
+                    ctx.save();
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([6, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(x, chartArea.top);
+                    ctx.lineTo(x, chartArea.bottom);
+                    ctx.stroke();
+
+                    // label pill above the line (staggered so close milestones do not overlap)
+                    ctx.setLineDash([]);
+                    ctx.font = 'bold 11px Assistant, sans-serif';
+                    const width = ctx.measureText(text).width + 12;
+                    const labelX = Math.min(Math.max(x - width / 2, chartArea.left), chartArea.right - width);
+                    const labelY = chartArea.top + 4 + (i % 2) * 20;
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.roundRect(labelX, labelY, width, 18, 9);
+                    ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.textBaseline = 'middle';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(text, labelX + width / 2, labelY + 9.5);
+                    ctx.restore();
+                });
+            }
+        };
+
         // 4. Render Chart.js with Beautiful Modern Aesthetics
         function renderImpactChart(data) {
             const ctx = document.getElementById('impactChart').getContext('2d');
@@ -790,8 +737,11 @@
             gradient.addColorStop(0, 'rgba(37, 99, 235, 0.25)');
             gradient.addColorStop(1, 'rgba(37, 99, 235, 0.00)');
 
+            const milestones = data.milestones || [];
+
             currentChart = new Chart(ctx, {
                 type: 'line',
+                plugins: [milestoneMarkersPlugin],
                 data: {
                     labels: labels,
                     datasets: [{
@@ -820,6 +770,7 @@
                     },
                     plugins: {
                         legend: { display: false },
+                        milestoneMarkers: { milestones },
                         tooltip: {
                             backgroundColor: '#0f172a',
                             titleFont: { family: 'Assistant', size: 13, weight: 'bold' },
@@ -828,7 +779,10 @@
                             cornerRadius: 8,
                             displayColors: false,
                             callbacks: {
-                                label: (item) => ` כמות צפיות: ${item.parsed.y.toLocaleString()}`
+                                label: (item) => ` כמות צפיות: ${item.parsed.y.toLocaleString()}`,
+                                afterBody: (items) => milestones
+                                    .filter(m => m.pointIndex === items[0].dataIndex)
+                                    .map(m => `● ${m.title}${m.editorName ? ' (' + m.editorName + ')' : ''}`)
                             }
                         }
                     },
@@ -886,187 +840,6 @@
                 `;
                 container.appendChild(div);
             });
-        }
-
-        // 6. View Simulation Action
-        async function simulateViews(amount) {
-            if (!activeArticleId) return;
-            for (let i = 0; i < amount; i++) {
-                await fetch(`/api/analytics/view/${activeArticleId}`, { method: 'POST' });
-            }
-            await loadAnalyticsForSelectedArticle();
-        }
-
-        // 7. Comments Module (AJAX)
-        async function fetchAndDisplayComments(articleId) {
-            const container = document.getElementById('commentsStream');
-            const badge = document.getElementById('commentsCountBadge');
-
-            try {
-                const res = await fetch(`/api/articles/${articleId}/comments`);
-                const data = await res.json();
-
-                if (data.success) {
-                    badge.textContent = `${data.comments.length} תגובות`;
-
-                    if (data.comments.length === 0) {
-                        container.innerHTML = '<div class="text-center text-muted py-4 small">טרם פורסמו תגובות לכתבה זו. היו הראשונים להגיב!</div>';
-                        return;
-                    }
-
-                    container.innerHTML = '';
-                    data.comments.forEach(c => {
-                        container.appendChild(buildCommentElement(c));
-                    });
-                }
-            } catch (err) {
-                container.innerHTML = '<div class="text-danger small py-3">שגיאה בטעינת תגובות</div>';
-            }
-        }
-
-        function buildCommentElement(comment) {
-            const el = document.createElement('div');
-            el.className = 'comment-item';
-
-            const author = comment.authorName || 'אורח';
-            const initial = author.trim().charAt(0) || 'A';
-            const d = new Date(comment.createdAt || Date.now());
-            const timeStr = `${d.toLocaleDateString('he-IL')} בשעה ${d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}`;
-
-            el.innerHTML = `
-                <div class="d-flex align-items-center justify-content-between mb-2">
-                    <div class="d-flex align-items-center gap-2">
-                        <div class="avatar-circle">${escapeHtml(initial)}</div>
-                        <div>
-                            <div class="fw-bold small text-dark">${escapeHtml(author)}</div>
-                            <div class="font-mono text-muted" style="font-size: 0.75rem;">${timeStr}</div>
-                        </div>
-                    </div>
-                    <span class="badge bg-white text-muted border small">קורא/ת מאומת/ת</span>
-                </div>
-                <div class="text-body small" style="white-space: pre-wrap;">${escapeHtml(comment.content)}</div>
-            `;
-            return el;
-        }
-
-        async function submitCommentAJAX() {
-            if (!activeArticleId) return;
-
-            const authorInput = document.getElementById('commentAuthor');
-            const contentInput = document.getElementById('commentContent');
-            const banner = document.getElementById('rateLimitBanner');
-            const submitBtn = document.getElementById('submitCommentBtn');
-
-            const authorName = authorInput.value.trim();
-            const content = contentInput.value.trim();
-
-            if (!authorName || !content) {
-                alert('נא למלא שם מגיב ותוכן תגובה');
-                return;
-            }
-
-            submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="spinner-border spinner-border-sm"></span> שולח...';
-
-            try {
-                const res = await fetch(`/api/articles/${activeArticleId}/comments`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ authorName, content })
-                });
-
-                const data = await res.json();
-
-                if (res.status === 429) {
-                    displayRateLimitError(data.retryAfterSeconds || 60);
-                } else if (data.success) {
-                    banner.style.display = 'none';
-
-                    // Instant prepend to stream without page refresh
-                    const stream = document.getElementById('commentsStream');
-                    const newEl = buildCommentElement(data.comment);
-
-                    if (stream.querySelector('.comment-item') === null) {
-                        stream.innerHTML = '';
-                    }
-                    stream.insertBefore(newEl, stream.firstChild);
-
-                    // Clear form
-                    contentInput.value = '';
-
-                    // Update count
-                    const badge = document.getElementById('commentsCountBadge');
-                    const cur = parseInt(badge.textContent) || 0;
-                    badge.textContent = `${cur + 1} תגובות`;
-                } else {
-                    alert(data.message || 'שגיאה בשליחת התגובה');
-                }
-            } catch (err) {
-                alert('שגיאת תקשורת מול השרת');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.innerHTML = '<i class="bi bi-send"></i> פרסם תגובה (AJAX)';
-            }
-        }
-
-        function displayRateLimitError(seconds) {
-            const banner = document.getElementById('rateLimitBanner');
-            const timer = document.getElementById('countdownTimer');
-            banner.style.display = 'block';
-
-            let rem = seconds;
-            timer.textContent = `בעוד ${rem} שניות`;
-
-            const t = setInterval(() => {
-                rem--;
-                if (rem <= 0) {
-                    clearInterval(t);
-                    banner.style.display = 'none';
-                } else {
-                    timer.textContent = `בעוד ${rem} שניות`;
-                }
-            }, 1000);
-        }
-
-        // 8. Anti-Spam Stress Test for Oral Defense
-        async function triggerSpamTest() {
-            if (!activeArticleId) return;
-            const logBox = document.getElementById('spamTestLog');
-            logBox.textContent = `[${new Date().toLocaleTimeString()}] תחילת בדיקת הצפה מהירה (4 תגובות ברצף)...\n`;
-
-            for (let i = 1; i <= 4; i++) {
-                try {
-                    const res = await fetch(`/api/articles/${activeArticleId}/comments`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            authorName: `בודק #${i}`,
-                            content: `בדיקת עמידות ספאם תגובה ${i}`
-                        })
-                    });
-                    const data = await res.json();
-
-                    if (res.status === 429) {
-                        logBox.textContent += `🔴 תגובה #${i}: נחסמה כחוק! HTTP 429 (Too Many Requests). המתנה: ${data.retryAfterSeconds} שניות.\n`;
-                        displayRateLimitError(data.retryAfterSeconds || 60);
-                    } else if (data.success) {
-                        logBox.textContent += `🟢 תגובה #${i}: אושרה בהצלחה! HTTP 201 Created\n`;
-                    }
-                } catch (err) {
-                    logBox.textContent += `⚠️ תגובה #${i}: תקלה ברשת\n`;
-                }
-            }
-            await fetchAndDisplayComments(activeArticleId);
-        }
-
-        function escapeHtml(str) {
-            if (!str) return '';
-            return String(str)
-                .replace(/&/g, '&amp;')
-                .replace(/</g, '&lt;')
-                .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;')
-                .replace(/'/g, '&#039;');
         }
 
         // Dynamic Date Calculation
