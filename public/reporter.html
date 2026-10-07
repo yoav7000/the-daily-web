@@ -545,6 +545,7 @@
 
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/common.js"></script>
 
     <script>
         // משתני מצב
@@ -579,17 +580,6 @@
             await loadMyArticles();
         });
 
-        function getAuthToken() {
-            return localStorage.getItem('token') || getCookie('token');
-        }
-
-        function getCookie(name) {
-            return document.cookie.split('; ').reduce((r, v) => {
-                const parts = v.split('=');
-                return parts[0] === name ? decodeURIComponent(parts[1]) : r;
-            }, '');
-        }
-
         // אימות חיבור
         async function verifySession() {
             const token = getAuthToken();
@@ -604,7 +594,7 @@
                 });
 
                 if (!res.ok) {
-                    localStorage.removeItem('token');
+                    clearLocalLogin();
                     window.location.href = '/login.html';
                     return;
                 }
@@ -617,13 +607,6 @@
             }
         }
 
-        function logout() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-            window.location.href = '/login.html';
-        }
-
         function showToast(message, icon = 'bi-check-circle-fill', isError = false) {
             const toastEl = document.getElementById('liveToast');
             const msgEl = document.getElementById('toastMessage');
@@ -632,7 +615,7 @@
                 ? 'toast align-items-center text-bg-danger border-0 shadow' 
                 : 'toast align-items-center text-bg-dark border-0 shadow';
 
-            msgEl.innerHTML = `<i class="bi ${icon}"></i> <div>${message}</div>`;
+            msgEl.innerHTML = `<i class="bi ${icon}"></i> <div>${escapeHtml(message)}</div>`;
             const toast = new bootstrap.Toast(toastEl, { delay: 3500 });
             toast.show();
         }
@@ -744,6 +727,11 @@
             renderArticlesList(list);
         }
 
+        function stripHtmlTags(str) {
+            // DOMParser never runs scripts or loads images, unlike assigning innerHTML to a detached element
+            return new DOMParser().parseFromString(str, 'text/html').body.textContent || '';
+        }
+
         // רינדור רשימת הכתבות ב-DOM
         function renderArticlesList(articles) {
             const container = document.getElementById('articlesListContainer');
@@ -799,7 +787,7 @@
                     <div class="article-item-card">
                         <div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
                             <div class="d-flex align-items-center gap-2 flex-wrap">
-                                <span class="category-badge">${article.category || 'כללי'}</span>
+                                <span class="category-badge">${escapeHtml(article.category || 'כללי')}</span>
                                 <span class="status-badge ${statusClass}">
                                     <i class="bi ${statusIcon}"></i> ${statusName}
                                 </span>
@@ -816,16 +804,16 @@
 
                         <h4 class="mb-2">
                             ${isCurrentlyPending ? `
-                                <span class="fw-bold text-dark">${article.title || 'טיוטה ללא כותרת'}</span>
+                                <span class="fw-bold text-dark">${escapeHtml(article.title || 'טיוטה ללא כותרת')}</span>
                             ` : `
                                 <a href="javascript:void(0)" class="article-title-link" onclick="openEditModal('${article._id}')">
-                                    ${article.title || 'טיוטה ללא כותרת'}
+                                    ${escapeHtml(article.title || 'טיוטה ללא כותרת')}
                                 </a>
                             `}
                         </h4>
 
                         <p class="text-muted mb-3" style="font-size: 0.95rem;">
-                            ${article.summary || (article.content ? article.content.replace(/<[^>]*>/g, '').substring(0, 150) + '...' : 'אין תקציר זמין')}
+                            ${escapeHtml(article.summary || (article.content ? stripHtmlTags(article.content).substring(0, 150) + '...' : 'אין תקציר זמין'))}
                         </p>
 
                         <!-- תיבת הערת עורך במידה והוחזרה לתיקונים -->
@@ -836,7 +824,7 @@
                                     <span>הערת העורך לתיקון:</span>
                                 </div>
                                 <div class="text-dark bg-white p-2 rounded border border-danger-subtle mb-2">
-                                    ${article.editorFeedback || article.draftVersion.editorFeedback}
+                                    ${escapeHtml(article.editorFeedback || article.draftVersion.editorFeedback)}
                                 </div>
                                 <div>
                                     <button type="button" class="btn btn-sm btn-danger fw-bold py-1 px-3" onclick="openEditModal('${article._id}')">
@@ -1078,7 +1066,7 @@
             else if (state === 'dirty') icon = 'bi-pencil-fill';
             else if (state === 'error') icon = 'bi-exclamation-triangle-fill';
 
-            indicator.innerHTML = `<i class="${icon}"></i> <span>${message}</span>`;
+            indicator.innerHTML = `<i class="${icon}"></i> <span>${escapeHtml(message)}</span>`;
         }
 
         function closeEditorModal() {

@@ -665,6 +665,7 @@
 
     <!-- Bootstrap 5 JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="/js/common.js"></script>
 
     <script>
         // משתני מצב
@@ -706,17 +707,6 @@
             await loadAllArticles();
         });
 
-        function getAuthToken() {
-            return localStorage.getItem('token') || getCookie('token');
-        }
-
-        function getCookie(name) {
-            return document.cookie.split('; ').reduce((r, v) => {
-                const parts = v.split('=');
-                return parts[0] === name ? decodeURIComponent(parts[1]) : r;
-            }, '');
-        }
-
         // אימות הרשאות עורך
         async function verifyEditorSession() {
             const token = getAuthToken();
@@ -731,7 +721,7 @@
                 });
 
                 if (!res.ok) {
-                    localStorage.removeItem('token');
+                    clearLocalLogin();
                     window.location.href = '/login.html';
                     return;
                 }
@@ -751,13 +741,6 @@
             }
         }
 
-        function logout() {
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-            window.location.href = '/login.html';
-        }
-
         function showToast(message, icon = 'bi-check-circle-fill', isError = false) {
             const toastEl = document.getElementById('liveToast');
             const msgEl = document.getElementById('toastMessage');
@@ -766,7 +749,7 @@
                 ? 'toast align-items-center text-bg-danger border-0 shadow' 
                 : 'toast align-items-center text-bg-dark border-0 shadow';
 
-            msgEl.innerHTML = `<i class="bi ${icon}"></i> <div>${message}</div>`;
+            msgEl.innerHTML = `<i class="bi ${icon}"></i> <div>${escapeHtml(message)}</div>`;
             const toast = new bootstrap.Toast(toastEl, { delay: 3500 });
             toast.show();
         }
@@ -811,7 +794,7 @@
 
             let options = '<option value="">כל הכתבים</option>';
             authorsMap.forEach((name, id) => {
-                options += `<option value="${id}" ${currentSelected === id ? 'selected' : ''}>${name}</option>`;
+                options += `<option value="${escapeHtml(id)}" ${currentSelected === id ? 'selected' : ''}>${escapeHtml(name)}</option>`;
             });
             authorSelect.innerHTML = options;
         }
@@ -946,17 +929,17 @@
                 html += `
                     <tr>
                         <td>
-                            <div class="fw-bold text-dark fs-6">${article.title || 'טיוטה ללא כותרת'}</div>
+                            <div class="fw-bold text-dark fs-6">${escapeHtml(article.title || 'טיוטה ללא כותרת')}</div>
                             <div class="text-muted small text-truncate" style="max-width: 320px;">
-                                ${article.summary || (article.content ? article.content.replace(/<[^>]*>/g, '').substring(0, 80) + '...' : '')}
+                                ${escapeHtml(article.summary || (article.content ? stripHtmlTags(article.content).substring(0, 80) + '...' : ''))}
                             </div>
                         </td>
                         <td>
-                            <div class="fw-semibold text-dark">${authorName}</div>
-                            <div class="small text-muted font-num">${article.author?.username || ''}</div>
+                            <div class="fw-semibold text-dark">${escapeHtml(authorName)}</div>
+                            <div class="small text-muted font-num">${escapeHtml(article.author?.username || '')}</div>
                         </td>
                         <td>
-                            <span class="category-badge">${article.category || 'כללי'}</span>
+                            <span class="category-badge">${escapeHtml(article.category || 'כללי')}</span>
                         </td>
                         <td>
                             <span class="status-badge ${statusClass}">
@@ -983,7 +966,7 @@
                                     <i class="bi bi-pencil"></i>
                                 </button>
 
-                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteArticleConfirm('${article._id}', '${article.title ? article.title.replace(/'/g, "\\'") : ''}')" title="מחק כתבה">
+                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteArticleConfirm('${article._id}')" title="מחק כתבה">
                                     <i class="bi bi-trash3"></i>
                                 </button>
                             </div>
@@ -1068,7 +1051,7 @@
             // הוספת שאר הכתבות במערכת לצורך השוואה צולבת
             allArticles.forEach(a => {
                 if (a._id !== currentId) {
-                    options += `<option value="${a._id}">השווה מול: ${a.title.substring(0, 35)} (${a.category || ''})</option>`;
+                    options += `<option value="${escapeHtml(a._id)}">השווה מול: ${escapeHtml(a.title.substring(0, 35))} (${escapeHtml(a.category || '')})</option>`;
                 }
             });
 
@@ -1119,14 +1102,14 @@
                     document.getElementById('currentPubCategory').innerText = newVersion.category || '';
                     document.getElementById('currentPubSummary').innerText = `כתב: ${art.author?.fullName || art.author?.username || 'כתב מערכת'}\nתאריך: ${new Date().toLocaleDateString('he-IL')}`;
 
-                    document.getElementById('currentContentPane').innerHTML = `<div class="p-3 bg-white rounded border"><strong>תקציר:</strong><p>${newVersion.summary || 'ללא תקציר'}</p><strong>קטגוריה:</strong> ${newVersion.category}</div>`;
+                    document.getElementById('currentContentPane').innerHTML = `<div class="p-3 bg-white rounded border"><strong>תקציר:</strong><p>${escapeHtml(newVersion.summary || 'ללא תקציר')}</p><strong>קטגוריה:</strong> ${escapeHtml(newVersion.category)}</div>`;
                     document.getElementById('diffContentPane').innerHTML = `<div class="p-3 bg-white rounded">${newVersion.content || 'ללא תוכן'}</div>`;
                 }
             } else {
                 // השוואה צולבת מול כתבה אחרת שנבחרה מהמערכת!
                 const otherArticle = allArticles.find(a => a._id === targetVal);
                 if (otherArticle) {
-                    document.getElementById('leftPaneHeaderTitle').innerHTML = `<i class="bi bi-files me-1"></i> השוואה מול כתבה: "${otherArticle.title.substring(0, 30)}..."`;
+                    document.getElementById('leftPaneHeaderTitle').innerHTML = `<i class="bi bi-files me-1"></i> השוואה מול כתבה: "${escapeHtml(otherArticle.title.substring(0, 30))}..."`;
                     document.getElementById('leftContentHeader').innerHTML = `<i class="bi bi-file-text me-1"></i> תוכן הכתבה שנבחרה להשוואה`;
                     document.getElementById('reviewNoticeText').innerText = `השוואה צולבת (Diff View) בין הכתבה הנבדקת לבין "${otherArticle.title}".`;
 
@@ -1301,7 +1284,9 @@
         }
 
         // מחיקת כתבה
-        async function deleteArticleConfirm(articleId, title) {
+        async function deleteArticleConfirm(articleId) {
+            const target = allArticles.find(a => a._id === articleId);
+            const title = target ? target.title : '';
             if (!confirm(`האם אתה בטוח שברצונך למחוק לצמיתות את הכתבה "${title}"?\nפעולה זו אינה ניתנת לביטול!`)) {
                 return;
             }
@@ -1331,9 +1316,8 @@
         // אלגוריתם השוואת מילים (Word-by-Word Diff)
         // ==========================================
         function stripHtmlTags(str) {
-            const temp = document.createElement('div');
-            temp.innerHTML = str;
-            return temp.textContent || temp.innerText || '';
+            // DOMParser never runs scripts or loads images, unlike assigning innerHTML to a detached element
+            return new DOMParser().parseFromString(str, 'text/html').body.textContent || '';
         }
 
         function computeWordDiffHtml(oldStr, newStr) {
@@ -1384,12 +1368,6 @@
             }
 
             return `<div class="diff-rendered-text">${result.join(' ')}</div>`;
-        }
-
-        function escapeHtml(text) {
-            const div = document.createElement('div');
-            div.innerText = text;
-            return div.innerHTML;
         }
     </script>
 </body>
