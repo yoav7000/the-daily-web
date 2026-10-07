@@ -140,59 +140,39 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="/js/common.js"></script>
+<script src="/js/comments.js"></script>
 <script>
     const articleId = '<%= article._id %>';
-    
-    // Mark article as viewed in localStorage
+    let commentCount = 0;
+
+    // Mark article as viewed in localStorage (used by the "viewed / not viewed" filter on the home page)
     try {
-        let viewed = JSON.parse(localStorage.getItem('the_daily_web_viewed') || '[]');
+        const viewed = JSON.parse(localStorage.getItem('the_daily_web_viewed') || '[]');
         if (!viewed.includes(articleId)) {
             viewed.push(articleId);
             localStorage.setItem('the_daily_web_viewed', JSON.stringify(viewed));
         }
-    } catch(e) {}
-    
+    } catch (e) { /* storage unavailable, nothing to remember */ }
+
     document.addEventListener('DOMContentLoaded', loadComments);
 
-    function escapeHtml(str) {
-        if (!str) return '';
-        return String(str)
-            .replace(/&/g, '&amp;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#039;');
+    function updateCommentsBadge() {
+        document.getElementById('commentsBadge').textContent = `${commentCount} תגובות`;
     }
 
+    // Initial load of the list (only once, when the page opens)
     async function loadComments() {
         const listEl = document.getElementById('commentsList');
-        const badge = document.getElementById('commentsBadge');
 
         try {
             const res = await fetch(`/api/articles/${articleId}/comments`);
             const data = await res.json();
 
             if (data.success) {
-                badge.textContent = `${data.comments.length} תגובות`;
-                if (data.comments.length === 0) {
-                    listEl.innerHTML = '<div class="text-center text-muted small py-3">אין עדיין תגובות לכתבה זו. היו הראשונים להגיב!</div>';
-                    return;
-                }
-
-                listEl.innerHTML = '';
-                data.comments.forEach(c => {
-                    const item = document.createElement('div');
-                    item.className = 'p-3 bg-white rounded border small';
-                    const d = new Date(c.createdAt || Date.now());
-                    item.innerHTML = `
-                        <div class="d-flex justify-content-between text-muted mb-2" style="font-size: 0.8rem;">
-                            <strong class="text-primary">${escapeHtml(c.authorName)}</strong>
-                            <span>${d.toLocaleDateString('he-IL')} ${d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</span>
-                        </div>
-                        <div class="text-dark">${escapeHtml(c.content)}</div>
-                    `;
-                    listEl.appendChild(item);
-                });
+                commentCount = data.pagination.totalCount;
+                updateCommentsBadge();
+                renderCommentList(listEl, data.comments);
             }
         } catch (err) {
             listEl.innerHTML = '<div class="text-danger small">שגיאה בטעינת תגובות</div>';
@@ -243,7 +223,10 @@
             } else if (data.success) {
                 banner.classList.add('d-none');
                 contentInput.value = '';
-                await loadComments();
+                // the server returns the saved comment: show it at the top right away, no need to reload the list
+                addCommentToList(document.getElementById('commentsList'), data.comment);
+                commentCount += 1;
+                updateCommentsBadge();
             } else {
                 alert(data.message || 'שגיאה בשליחת התגובה');
             }

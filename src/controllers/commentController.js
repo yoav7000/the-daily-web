@@ -114,7 +114,7 @@ const getArticleComments = async (req, res, next) => {
         // תמיכה בחיפוש טקסטואלי בתוך תגובות הכתבה
         Object.assign(query, buildSearchFilter(search, ['content', 'authorName']));
 
-        const { page, limit, skip } = parsePagination(req.query);
+        const { page, limit, skip } = parsePagination(req.query, 50);
 
         const [comments, totalCount] = await Promise.all([
             Comment.find(query)
