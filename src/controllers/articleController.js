@@ -1,5 +1,7 @@
+const mongoose = require('mongoose');
 const Article = require('../models/Article');
 const ViewStat = require('../models/ViewStat');
+const Comment = require('../models/Comment');
 const { ARTICLE_STATUS, ARTICLE_CATEGORIES, DEFAULT_ARTICLE_IMAGE } = require('../constants/articleConstants');
 const { logOperation } = require('../middleware/requestLogger');
 const { recordViewInternal } = require('./analyticsController');
@@ -8,6 +10,7 @@ const { normalizeStatus } = require('../utils/statusFilter');
 const { cleanText } = require('../utils/text');
 const { buildSearchFilter } = require('../utils/search');
 const { sanitizeHtml } = require('../utils/sanitizeHtml');
+const { buildViewedCondition } = require('../utils/viewedFilter');
 
 /**
  * Helper to check if user has permission to modify an article
@@ -210,7 +213,7 @@ const getMyArticles = async (req, res, next) => {
         const { page, limit, skip } = parsePagination(req.query, 20, MAX_STAFF_LIMIT);
         const [articles, totalCount] = await Promise.all([
             Article.find(query)
-                .sort({ updatedAt: -1 })
+                .sort({ updatedAt: -1, _id: -1 })
                 .skip(skip)
                 .limit(limit)
                 .lean(),
@@ -374,7 +377,7 @@ const getAllArticlesForEditor = async (req, res, next) => {
         const [articles, totalCount] = await Promise.all([
             Article.find(query)
                 .populate('author', 'fullName username role')
-                .sort({ updatedAt: -1 })
+                .sort({ updatedAt: -1, _id: -1 })
                 .skip(skip)
                 .limit(limit)
                 .lean(),
@@ -407,7 +410,7 @@ const getPendingArticlesForEditor = async (req, res, next) => {
 
         const articles = await Article.find(query)
             .populate('author', 'fullName username')
-            .sort({ updatedAt: -1 })
+            .sort({ updatedAt: -1, _id: -1 })
             .lean();
 
         return res.status(200).json({
@@ -681,9 +684,16 @@ const deleteArticle = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'הכתבה לא נמצאה' });
         }
 
+        // An article's comments and view statistics mean nothing without it, so they go too
+        const [removedComments, removedStats] = await Promise.all([
+            Comment.deleteMany({ article: article._id }),
+            ViewStat.deleteMany({ article: article._id })
+        ]);
         await Article.findByIdAndDelete(req.params.id);
 
         logOperation('ARTICLE_DELETED', {
+            removedComments: removedComments.deletedCount,
+            removedViewStats: removedStats.deletedCount,
             articleId: req.params.id,
             editorId: req.user._id,
             title: article.title
@@ -718,44 +728,46 @@ const getPublicArticles = async (req, res, next) => {
 
         Object.assign(query, buildSearchFilter(search, ['title', 'summary']));
 
-        let sortOption = { publishedAt: -1 };
-        if (sort === 'oldest') {
-            sortOption = { publishedAt: 1 };
+        const viewedCondition = buildViewedCondition(req.query);
+        if (viewedCondition) {
+            query._id = viewedCondition;
         }
 
-        // For popularity sort, we need to aggregate view counts
+        // _id breaks ties between articles published at the same moment, so infinite scroll never repeats or skips one
+        let sortOption = { publishedAt: -1, _id: -1 };
+        if (sort === 'oldest') {
+            sortOption = { publishedAt: 1, _id: 1 };
+        }
+
+        // Popularity: the database adds up each article's views and sorts, we only fetch the requested page
         if (sort === 'popular') {
             const { page, limit, skip } = parsePagination(req.query);
 
-            // Get total views per article
-            const pipeline = [
-                { $group: { _id: '$article', totalViews: { $sum: '$viewCount' } } },
-                { $sort: { totalViews: -1 } }
-            ];
-            const viewCounts = await ViewStat.aggregate(pipeline);
-            const viewMap = {};
-            viewCounts.forEach(v => { viewMap[v._id.toString()] = v.totalViews; });
+            // aggregate() does not cast ids for us like find() does
+            const match = { ...query };
+            if (match._id) {
+                const toId = (id) => new mongoose.Types.ObjectId(id);
+                match._id = match._id.$in ? { $in: match._id.$in.map(toId) } : { $nin: match._id.$nin.map(toId) };
+            }
 
-            // Fetch all matching articles, then sort them by views in memory
-            const [allArticles, totalCount] = await Promise.all([
-                Article.find(query)
-                    .select('title summary category mainImage author publishedAt createdAt')
-                    .populate('author', 'fullName username')
-                    .lean(),
+            const [pageOfArticles, totalCount] = await Promise.all([
+                Article.aggregate([
+                    { $match: match },
+                    { $lookup: { from: ViewStat.collection.name, localField: '_id', foreignField: 'article', as: 'views' } },
+                    { $addFields: { totalViews: { $sum: '$views.viewCount' } } },
+                    { $sort: { totalViews: -1, publishedAt: -1, _id: -1 } },
+                    { $skip: skip },
+                    { $limit: limit },
+                    { $project: { title: 1, summary: 1, category: 1, mainImage: 1, author: 1, publishedAt: 1, createdAt: 1, totalViews: 1 } }
+                ]),
                 Article.countDocuments(query)
             ]);
 
-            allArticles.sort((a, b) => {
-                const viewsA = viewMap[a._id.toString()] || 0;
-                const viewsB = viewMap[b._id.toString()] || 0;
-                return viewsB - viewsA;
-            });
-
-            const paged = allArticles.slice(skip, skip + limit);
+            const articles = await Article.populate(pageOfArticles, { path: 'author', select: 'fullName username' });
 
             return res.status(200).json({
                 success: true,
-                articles: paged,
+                articles,
                 pagination: buildPagination(totalCount, page, limit)
             });
         }
@@ -811,6 +823,50 @@ const getPublicArticleById = async (req, res, next) => {
 };
 
 /**
+ * Number of articles per status for the dashboard counters, computed by the database
+ * (the dashboards only load one page of articles, so they cannot count them in the browser).
+ */
+const countByStatus = async (match = {}) => {
+    const [grouped, pendingUpdates] = await Promise.all([
+        Article.aggregate([{ $match: match }, { $group: { _id: '$status', count: { $sum: 1 } } }]),
+        Article.countDocuments({ ...match, status: ARTICLE_STATUS.PUBLISHED, 'draftVersion.status': ARTICLE_STATUS.PENDING_APPROVAL })
+    ]);
+
+    const counts = Object.fromEntries(Object.values(ARTICLE_STATUS).map((status) => [status, 0]));
+    grouped.forEach(({ _id, count }) => { counts[_id] = count; });
+
+    return {
+        total: Object.values(counts).reduce((sum, n) => sum + n, 0),
+        ...counts,
+        pendingUpdates
+    };
+};
+
+/**
+ * Counters for the editor dashboard
+ * GET /api/articles/editor/stats
+ */
+const getEditorStats = async (req, res, next) => {
+    try {
+        return res.status(200).json({ success: true, stats: await countByStatus() });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Counters for the reporter's own articles
+ * GET /api/articles/my-stats
+ */
+const getMyStats = async (req, res, next) => {
+    try {
+        return res.status(200).json({ success: true, stats: await countByStatus({ author: req.user._id }) });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
  * Server-rendered article page (EJS) so search engines get the full content
  * GET /article/:id
  */
@@ -822,7 +878,11 @@ const renderArticlePage = async (req, res, next) => {
         }).populate('author', 'fullName username');
 
         if (!article) {
-            return res.status(404).send('הכתבה לא נמצאה או שטרם פורסמה');
+            return res.status(404).render('error', {
+                status: 404,
+                heading: 'הכתבה לא נמצאה',
+                message: 'הכתבה הוסרה, שטרם פורסמה או שהקישור שגוי.'
+            });
         }
 
         recordViewInternal(article._id);
@@ -848,5 +908,7 @@ module.exports = {
     deleteArticle,
     getPublicArticles,
     getPublicArticleById,
+    getEditorStats,
+    getMyStats,
     renderArticlePage
 };

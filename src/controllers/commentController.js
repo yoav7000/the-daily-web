@@ -119,7 +119,7 @@ const getArticleComments = async (req, res, next) => {
         const [comments, totalCount] = await Promise.all([
             Comment.find(query)
                 .select(PUBLIC_FIELDS)
-                .sort({ createdAt: -1 })
+                .sort({ createdAt: -1, _id: -1 })
                 .skip(skip)
                 .limit(limit)
                 .lean(),
@@ -254,7 +254,7 @@ const getAllComments = async (req, res, next) => {
         const [comments, totalCount] = await Promise.all([
             Comment.find(query)
                 .populate('article', 'title')
-                .sort({ createdAt: -1 })
+                .sort({ createdAt: -1, _id: -1 })
                 .skip(skip)
                 .limit(limit)
                 .lean(),

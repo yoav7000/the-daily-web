@@ -73,7 +73,7 @@ const getUsers = async (req, res, next) => {
 
         const { page, limit, skip } = parsePagination(req.query);
         const [users, totalCount] = await Promise.all([
-            User.find(query).select('-password').sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+            User.find(query).select('-password').sort({ createdAt: -1, _id: -1 }).skip(skip).limit(limit).lean(),
             User.countDocuments(query)
         ]);
 
