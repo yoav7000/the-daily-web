@@ -7,7 +7,7 @@ const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const User = require('../models/User');
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const [username, password, ...nameParts] = process.argv.slice(2);
 const fullName = nameParts.join(' ');
