@@ -3,7 +3,7 @@ const ViewStat = require('../models/ViewStat');
 const { ARTICLE_STATUS, ARTICLE_CATEGORIES, DEFAULT_ARTICLE_IMAGE } = require('../constants/articleConstants');
 const { logOperation } = require('../middleware/requestLogger');
 const { recordViewInternal } = require('./analyticsController');
-const { parsePagination, buildPagination } = require('../utils/pagination');
+const { parsePagination, buildPagination, MAX_STAFF_LIMIT } = require('../utils/pagination');
 const { normalizeStatus } = require('../utils/statusFilter');
 const { cleanText } = require('../utils/text');
 const { buildSearchFilter } = require('../utils/search');
@@ -207,7 +207,7 @@ const getMyArticles = async (req, res, next) => {
 
         Object.assign(query, buildSearchFilter(search, ['title', 'summary']));
 
-        const { page, limit, skip } = parsePagination(req.query);
+        const { page, limit, skip } = parsePagination(req.query, 20, MAX_STAFF_LIMIT);
         const [articles, totalCount] = await Promise.all([
             Article.find(query)
                 .sort({ updatedAt: -1 })
@@ -370,7 +370,7 @@ const getAllArticlesForEditor = async (req, res, next) => {
 
         Object.assign(query, buildSearchFilter(search, ['title', 'summary']));
 
-        const { page, limit, skip } = parsePagination(req.query);
+        const { page, limit, skip } = parsePagination(req.query, 20, MAX_STAFF_LIMIT);
         const [articles, totalCount] = await Promise.all([
             Article.find(query)
                 .populate('author', 'fullName username role')
