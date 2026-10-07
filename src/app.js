@@ -50,10 +50,8 @@ app.get('/favicon.ico', (req, res) => {
 // Static files (CSS, Vanilla JS client scripts, images)
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Request logging (skipped in tests)
-if (process.env.NODE_ENV !== 'test') {
-    app.use(httpLogger);
-}
+// Request logging (httpLogger stays silent while tests run)
+app.use(httpLogger);
 
 // Server-side sessions (MongoDB store) so logins survive a server restart
 app.use(sessionMiddleware);
