@@ -9,6 +9,20 @@ const { buildSearchFilter } = require('../utils/search');
 const isValidViewCount = (value) => Number.isInteger(value) && value >= 0;
 
 /**
+ * "2026-10-07-14" -> the start of that hour. Returns null when the text is not a real date and hour.
+ */
+const parseTimeBucket = (bucket) => {
+    const match = /^(\d{4})-(\d{2})-(\d{2})-(\d{2})$/.exec(bucket);
+    if (!match) {
+        return null;
+    }
+    const [year, month, day, hour] = match.slice(1).map(Number);
+    const date = new Date(year, month - 1, day, hour);
+    const isRealDate = date.getFullYear() === year && date.getMonth() === month - 1 && date.getDate() === day && date.getHours() === hour;
+    return isRealDate ? date : null;
+};
+
+/**
  * פונקציית עזר ליצירת מפתח דלי זמן שעתי
  * פורמט: YYYY-MM-DD-HH (לדוגמה: 2026-09-30-11)
  */
@@ -283,10 +297,20 @@ const createViewStat = async (req, res, next) => {
         }
 
         const bucket = cleanText(timeBucket) || getTimeBucketKey(new Date());
+        const bucketStart = parseTimeBucket(bucket);
+        if (!bucketStart) {
+            return res.status(400).json({ success: false, message: 'פורמט השעה חייב להיות YYYY-MM-DD-HH, לדוגמה 2026-10-07-14' });
+        }
+
+        const article = await Article.exists({ _id: cleanText(articleId) });
+        if (!article) {
+            return res.status(404).json({ success: false, message: 'הכתבה המבוקשת לא נמצאה' });
+        }
 
         const stat = new ViewStat({
             article: articleId,
             timeBucket: bucket,
+            viewedAt: bucketStart, // the graph plots the record at its own hour, not at the moment it was typed in
             viewCount: Number(viewCount),
             notes: cleanText(notes) || `רשומה ידנית עבור דלי ${bucket}`
         });

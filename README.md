@@ -40,15 +40,13 @@ Wipes the database and creates 520 articles in every status, 6 users, comments, 
 
 Demo users (password `password123`): `sarah_editor`, `yossi_editor`, `dan_reporter`, `michal_reporter`, `ron_reporter`, `noa_reporter`.
 
-### Creating editors
+### Creating accounts
 
-Public sign-up only creates **reporters**. Editor accounts are created either from the command line:
+There is **no public sign-up**. Accounts (reporters and editors) are created by an editor in the management page (`/admin.html`, tab "משתמשים"), or through the user management API (see below). The very first editor can be created from the command line:
 
 ```bash
 npm run create-editor -- <username> <password> "<full name>"
 ```
-
-or by a logged-in editor through the user management API (see below).
 
 ### Tests
 
@@ -84,11 +82,12 @@ the-daily-web/
 ├── .env.example
 ├── public/                      # Static client: HTML, vanilla JS, images
 │   ├── index.html               # Public home page (feed, search, filters, infinite scroll)
-│   ├── login.html               # Login / reporter sign-up
+│   ├── login.html               # Staff login (no sign-up)
+│   ├── portal.html              # Staff portal: links to the desks the user may open
 │   ├── reporter.html            # Reporter dashboard (own articles, editor with auto-save)
 │   ├── editor.html              # Editor dashboard (review, diff view, approve / return)
-│   ├── analytics.html           # Impact Analytics graph (Chart.js) and comments demo
-│   ├── test.html                # Interactive visual testing workbench (auto-save & review)
+│   ├── analytics.html           # Impact Analytics graph (Chart.js)
+│   ├── admin.html               # Editors: manage users, comments and view statistics (full CRUD)
 │   ├── js/common.js             # Shared client helpers (escapeHtml, token, logout)
 │   ├── js/comments.js           # Comment list helpers (add a comment without reloading the list)
 │   └── images/                  # Default article image and SVG assets
@@ -117,10 +116,10 @@ the-daily-web/
 
 ### Users, roles & security
 - Roles: **Guest** (not logged in), **Reporter**, **Editor**. Roles are enforced on the server (`requireRole`, `requireReporter`, `requireEditor`); reporters can only touch their own articles.
-- Passwords are hashed with `bcrypt`.
+- **Passwords are stored only as bcrypt hashes** and every rule about them runs on the server, never in the browser. The model hashes on every way of writing a user (`save`, `insertMany`, `updateOne` / `findOneAndUpdate`), a password must be 6 to 72 characters, and API responses never contain a password or hash. `tests/passwordStorage.test.js` reads the raw MongoDB documents to prove it, including users made by the seeder and by `npm run create-editor`.
 - Logins are kept in a server session stored in MongoDB (`connect-mongo`), so they survive a server restart. The dashboards authenticate with a signed token, and the server accepts the session cookie as well.
-- Public sign-up always creates a reporter. Editors are created by another editor or with `npm run create-editor`.
-- **User management (editors only):** `GET /api/users?search=&role=` (list and search by part of the name), `GET /api/users/:id`, `POST /api/users`, `PUT /api/users/:id` (name, role, active flag, password), `DELETE /api/users/:id` (also reachable under `/api/auth/users`). The last active editor cannot be removed, and a user who wrote articles is deactivated instead of deleted.
+- No public sign-up: only an editor can create accounts. The login page only follows `?redirect=` to paths on this site.
+- **User management (editors only, also in `/admin.html`):** `GET /api/users?search=&role=` (list and search by part of the name), `GET /api/users/:id`, `POST /api/users`, `PUT /api/users/:id` (name, role, active flag, password), `DELETE /api/users/:id` (also reachable under `/api/auth/users`). The last active editor cannot be removed, and a user who wrote articles is deactivated instead of deleted.
 - Article HTML is sanitized on save (small allowlist of tags, safe links only), and the dashboards escape all text they render.
 - Centralized error handling, with errors in `logs/error.log`, HTTP requests in `logs/access.log`, and operational events in `logs/operations.log`.
 
@@ -154,20 +153,20 @@ the-daily-web/
    ```bash
    npm start
    ```
-3. **Open the Dashboards & Workbenches:**
-   - **Main News Portal:** `http://localhost:3000/`
-   - **Staff Login:** `http://localhost:3000/login.html`
-   - **Reporter Workspace:** `http://localhost:3000/reporter.html`
-   - **Editor-in-Chief CMS:** `http://localhost:3000/editor.html`
-   - **Article Workflow Workbench:** `http://localhost:3000/test.html`
-   - **Impact Analytics & Comments Lab:** `http://localhost:3000/analytics.html`
+3. **Open the pages:**
+   - **Main news site:** `http://localhost:3000/`
+   - **Staff login:** `http://localhost:3000/login.html` (demo users are listed above)
+   - **Reporter desk:** `http://localhost:3000/reporter.html`
+   - **Editor desk:** `http://localhost:3000/editor.html`
+   - **Impact Analytics:** `http://localhost:3000/analytics.html`
+   - **Data management (editors):** `http://localhost:3000/admin.html`
 4. **Demonstrate Impact Analytics:**
    - Select the showcase article (*"דעה: החוסן הכלכלי של ישראל מול אתגרי השעה (מהדורה #151)"*).
    - Point out the metrics cards showing pre-update vs. post-update views and percentage growth.
    - Show the Chart.js curve highlighting the surge in readership following editorial updates.
 5. **Demonstrate Real-Time AJAX Comments:**
-   - Add a comment in the form and show that it appears instantly without reloading the page.
+   - Open any article page, add a comment, and show that it appears at the top instantly without reloading the page.
 6. **Demonstrate Anti-Spam (3 comments/min limit):**
-   - Click the *"בצע בדיקת הצפת ספאם"* button: show that 3 comments pass and the 4th is immediately blocked with HTTP 429 and a countdown timer.
+   - Post 4 comments in a row on an article page: the first 3 pass and the 4th is blocked with HTTP 429 and a countdown timer.
 7. **Demonstrate Server Restart Resilience:**
    - Stop the server (`Ctrl+C`), start it again (`npm start`), and show that the spam block remains active!

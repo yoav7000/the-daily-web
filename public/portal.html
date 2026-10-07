@@ -21,6 +21,11 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
     <style>
+        /* Always reserve the space of the page scrollbar. Without it, buttons jump sideways whenever a filter
+           makes the page short enough for the scrollbar to disappear (and back). */
+        html {
+            overflow-y: scroll;
+        }
         :root {
             --font-editorial: 'Frank Ruhl Libre', Georgia, serif;
             --font-sans: 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -264,6 +269,9 @@
                 <a href="/analytics.html" class="portal-nav-link">
                     <i class="bi bi-bar-chart-line"></i> Impact Analytics
                 </a>
+                <a href="/admin.html" class="portal-nav-link">
+                    <i class="bi bi-database-gear"></i> ניהול נתונים
+                </a>
             </div>
         </div>
     </nav>
@@ -352,6 +360,23 @@
                 </div>
             </div>
 
+            <!-- 4. Data management -->
+            <div class="col-md-6 col-lg-3" id="cardAdmin">
+                <div class="desk-card">
+                    <div>
+                        <span class="desk-badge text-danger">ניהול מערכת</span>
+                        <h3 class="desk-title">ניהול נתונים</h3>
+                        <p class="desk-description">
+                            יצירה ועדכון של חשבונות כתבים ועורכים, ניהול תגובות, ותיקון נתוני צפייה.
+                        </p>
+                    </div>
+                    <a href="/admin.html" class="desk-action-btn btn btn-outline-dark">
+                        <span>כניסה לניהול נתונים</span>
+                        <i class="bi bi-arrow-left"></i>
+                    </a>
+                </div>
+            </div>
+
         </div>
 
     </main>
@@ -417,6 +442,7 @@
             if (!isEditor) {
                 const editorCard = document.getElementById('cardEditorDesk');
                 const analyticsCard = document.getElementById('cardAnalytics');
+                const adminCard = document.getElementById('cardAdmin');
                 if (editorCard) {
                     editorCard.style.opacity = '0.55';
                     const btn = editorCard.querySelector('.desk-action-btn');
@@ -426,6 +452,16 @@
                         btn.removeAttribute('href');
                     }
                 }
+                [adminCard].forEach((card) => {
+                    if (!card) return;
+                    card.style.opacity = '0.55';
+                    const btn = card.querySelector('.desk-action-btn');
+                    if (btn) {
+                        btn.className = 'desk-action-btn btn btn-outline-secondary disabled';
+                        btn.innerHTML = '<span>גישה לעורכים בלבד</span><i class="bi bi-lock-fill"></i>';
+                        btn.removeAttribute('href');
+                    }
+                });
                 if (analyticsCard) {
                     analyticsCard.style.opacity = '0.55';
                     const btn = analyticsCard.querySelector('.desk-action-btn');
@@ -438,9 +474,9 @@
             }
         }
 
+        // ends the server session too (common.js), not just the copy kept in the browser
         function logoutStaff() {
-            clearLocalLogin();
-            window.location.href = '/login.html';
+            return logout();
         }
 
         document.addEventListener('DOMContentLoaded', async () => {
