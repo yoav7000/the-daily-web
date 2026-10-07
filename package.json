@@ -18,7 +18,7 @@
     "mongodb",
     "mvc"
   ],
-  "author": "",
+  "author": "The Daily Web team",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.3",
