@@ -1,12 +1,31 @@
 const Article = require('../models/Article');
-const { ARTICLE_STATUS, ARTICLE_CATEGORIES } = require('../constants/articleConstants');
+const ViewStat = require('../models/ViewStat');
+const { ARTICLE_STATUS, ARTICLE_CATEGORIES, DEFAULT_ARTICLE_IMAGE } = require('../constants/articleConstants');
 const { logOperation } = require('../middleware/requestLogger');
 const { recordViewInternal } = require('./analyticsController');
+const { parsePagination, buildPagination } = require('../utils/pagination');
+const { normalizeStatus } = require('../utils/statusFilter');
+const { cleanText } = require('../utils/text');
+const { sanitizeHtml } = require('../utils/sanitizeHtml');
 
 /**
  * Helper to check if user has permission to modify an article
  * Author can modify their own article. Editor can modify any article.
  */
+/**
+ * Fields of a published article that are safe to show to the public (never includes draftVersion)
+ */
+const toPublicArticle = (article) => ({
+    _id: article._id,
+    title: article.title,
+    summary: article.summary,
+    content: article.content,
+    category: article.category,
+    mainImage: article.mainImage,
+    author: article.author,
+    publishedAt: article.publishedAt
+});
+
 const canModifyArticle = (article, user) => {
     if (user.role === 'editor') return true;
     return article.author.toString() === user._id.toString();
@@ -24,10 +43,10 @@ const createArticle = async (req, res, next) => {
     try {
         const { title, summary, content, category, mainImage } = req.body;
 
-        if (!title || !title.trim()) {
+        if (!cleanText(title)) {
             return res.status(400).json({ success: false, message: 'כותרת הכתבה היא שדה חובה' });
         }
-        if (!content || !content.trim()) {
+        if (!cleanText(content)) {
             return res.status(400).json({ success: false, message: 'תוכן הכתבה הוא שדה חובה' });
         }
         if (!category || !ARTICLE_CATEGORIES.includes(category)) {
@@ -38,11 +57,11 @@ const createArticle = async (req, res, next) => {
         }
 
         const article = new Article({
-            title: title.trim(),
-            summary: summary ? summary.trim() : '',
-            content,
+            title: cleanText(title),
+            summary: cleanText(summary),
+            content: sanitizeHtml(content),
             category,
-            mainImage: mainImage || '/images/default-article.jpg',
+            mainImage: mainImage || DEFAULT_ARTICLE_IMAGE,
             author: req.user._id,
             status: ARTICLE_STATUS.DRAFT
         });
@@ -90,11 +109,11 @@ const autoSaveArticle = async (req, res, next) => {
         } else {
             // If no ID provided, initialize a new draft article
             article = new Article({
-                title: title && title.trim() ? title.trim() : 'טיוטה ללא כותרת',
-                summary: summary ? summary.trim() : '',
-                content: content || '',
+                title: cleanText(title) || 'טיוטה ללא כותרת',
+                summary: cleanText(summary),
+                content: sanitizeHtml(content),
                 category: category && ARTICLE_CATEGORIES.includes(category) ? category : ARTICLE_CATEGORIES[0],
-                mainImage: mainImage || '/images/default-article.jpg',
+                mainImage: mainImage || DEFAULT_ARTICLE_IMAGE,
                 author: req.user._id,
                 status: ARTICLE_STATUS.DRAFT
             });
@@ -107,27 +126,27 @@ const autoSaveArticle = async (req, res, next) => {
             if (!article.draftVersion) {
                 // Initialize draftVersion from current published fields merged with new edits
                 article.draftVersion = {
-                    title: title !== undefined ? title.trim() : article.title,
-                    summary: summary !== undefined ? summary.trim() : article.summary,
-                    content: content !== undefined ? content : article.content,
+                    title: title !== undefined ? cleanText(title) : article.title,
+                    summary: summary !== undefined ? cleanText(summary) : article.summary,
+                    content: content !== undefined ? sanitizeHtml(content) : article.content,
                     category: category !== undefined && ARTICLE_CATEGORIES.includes(category) ? category : article.category,
                     mainImage: mainImage !== undefined ? mainImage : article.mainImage,
                     status: ARTICLE_STATUS.DRAFT,
                     updatedAt: now
                 };
             } else {
-                if (title !== undefined) article.draftVersion.title = title.trim();
-                if (summary !== undefined) article.draftVersion.summary = summary.trim();
-                if (content !== undefined) article.draftVersion.content = content;
+                if (title !== undefined) article.draftVersion.title = cleanText(title);
+                if (summary !== undefined) article.draftVersion.summary = cleanText(summary);
+                if (content !== undefined) article.draftVersion.content = sanitizeHtml(content);
                 if (category !== undefined && ARTICLE_CATEGORIES.includes(category)) article.draftVersion.category = category;
                 if (mainImage !== undefined) article.draftVersion.mainImage = mainImage;
                 article.draftVersion.updatedAt = now;
             }
         } else {
             // For unpublished articles, directly update the draft fields
-            if (title !== undefined) article.title = title.trim();
-            if (summary !== undefined) article.summary = summary.trim();
-            if (content !== undefined) article.content = content;
+            if (title !== undefined) article.title = cleanText(title);
+            if (summary !== undefined) article.summary = cleanText(summary);
+            if (content !== undefined) article.content = sanitizeHtml(content);
             if (category !== undefined && ARTICLE_CATEGORIES.includes(category)) article.category = category;
             if (mainImage !== undefined) article.mainImage = mainImage;
             article.lastAutoSavedAt = now;
@@ -154,37 +173,27 @@ const autoSaveArticle = async (req, res, next) => {
  */
 const getMyArticles = async (req, res, next) => {
     try {
-        const { status, category, search, page = 1, limit = 20 } = req.query;
+        const { status, category, search } = req.query;
         const query = { author: req.user._id };
 
         if (status) {
-            if (status === 'draft' || status === 'בהכנה') {
-                query.status = { $in: ['draft', 'בהכנה'] };
-            } else if (status === 'pending_approval' || status === 'ממתינה לאישור עורך' || status === 'ממתינה לאישור') {
-                query.status = { $in: ['pending_approval', 'ממתינה לאישור עורך'] };
-            } else if (status === 'published' || status === 'פורסמה' || status === 'פורסמו') {
-                query.status = { $in: ['published', 'פורסמה'] };
-            } else if (status === 'revision_requested' || status === 'הוחזרה לתיקונים' || status === 'הוחזרו לתיקונים') {
-                query.status = { $in: ['revision_requested', 'הוחזרה לתיקונים'] };
-            } else {
-                query.status = status;
-            }
+            query.status = normalizeStatus(status);
         }
 
         if (category) {
-            query.category = category;
+            query.category = cleanText(category);
         }
 
-        if (search && search.trim()) {
-            query.$text = { $search: search.trim() };
+        if (cleanText(search)) {
+            query.$text = { $search: cleanText(search) };
         }
 
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const { page, limit, skip } = parsePagination(req.query);
         const [articles, totalCount] = await Promise.all([
             Article.find(query)
                 .sort({ updatedAt: -1 })
                 .skip(skip)
-                .limit(parseInt(limit))
+                .limit(limit)
                 .lean(),
             Article.countDocuments(query)
         ]);
@@ -192,11 +201,7 @@ const getMyArticles = async (req, res, next) => {
         return res.status(200).json({
             success: true,
             articles,
-            pagination: {
-                totalCount,
-                currentPage: parseInt(page),
-                totalPages: Math.ceil(totalCount / parseInt(limit))
-            }
+            pagination: buildPagination(totalCount, page, limit)
         });
     } catch (error) {
         next(error);
@@ -289,10 +294,10 @@ const submitForApproval = async (req, res, next) => {
         }
 
         // Validate mandatory fields before submitting for review
-        if (!article.title || !article.title.trim()) {
+        if (!cleanText(article.title)) {
             return res.status(400).json({ success: false, message: 'כותרת הכתבה היא שדה חובה לפני הגשה לאישור' });
         }
-        if (!article.content || !article.content.trim()) {
+        if (!cleanText(article.content)) {
             return res.status(400).json({ success: false, message: 'תוכן הכתבה הוא שדה חובה לפני הגשה לאישור' });
         }
 
@@ -325,46 +330,36 @@ const submitForApproval = async (req, res, next) => {
  */
 const getAllArticlesForEditor = async (req, res, next) => {
     try {
-        const { status, category, author, search, page = 1, limit = 20 } = req.query;
+        const { status, category, author, search } = req.query;
         const query = {};
 
-        if (status) {
-            if (status === 'pending_update') {
-                // Articles that are published but have a draftVersion pending approval
-                query.status = { $in: [ARTICLE_STATUS.PUBLISHED, 'פורסמה'] };
-                query['draftVersion.status'] = { $in: [ARTICLE_STATUS.PENDING_APPROVAL, 'ממתינה לאישור עורך'] };
-            } else if (status === 'draft' || status === 'בהכנה') {
-                query.status = { $in: ['draft', 'בהכנה'] };
-            } else if (status === 'pending_approval' || status === 'ממתינה לאישור עורך' || status === 'ממתינה לאישור') {
-                query.status = { $in: ['pending_approval', 'ממתינה לאישור עורך'] };
-            } else if (status === 'published' || status === 'פורסמה' || status === 'פורסמו') {
-                query.status = { $in: ['published', 'פורסמה'] };
-            } else if (status === 'revision_requested' || status === 'הוחזרה לתיקונים' || status === 'הוחזרו לתיקונים') {
-                query.status = { $in: ['revision_requested', 'הוחזרה לתיקונים'] };
-            } else {
-                query.status = status;
-            }
+        if (status === 'pending_update') {
+            // Articles that are published but have a draftVersion pending approval
+            query.status = ARTICLE_STATUS.PUBLISHED;
+            query['draftVersion.status'] = ARTICLE_STATUS.PENDING_APPROVAL;
+        } else if (status) {
+            query.status = normalizeStatus(status);
         }
 
         if (category) {
-            query.category = category;
+            query.category = cleanText(category);
         }
 
         if (author) {
-            query.author = author;
+            query.author = cleanText(author);
         }
 
-        if (search && search.trim()) {
-            query.$text = { $search: search.trim() };
+        if (cleanText(search)) {
+            query.$text = { $search: cleanText(search) };
         }
 
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const { page, limit, skip } = parsePagination(req.query);
         const [articles, totalCount] = await Promise.all([
             Article.find(query)
                 .populate('author', 'fullName username role')
                 .sort({ updatedAt: -1 })
                 .skip(skip)
-                .limit(parseInt(limit))
+                .limit(limit)
                 .lean(),
             Article.countDocuments(query)
         ]);
@@ -372,11 +367,7 @@ const getAllArticlesForEditor = async (req, res, next) => {
         return res.status(200).json({
             success: true,
             articles,
-            pagination: {
-                totalCount,
-                currentPage: parseInt(page),
-                totalPages: Math.ceil(totalCount / parseInt(limit))
-            }
+            pagination: buildPagination(totalCount, page, limit)
         });
     } catch (error) {
         next(error);
@@ -559,7 +550,7 @@ const returnForRevisions = async (req, res, next) => {
     try {
         const { feedback } = req.body;
 
-        if (!feedback || !feedback.trim()) {
+        if (!cleanText(feedback)) {
             return res.status(400).json({
                 success: false,
                 message: 'חובה לצרף הערת עורך המסבירה אילו תיקונים נדרשים'
@@ -581,14 +572,14 @@ const returnForRevisions = async (req, res, next) => {
             }
 
             article.draftVersion.status = ARTICLE_STATUS.REVISION_REQUESTED;
-            article.draftVersion.editorFeedback = feedback.trim();
+            article.draftVersion.editorFeedback = cleanText(feedback);
             article.draftVersion.updatedAt = new Date();
             await article.save();
 
             logOperation('ARTICLE_UPDATE_RETURNED_FOR_REVISIONS', {
                 articleId: article._id,
                 editorId: req.user._id,
-                feedback: feedback.trim()
+                feedback: cleanText(feedback)
             });
 
             return res.status(200).json({
@@ -607,13 +598,13 @@ const returnForRevisions = async (req, res, next) => {
         }
 
         article.status = ARTICLE_STATUS.REVISION_REQUESTED;
-        article.editorFeedback = feedback.trim();
+        article.editorFeedback = cleanText(feedback);
         await article.save();
 
         logOperation('ARTICLE_RETURNED_FOR_REVISIONS', {
             articleId: article._id,
             editorId: req.user._id,
-            feedback: feedback.trim()
+            feedback: cleanText(feedback)
         });
 
         return res.status(200).json({
@@ -639,9 +630,9 @@ const editorDirectEdit = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'הכתבה לא נמצאה' });
         }
 
-        if (title !== undefined) article.title = title.trim();
-        if (summary !== undefined) article.summary = summary.trim();
-        if (content !== undefined) article.content = content;
+        if (title !== undefined) article.title = cleanText(title);
+        if (summary !== undefined) article.summary = cleanText(summary);
+        if (content !== undefined) article.content = sanitizeHtml(content);
         if (category !== undefined && ARTICLE_CATEGORIES.includes(category)) article.category = category;
         if (mainImage !== undefined) article.mainImage = mainImage;
 
@@ -701,15 +692,15 @@ const deleteArticle = async (req, res, next) => {
  */
 const getPublicArticles = async (req, res, next) => {
     try {
-        const { category, search, page = 1, limit = 20, sort = 'newest' } = req.query;
+        const { category, search, sort = 'newest' } = req.query;
         const query = { status: ARTICLE_STATUS.PUBLISHED };
 
         if (category) {
-            query.category = category;
+            query.category = cleanText(category);
         }
 
-        if (search && search.trim()) {
-            query.$text = { $search: search.trim() };
+        if (cleanText(search)) {
+            query.$text = { $search: cleanText(search) };
         }
 
         let sortOption = { publishedAt: -1 };
@@ -719,8 +710,7 @@ const getPublicArticles = async (req, res, next) => {
 
         // For popularity sort, we need to aggregate view counts
         if (sort === 'popular') {
-            const ViewStat = require('../models/ViewStat');
-            const skip = (parseInt(page) - 1) * parseInt(limit);
+            const { page, limit, skip } = parsePagination(req.query);
 
             // Get total views per article
             const pipeline = [
@@ -731,7 +721,7 @@ const getPublicArticles = async (req, res, next) => {
             const viewMap = {};
             viewCounts.forEach(v => { viewMap[v._id.toString()] = v.totalViews; });
 
-            // Fetch all matching articles, then sort by views client-side
+            // Fetch all matching articles, then sort them by views in memory
             const [allArticles, totalCount] = await Promise.all([
                 Article.find(query)
                     .select('title summary category mainImage author publishedAt createdAt')
@@ -746,27 +736,23 @@ const getPublicArticles = async (req, res, next) => {
                 return viewsB - viewsA;
             });
 
-            const paged = allArticles.slice(skip, skip + parseInt(limit));
+            const paged = allArticles.slice(skip, skip + limit);
 
             return res.status(200).json({
                 success: true,
                 articles: paged,
-                pagination: {
-                    totalCount,
-                    currentPage: parseInt(page),
-                    totalPages: Math.ceil(totalCount / parseInt(limit))
-                }
+                pagination: buildPagination(totalCount, page, limit)
             });
         }
 
-        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const { page, limit, skip } = parsePagination(req.query);
         const [articles, totalCount] = await Promise.all([
             Article.find(query)
                 .select('title summary category mainImage author publishedAt createdAt')
                 .populate('author', 'fullName username')
                 .sort(sortOption)
                 .skip(skip)
-                .limit(parseInt(limit))
+                .limit(limit)
                 .lean(),
             Article.countDocuments(query)
         ]);
@@ -774,11 +760,7 @@ const getPublicArticles = async (req, res, next) => {
         return res.status(200).json({
             success: true,
             articles,
-            pagination: {
-                totalCount,
-                currentPage: parseInt(page),
-                totalPages: Math.ceil(totalCount / parseInt(limit))
-            }
+            pagination: buildPagination(totalCount, page, limit)
         });
     } catch (error) {
         next(error);
@@ -806,17 +788,31 @@ const getPublicArticleById = async (req, res, next) => {
         // Return published content only (ignore any draftVersion)
         return res.status(200).json({
             success: true,
-            article: {
-                _id: article._id,
-                title: article.title,
-                summary: article.summary,
-                content: article.content,
-                category: article.category,
-                mainImage: article.mainImage,
-                author: article.author,
-                publishedAt: article.publishedAt
-            }
+            article: toPublicArticle(article)
         });
+    } catch (error) {
+        next(error);
+    }
+};
+
+/**
+ * Server-rendered article page (EJS) so search engines get the full content
+ * GET /article/:id
+ */
+const renderArticlePage = async (req, res, next) => {
+    try {
+        const article = await Article.findOne({
+            _id: req.params.id,
+            status: ARTICLE_STATUS.PUBLISHED
+        }).populate('author', 'fullName username');
+
+        if (!article) {
+            return res.status(404).send('הכתבה לא נמצאה או שטרם פורסמה');
+        }
+
+        recordViewInternal(article._id);
+
+        res.render('article', { article: toPublicArticle(article) });
     } catch (error) {
         next(error);
     }
@@ -836,38 +832,6 @@ module.exports = {
     editorDirectEdit,
     deleteArticle,
     getPublicArticles,
-    getPublicArticleById
+    getPublicArticleById,
+    renderArticlePage
 };
-
-const renderArticlePage = async (req, res, next) => {
-    try {
-        const article = await Article.findOne({
-            _id: req.params.id,
-            status: ARTICLE_STATUS.PUBLISHED
-        }).populate('author', 'fullName username');
-
-        if (!article) {
-            return res.status(404).send('הכתבה לא נמצאה או שטרם פורסמה');
-        }
-
-        recordViewInternal(article._id);
-
-        res.render('article', {
-            article: {
-                _id: article._id,
-                title: article.title,
-                summary: article.summary,
-                content: article.content,
-                category: article.category,
-                mainImage: article.mainImage,
-                author: article.author,
-                publishedAt: article.publishedAt
-            }
-        });
-    } catch (error) {
-        next(error);
-    }
-};
-
-module.exports.renderArticlePage = renderArticlePage;
-

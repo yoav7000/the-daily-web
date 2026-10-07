@@ -7,6 +7,7 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "seed": "node src/scripts/seed.js",
+    "create-editor": "node src/scripts/createEditor.js",
     "test": "node --test tests/"
   },
   "keywords": [
@@ -17,7 +18,7 @@
     "mongodb",
     "mvc"
   ],
-  "author": "",
+  "author": "The Daily Web team",
   "license": "ISC",
   "dependencies": {
     "bcryptjs": "^3.0.3",
