@@ -5,7 +5,7 @@ const app = require('../src/app');
 const User = require('../src/models/User');
 const Article = require('../src/models/Article');
 const { ARTICLE_STATUS, ARTICLE_CATEGORIES } = require('../src/constants/articleConstants');
-const { connectTestDb, disconnectTestDb, createEditor } = require('./helpers/testEnv');
+const { connectTestDb, disconnectTestDb, createEditor, createReporter } = require('./helpers/testEnv');
 
 let server;
 let baseUrl;
@@ -25,18 +25,8 @@ test.before(async () => {
         });
     });
 
-    // Register reporter and editor
-    const repRes = await fetch(`${baseUrl}/api/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            username: 'reporter_m4',
-            password: 'Password123!',
-            fullName: 'רועי הכתב',
-            role: 'reporter'
-        })
-    });
-    const repData = await repRes.json();
+    // Reporter and editor accounts
+    const repData = await createReporter('reporter_m4', 'רועי הכתב');
     reporterToken = repData.token;
     reporterUser = repData.user;
 

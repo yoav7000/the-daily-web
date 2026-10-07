@@ -109,7 +109,7 @@ const buildTimeline = (stats, startMs, endMs) => {
 
 /**
  * נקודות הציון של הכתבה: הפרסום הראשוני ואישורי העדכונים של העורך.
- * בפרסום ראשוני נרשמת גם רשומה ב-revisionsHistory (באותו רגע בדיוק כמו publishedAt),
+ * בפרסום ראשוני נרשמת גם רשומה ב-revisionsHistory (באותו רגע כמו publishedAt),
  * לכן היא נחשבת לפרסום ולא לעדכון, כדי שלא תופיע נקודה כפולה.
  */
 const buildMilestones = (article) => {
@@ -128,7 +128,8 @@ const buildMilestones = (article) => {
     }
 
     (article.revisionsHistory || []).forEach((rev) => {
-        const isInitialPublishEntry = publishedMs !== null && new Date(rev.approvedAt).getTime() === publishedMs;
+        // approving the first publication stores publishedAt and this entry at the same moment (allow clock rounding)
+        const isInitialPublishEntry = publishedMs !== null && Math.abs(new Date(rev.approvedAt).getTime() - publishedMs) < 1000;
         if (isInitialPublishEntry) {
             milestones[0].editorName = rev.approvedBy ? rev.approvedBy.fullName : 'עורך';
             return;

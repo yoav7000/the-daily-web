@@ -7,7 +7,7 @@ const User = require('../src/models/User');
 const ViewStat = require('../src/models/ViewStat');
 const { ARTICLE_STATUS } = require('../src/constants/articleConstants');
 const { getTimeBucketKey } = require('../src/controllers/analyticsController');
-const { connectTestDb, disconnectTestDb, createEditor } = require('./helpers/testEnv');
+const { connectTestDb, disconnectTestDb, createEditor, createReporter } = require('./helpers/testEnv');
 
 let server;
 let baseUrl;
@@ -47,11 +47,9 @@ test.before(async () => {
     });
 
     editor = await createEditor('gap_editor', 'עורך ראשי');
-    const reg = await api('POST', '/api/auth/register', {
-        body: { username: 'gap_reporter', password: 'password123', fullName: 'כתב בדיקות' }
-    });
-    reporterToken = reg.body.token;
-    reporterId = reg.body.user.id;
+    const reporter = await createReporter('gap_reporter', 'כתב בדיקות');
+    reporterToken = reporter.token;
+    reporterId = reporter.user.id;
 });
 
 test.after(async () => {
@@ -107,10 +105,11 @@ test('Impact analytics: one publish milestone, marked positions, continuous time
     await t.test('an approved update becomes a second milestone placed on the graph', async () => {
         // make the history realistic: published 10 hours ago, updated 4 hours ago, with views around both
         const hoursAgo = (h) => new Date(Date.now() - h * 3600 * 1000);
+        const publishedAt = hoursAgo(10);
         await Article.updateOne({ _id: id }, {
-            publishedAt: hoursAgo(10),
+            publishedAt,
             revisionsHistory: [
-                { approvedAt: hoursAgo(10), approvedBy: editor.user.id, changesSummary: 'פרסום ראשוני' },
+                { approvedAt: publishedAt, approvedBy: editor.user.id, changesSummary: 'פרסום ראשוני' },
                 { approvedAt: hoursAgo(4), approvedBy: editor.user.id, changesSummary: 'עדכון' }
             ]
         });
