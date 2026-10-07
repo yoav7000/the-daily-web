@@ -111,7 +111,7 @@ the-daily-web/
 
 ---
 
-## 💡 Core Features & Business Logic (Team Member 2: Article Lifecycle & Workflows)
+## 💡 Core Features & Business Logic: Article Lifecycle & Workflows
 
 1. **Article State Machine:**
    - **"In Preparation" (`draft`)**: Initial state when created by a reporter.
@@ -138,7 +138,7 @@ the-daily-web/
 
 ---
 
-## 📊 Core Features & Business Logic (Team Member 5: Comments, Anti-Spam, Analytics & Seeder)
+## 📊 Core Features & Business Logic: Comments, Anti-Spam, Analytics & Seeder
 
 1. **Comments Model & Real-Time AJAX Submission:**
    - **Model (`src/models/Comment.js`)**: Full CRUD Mongoose model supporting articles, author names, content, and client IP identifiers.
@@ -182,9 +182,13 @@ the-daily-web/
    ```bash
    npm start
    ```
-3. **Open the Test Labs:**
-   - **Article Workflow Lab (Member 2):** `http://localhost:3000/test.html`
-   - **Impact Analytics & Comments Lab (Member 5):** `http://localhost:3000/analytics.html`
+3. **Open the Dashboards & Workbenches:**
+   - **Main News Portal:** `http://localhost:3000/`
+   - **Staff Login:** `http://localhost:3000/login.html`
+   - **Reporter Workspace:** `http://localhost:3000/reporter.html`
+   - **Editor-in-Chief CMS:** `http://localhost:3000/editor.html`
+   - **Article Workflow Workbench:** `http://localhost:3000/test.html`
+   - **Impact Analytics & Comments Lab:** `http://localhost:3000/analytics.html`
 4. **Demonstrate Impact Analytics:**
    - Select the showcase article (*"דעה: החוסן הכלכלי של ישראל מול אתגרי השעה (מהדורה #151)"*).
    - Point out the metrics cards showing pre-update vs. post-update views and percentage growth.

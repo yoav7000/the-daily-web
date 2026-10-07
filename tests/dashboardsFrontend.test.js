@@ -80,7 +80,7 @@ test.after(async () => {
     if (mongod) await mongod.stop();
 });
 
-test('Team Member 4: Dashboards Frontend & Review Workflow Integration Suite', async (t) => {
+test('Dashboards Frontend & Review Workflow Integration Suite', async (t) => {
 
     await t.test('1. Static HTML Pages are served correctly', async () => {
         const loginRes = await fetch(`${baseUrl}/login.html`);

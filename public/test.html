@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Daily Web — מעבדת ניהול תוכן ועריכה (Member 2 Workflow Lab)</title>
+<title>The Daily Web — מעבדת ניהול תוכן ועריכה (Workflow & Auto-Save)</title>
 
     <!-- Google Fonts: Frank Ruhl Libre (Classic Editorial Serif) + Assistant (Clean Modern Hebrew) + Inter (Numbers & Code) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -203,7 +203,7 @@
                     <span class="brand-badge">Workflow & Auto-Save</span>
                 </a>
                 <span class="badge bg-light text-secondary border d-none d-md-inline-block">
-                    מעבדת עריכה וניהול כתבות (חבר צוות 2)
+                    מעבדת עריכה וניהול כתבות
                 </span>
             </div>
 
@@ -212,8 +212,14 @@
                 <a href="/" class="btn btn-outline-dark btn-sm px-3 fw-bold">
                     <i class="bi bi-house-door me-1"></i> עיתון ראשי
                 </a>
+                <a href="/editor.html" class="btn btn-outline-success btn-sm px-3 fw-semibold">
+                    <i class="bi bi-shield-check me-1"></i> דסק עריכה
+                </a>
+                <a href="/reporter.html" class="btn btn-outline-primary btn-sm px-3 fw-semibold">
+                    <i class="bi bi-pen me-1"></i> דסק כתבים
+                </a>
                 <a href="/analytics.html" class="btn btn-outline-primary btn-sm px-3 fw-bold">
-                    <i class="bi bi-graph-up-arrow me-1"></i> דשבורד אנליטיקות (Member 5)
+                    <i class="bi bi-graph-up-arrow me-1"></i> דשבורד אנליטיקות
                 </a>
             </div>
         </div>
@@ -389,7 +395,7 @@
 
     </main>
 
-    <!-- Client-side Logic (Vanilla JS, Preserving 100% of Member 2 Functionality) -->
+    <!-- Client-side Logic (Vanilla JS, Auto-Save & Editorial Workflow) -->
     <script>
         let currentToken = "";
         let currentRole = "reporter";
