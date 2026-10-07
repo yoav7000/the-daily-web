@@ -196,6 +196,22 @@
                             </button>
                         </form>
 
+                        <!-- Quick Demo Fillers for Live Presentation -->
+                        <div class="mt-4 pt-3 border-top">
+                            <div class="text-muted small fw-semibold mb-2 text-center">התחברות מהירה למשתמשי הדגמה (Seeded):</div>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-outline-primary btn-sm w-100 py-2 fw-semibold" onclick="fillDemoLogin('dan_reporter', 'password123')">
+                                        <i class="bi bi-pencil-square d-block fs-6 mb-1"></i> כתב: דן שטרן
+                                    </button>
+                                </div>
+                                <div class="col-6">
+                                    <button type="button" class="btn btn-outline-success btn-sm w-100 py-2 fw-semibold" onclick="fillDemoLogin('sarah_editor', 'password123')">
+                                        <i class="bi bi-shield-check d-block fs-6 mb-1"></i> עורכת: שרה לוי
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- 2. REGISTER PANEL -->
@@ -380,6 +396,13 @@
                 submitBtn.innerHTML = '<span>צור חשבון והתחבר</span> <i class="bi bi-check-circle"></i>';
             }
         });
+
+        // Fill credentials for demo users and trigger login
+        function fillDemoLogin(username, password) {
+            document.getElementById('loginUsername').value = username;
+            document.getElementById('loginPassword').value = password;
+            document.getElementById('loginForm').dispatchEvent(new Event('submit'));
+        }
     </script>
 </body>
 </html>
