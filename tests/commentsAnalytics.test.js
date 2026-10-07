@@ -103,7 +103,7 @@ test.after(async () => {
     await mongoose.connection.close();
 });
 
-test('Team Member 5: Comments & Anti-Spam Rate Limiter Test Suite', async (t) => {
+test('Comments & Anti-Spam Rate Limiter Test Suite', async (t) => {
 
     await t.test('1. Guest successfully posts a comment via AJAX (POST /api/articles/:id/comments)', async () => {
         const res = await fetch(`${baseUrl}/api/articles/${testArticleId}/comments`, {
@@ -226,7 +226,7 @@ test('Team Member 5: Comments & Anti-Spam Rate Limiter Test Suite', async (t) =>
     });
 });
 
-test('Team Member 5: Scalable View Analytics & Impact Graph Test Suite', async (t) => {
+test('Scalable View Analytics & Impact Graph Test Suite', async (t) => {
 
     await t.test('1. High-throughput atomic view recording with time-bucket aggregation', async () => {
         const bucketKey = getTimeBucketKey(new Date());
