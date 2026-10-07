@@ -4,6 +4,7 @@ const { ARTICLE_STATUS } = require('../constants/articleConstants');
 const { logOperation } = require('../middleware/requestLogger');
 const { parsePagination, buildPagination } = require('../utils/pagination');
 const { cleanText } = require('../utils/text');
+const { buildSearchFilter } = require('../utils/search');
 
 const isValidViewCount = (value) => Number.isInteger(value) && value >= 0;
 
@@ -76,11 +77,120 @@ const recordView = async (req, res, next) => {
     }
 };
 
+const HOUR_MS = 60 * 60 * 1000;
+const DAY_MS = 24 * HOUR_MS;
+const MAX_GRAPH_POINTS = 400;
+
+const pad2 = (n) => String(n).padStart(2, '0');
+
+/**
+ * סדרת זמן רציפה לגרף: שעות ללא צפיות מופיעות כ-0, כדי שציר הזמן ישקף את המציאות.
+ * הרזולוציה גדלה (שעה / יום / שבוע) כשהתקופה ארוכה, כדי שלא יישלחו אלפי נקודות לדפדפן.
+ */
+const buildTimeline = (stats, startMs, endMs) => {
+    const step = [HOUR_MS, DAY_MS, 7 * DAY_MS].find((ms) => (endMs - startMs) / ms < MAX_GRAPH_POINTS) || 7 * DAY_MS;
+    const origin = new Date(startMs).setMinutes(0, 0, 0);
+    const indexOf = (ms) => Math.max(0, Math.floor((ms - origin) / step));
+
+    const points = Array.from({ length: indexOf(endMs) + 1 }, (_, i) => ({ t: origin + i * step, views: 0 }));
+    stats.forEach((stat) => {
+        const point = points[Math.min(indexOf(new Date(stat.viewedAt).getTime()), points.length - 1)];
+        point.views += stat.viewCount;
+    });
+
+    const labels = points.map(({ t }) => {
+        const d = new Date(t);
+        const date = `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`;
+        return step === HOUR_MS ? `${date} ${pad2(d.getHours())}:00` : date;
+    });
+
+    return { points, labels, views: points.map((p) => p.views), indexOf, granularity: step === HOUR_MS ? 'hour' : (step === DAY_MS ? 'day' : 'week') };
+};
+
+/**
+ * נקודות הציון של הכתבה: הפרסום הראשוני ואישורי העדכונים של העורך.
+ * בפרסום ראשוני נרשמת גם רשומה ב-revisionsHistory (באותו רגע בדיוק כמו publishedAt),
+ * לכן היא נחשבת לפרסום ולא לעדכון, כדי שלא תופיע נקודה כפולה.
+ */
+const buildMilestones = (article) => {
+    const publishedMs = article.publishedAt ? new Date(article.publishedAt).getTime() : null;
+    const milestones = [];
+    let updateNumber = 0;
+
+    if (publishedMs !== null) {
+        milestones.push({
+            type: 'INITIAL_PUBLISH',
+            title: 'פרסום ראשוני',
+            timestamp: article.publishedAt,
+            timeBucket: getTimeBucketKey(article.publishedAt),
+            description: 'הכתבה אושרה ופורסמה לראשונה לציבור'
+        });
+    }
+
+    (article.revisionsHistory || []).forEach((rev) => {
+        const isInitialPublishEntry = publishedMs !== null && new Date(rev.approvedAt).getTime() === publishedMs;
+        if (isInitialPublishEntry) {
+            milestones[0].editorName = rev.approvedBy ? rev.approvedBy.fullName : 'עורך';
+            return;
+        }
+        updateNumber += 1;
+        milestones.push({
+            type: 'REVISION_UPDATE',
+            title: `עדכון גרסה #${updateNumber}`,
+            timestamp: rev.approvedAt,
+            timeBucket: getTimeBucketKey(rev.approvedAt),
+            editorName: rev.approvedBy ? rev.approvedBy.fullName : 'עורך',
+            description: rev.changesSummary || 'אישור שינויים ועדכון תוכן הכתבה'
+        });
+    });
+
+    return milestones.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+};
+
+/**
+ * השוואת קצב הצפיות (צפיות לשעה) לפני ואחרי העדכון האחרון.
+ * הממוצע מחושב על כל השעות שחלפו, כולל שעות בלי צפיות.
+ */
+const buildImpactAnalysis = (stats, lastUpdate, startMs, endMs) => {
+    const updateMs = new Date(lastUpdate.timestamp).getTime();
+
+    let viewsBeforeUpdate = 0;
+    let viewsAfterUpdate = 0;
+    stats.forEach((stat) => {
+        if (new Date(stat.viewedAt).getTime() < updateMs) {
+            viewsBeforeUpdate += stat.viewCount;
+        } else {
+            viewsAfterUpdate += stat.viewCount;
+        }
+    });
+
+    const avgHourlyBefore = viewsBeforeUpdate / Math.max(1, (updateMs - startMs) / HOUR_MS);
+    const avgHourlyAfter = viewsAfterUpdate / Math.max(1, (endMs - updateMs) / HOUR_MS);
+
+    let percentageChange = 0;
+    if (avgHourlyBefore > 0) {
+        percentageChange = ((avgHourlyAfter - avgHourlyBefore) / avgHourlyBefore) * 100;
+    } else if (avgHourlyAfter > 0) {
+        percentageChange = 100;
+    }
+
+    return {
+        lastUpdateTimestamp: lastUpdate.timestamp,
+        lastUpdateTitle: lastUpdate.title,
+        viewsBeforeUpdate,
+        viewsAfterUpdate,
+        avgHourlyBefore: Number(avgHourlyBefore.toFixed(1)),
+        avgHourlyAfter: Number(avgHourlyAfter.toFixed(1)),
+        percentageChange: Number(percentageChange.toFixed(1)),
+        isPositiveImpact: percentageChange >= 0
+    };
+};
+
 /**
  * שליפת נתוני גרף Impact Analytics עבור עורך
  * GET /api/analytics/article/:articleId
- * מחזיר ציר זמן של צפיות, סימון נקודות אישור ועדכון גרסה,
- * והשוואת היקף הצפיות לפני ואחרי כל עדכון
+ * מחזיר ציר זמן רציף של צפיות, נקודות פרסום ועדכון (עם המיקום שלהן על הגרף),
+ * והשוואת קצב הצפיות לפני ואחרי העדכון האחרון
  */
 const getArticleImpactAnalytics = async (req, res, next) => {
     try {
@@ -98,91 +208,33 @@ const getArticleImpactAnalytics = async (req, res, next) => {
             });
         }
 
-        // שליפת כל דליי הצפייה לאורך ציר הזמן, ממוינים מהישן לחדש
         const stats = await ViewStat.find({ article: articleId })
             .sort({ viewedAt: 1 })
             .lean();
 
-        // הכנת הנתונים עבור גרף Chart.js
-        const timelineLabels = [];
-        const viewCounts = [];
-        let totalViews = 0;
+        const milestones = buildMilestones(article);
 
-        stats.forEach((s) => {
-            const dateObj = new Date(s.viewedAt);
-            const label = `${String(dateObj.getDate()).padStart(2, '0')}/${String(dateObj.getMonth() + 1).padStart(2, '0')} ${String(dateObj.getHours()).padStart(2, '0')}:00`;
-            timelineLabels.push(label);
-            viewCounts.push(s.viewCount);
-            totalViews += s.viewCount;
+        // הגרף מתחיל בפרסום (או בנקודה הראשונה שיש לה נתונים) ונמשך עד עכשיו
+        const times = [
+            ...stats.map((s) => new Date(s.viewedAt).getTime()),
+            ...milestones.map((m) => new Date(m.timestamp).getTime())
+        ];
+        const nowMs = Date.now();
+        const startMs = times.length > 0 ? Math.min(...times) : nowMs;
+        const endMs = Math.max(nowMs, ...times);
+
+        const timeline = buildTimeline(stats, startMs, endMs);
+        milestones.forEach((m) => {
+            m.pointIndex = timeline.indexOf(new Date(m.timestamp).getTime());
         });
 
-        // נקודות ציון של פרסום ועדכונים (Milestones)
-        const milestones = [];
+        const totalViews = stats.reduce((sum, s) => sum + s.viewCount, 0);
 
-        // 1. נקודת פרסום ראשוני
-        if (article.publishedAt) {
-            milestones.push({
-                type: 'INITIAL_PUBLISH',
-                title: 'פרסום ראשוני',
-                timestamp: article.publishedAt,
-                timeBucket: getTimeBucketKey(article.publishedAt),
-                description: 'הכתבה אושרה ופורסמה לראשונה לציבור'
-            });
-        }
-
-        // 2. נקודות עדכון נוספות מההיסטוריה
-        if (Array.isArray(article.revisionsHistory)) {
-            article.revisionsHistory.forEach((rev, idx) => {
-                milestones.push({
-                    type: 'REVISION_UPDATE',
-                    title: `עדכון גרסה #${idx + 1}`,
-                    timestamp: rev.approvedAt,
-                    timeBucket: getTimeBucketKey(rev.approvedAt),
-                    editorName: rev.approvedBy ? rev.approvedBy.fullName : 'עורך',
-                    description: rev.changesSummary || 'אישור שינויים ועדכון תוכן הכתבה'
-                });
-            });
-        }
-
-        // ניתוח השפעה (Impact Comparison): בדיקת שינוי בצפיות לפני ואחרי העדכון האחרון
-        let impactAnalysis = null;
-        if (milestones.length > 1) {
-            const lastUpdate = milestones[milestones.length - 1];
-            const updateTime = new Date(lastUpdate.timestamp).getTime();
-
-            let viewsBeforeUpdate = 0;
-            let countBucketsBefore = 0;
-            let viewsAfterUpdate = 0;
-            let countBucketsAfter = 0;
-
-            stats.forEach((s) => {
-                const statTime = new Date(s.viewedAt).getTime();
-                if (statTime < updateTime) {
-                    viewsBeforeUpdate += s.viewCount;
-                    countBucketsBefore++;
-                } else {
-                    viewsAfterUpdate += s.viewCount;
-                    countBucketsAfter++;
-                }
-            });
-
-            const avgHourlyBefore = countBucketsBefore > 0 ? (viewsBeforeUpdate / countBucketsBefore).toFixed(1) : 0;
-            const avgHourlyAfter = countBucketsAfter > 0 ? (viewsAfterUpdate / countBucketsAfter).toFixed(1) : 0;
-            const percentageChange = avgHourlyBefore > 0 
-                ? (((avgHourlyAfter - avgHourlyBefore) / avgHourlyBefore) * 100).toFixed(1)
-                : 100;
-
-            impactAnalysis = {
-                lastUpdateTimestamp: lastUpdate.timestamp,
-                lastUpdateTitle: lastUpdate.title,
-                viewsBeforeUpdate,
-                viewsAfterUpdate,
-                avgHourlyBefore: Number(avgHourlyBefore),
-                avgHourlyAfter: Number(avgHourlyAfter),
-                percentageChange: Number(percentageChange),
-                isPositiveImpact: Number(percentageChange) >= 0
-            };
-        }
+        // יש מה להשוות רק כשהיה לפחות עדכון אחד אחרי הפרסום הראשוני
+        const updates = milestones.filter((m) => m.type === 'REVISION_UPDATE');
+        const impactAnalysis = updates.length > 0
+            ? buildImpactAnalysis(stats, updates[updates.length - 1], article.publishedAt ? new Date(article.publishedAt).getTime() : startMs, endMs)
+            : null;
 
         return res.status(200).json({
             success: true,
@@ -195,8 +247,10 @@ const getArticleImpactAnalytics = async (req, res, next) => {
             },
             totalViews,
             timeline: {
-                labels: timelineLabels,
-                views: viewCounts,
+                granularity: timeline.granularity,
+                labels: timeline.labels,
+                views: timeline.views,
+                timestamps: timeline.points.map((p) => p.t),
                 rawStats: stats.map(s => ({
                     timeBucket: s.timeBucket,
                     viewedAt: s.viewedAt,
@@ -267,9 +321,7 @@ const getAllViewStats = async (req, res, next) => {
             query.article = cleanText(articleId);
         }
 
-        if (cleanText(search)) {
-            query.$text = { $search: cleanText(search) };
-        }
+        Object.assign(query, buildSearchFilter(search, ['timeBucket', 'notes']));
 
         const { page, limit, skip } = parsePagination(req.query, 50);
 

@@ -4,6 +4,7 @@ const { ARTICLE_STATUS } = require('../constants/articleConstants');
 const { logOperation } = require('../middleware/requestLogger');
 const { parsePagination, buildPagination } = require('../utils/pagination');
 const { cleanText } = require('../utils/text');
+const { buildSearchFilter } = require('../utils/search');
 
 // clientIp is only used for spam protection and must never be sent to the browser
 const PUBLIC_FIELDS = '-clientIp';
@@ -111,9 +112,7 @@ const getArticleComments = async (req, res, next) => {
         const query = { article: articleId };
 
         // תמיכה בחיפוש טקסטואלי בתוך תגובות הכתבה
-        if (cleanText(search)) {
-            query.$text = { $search: cleanText(search) };
-        }
+        Object.assign(query, buildSearchFilter(search, ['content', 'authorName']));
 
         const { page, limit, skip } = parsePagination(req.query);
 
@@ -248,9 +247,7 @@ const getAllComments = async (req, res, next) => {
         const { search } = req.query;
         const query = {};
 
-        if (cleanText(search)) {
-            query.$text = { $search: cleanText(search) };
-        }
+        Object.assign(query, buildSearchFilter(search, ['content', 'authorName']));
 
         const { page, limit, skip } = parsePagination(req.query);
 

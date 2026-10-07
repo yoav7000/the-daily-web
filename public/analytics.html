@@ -449,7 +449,7 @@
                             <h2 class="fs-5 fw-bold text-dark m-0">
                                 <i class="bi bi-graph-up text-primary me-2"></i>עקומת צפיות לאורך ציר הזמן
                             </h2>
-                            <p class="text-muted small m-0">מעקב רציף לפי דליי זמן שעתיים (Time-Bucket Aggregation)</p>
+                            <p class="text-muted small m-0">מעקב רציף לפי דליי זמן (שעה, ובכתבות ותיקות יום או שבוע). שעות בלי צפיות מוצגות כ-0.</p>
                         </div>
                         <div class="d-flex align-items-center gap-3">
                             <span class="small text-muted d-flex align-items-center gap-1">
@@ -457,8 +457,16 @@
                                 צפיות שוטפות
                             </span>
                             <span class="small text-muted d-flex align-items-center gap-1">
+                                <span style="display:inline-block; width:10px; height:10px; background:#16a34a; border-radius:50%;"></span>
+                                פרסום ראשוני
+                            </span>
+                            <span class="small text-muted d-flex align-items-center gap-1">
                                 <span style="display:inline-block; width:10px; height:10px; background:#d97706; border-radius:50%;"></span>
                                 אישור עדכון עורך
+                            </span>
+                            <span class="small text-muted d-flex align-items-center gap-1">
+                                <span style="display:inline-block; width:14px; height:10px; background:rgba(217, 119, 6, 0.15); border-radius:2px;"></span>
+                                אחרי העדכון האחרון
                             </span>
                         </div>
                     </div>
@@ -674,6 +682,61 @@
             }
         }
 
+        // Marks the publication and every editor-approved update on the graph itself:
+        // a dashed vertical line at each point in time, and a tinted area after the last update
+        const MILESTONE_COLORS = { INITIAL_PUBLISH: '#16a34a', REVISION_UPDATE: '#d97706' };
+
+        const milestoneMarkersPlugin = {
+            id: 'milestoneMarkers',
+            beforeDatasetsDraw(chart, args, options) {
+                const milestones = options.milestones || [];
+                const updates = milestones.filter(m => m.type === 'REVISION_UPDATE');
+                if (updates.length === 0) return;
+
+                const { ctx, chartArea, scales } = chart;
+                const x = scales.x.getPixelForValue(updates[updates.length - 1].pointIndex);
+                ctx.save();
+                ctx.fillStyle = 'rgba(217, 119, 6, 0.08)';
+                ctx.fillRect(x, chartArea.top, chartArea.right - x, chartArea.bottom - chartArea.top);
+                ctx.restore();
+            },
+            afterDatasetsDraw(chart, args, options) {
+                const milestones = options.milestones || [];
+                const { ctx, chartArea, scales } = chart;
+
+                milestones.forEach((m, i) => {
+                    const x = scales.x.getPixelForValue(m.pointIndex);
+                    const color = MILESTONE_COLORS[m.type] || '#64748b';
+                    const text = m.type === 'INITIAL_PUBLISH' ? 'פרסום' : m.title.replace('עדכון גרסה ', 'עדכון ');
+
+                    ctx.save();
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([6, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(x, chartArea.top);
+                    ctx.lineTo(x, chartArea.bottom);
+                    ctx.stroke();
+
+                    // label pill above the line (staggered so close milestones do not overlap)
+                    ctx.setLineDash([]);
+                    ctx.font = 'bold 11px Assistant, sans-serif';
+                    const width = ctx.measureText(text).width + 12;
+                    const labelX = Math.min(Math.max(x - width / 2, chartArea.left), chartArea.right - width);
+                    const labelY = chartArea.top + 4 + (i % 2) * 20;
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.roundRect(labelX, labelY, width, 18, 9);
+                    ctx.fill();
+                    ctx.fillStyle = '#ffffff';
+                    ctx.textBaseline = 'middle';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(text, labelX + width / 2, labelY + 9.5);
+                    ctx.restore();
+                });
+            }
+        };
+
         // 4. Render Chart.js with Beautiful Modern Aesthetics
         function renderImpactChart(data) {
             const ctx = document.getElementById('impactChart').getContext('2d');
@@ -690,8 +753,11 @@
             gradient.addColorStop(0, 'rgba(37, 99, 235, 0.25)');
             gradient.addColorStop(1, 'rgba(37, 99, 235, 0.00)');
 
+            const milestones = data.milestones || [];
+
             currentChart = new Chart(ctx, {
                 type: 'line',
+                plugins: [milestoneMarkersPlugin],
                 data: {
                     labels: labels,
                     datasets: [{
@@ -720,6 +786,7 @@
                     },
                     plugins: {
                         legend: { display: false },
+                        milestoneMarkers: { milestones },
                         tooltip: {
                             backgroundColor: '#0f172a',
                             titleFont: { family: 'Assistant', size: 13, weight: 'bold' },
@@ -728,7 +795,10 @@
                             cornerRadius: 8,
                             displayColors: false,
                             callbacks: {
-                                label: (item) => ` כמות צפיות: ${item.parsed.y.toLocaleString()}`
+                                label: (item) => ` כמות צפיות: ${item.parsed.y.toLocaleString()}`,
+                                afterBody: (items) => milestones
+                                    .filter(m => m.pointIndex === items[0].dataIndex)
+                                    .map(m => `● ${m.title}${m.editorName ? ' (' + m.editorName + ')' : ''}`)
                             }
                         }
                     },
