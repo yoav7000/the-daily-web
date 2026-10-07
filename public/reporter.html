@@ -5,6 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>The Daily Web — סביבת עבודה לכתב</title>
 
+    <script>
+        if (!localStorage.getItem('token')) {
+            window.location.replace('/login.html?redirect=' + encodeURIComponent(window.location.pathname));
+        }
+    </script>
+
     <!-- פונטים של גוגל -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -44,7 +50,80 @@
         .font-editorial { font-family: var(--font-editorial); }
         .font-num { font-family: var(--font-num); }
 
-        /* סרגל עליון */
+        /* 1. Top Utility Header */
+        .top-utility-bar {
+            background-color: #fafafa;
+            border-bottom: 1px solid var(--news-border);
+            font-size: 0.84rem;
+            color: var(--news-muted);
+        }
+
+        /* 2. Main Newspaper Masthead */
+        .newspaper-masthead {
+            text-align: center;
+            padding: 24px 0 16px;
+            background-color: #ffffff;
+            border-bottom: 3px double var(--news-dark);
+        }
+
+        .masthead-title {
+            font-family: var(--font-editorial);
+            font-size: 3.2rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            color: var(--news-dark);
+            text-decoration: none;
+            display: inline-block;
+            line-height: 1;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+        }
+
+        .masthead-tagline {
+            font-size: 0.92rem;
+            color: var(--news-muted);
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+
+        /* 3. Category & Navigation Bar */
+        .category-nav-bar {
+            background-color: #ffffff;
+            border-bottom: 1px solid var(--news-border);
+            position: sticky;
+            top: 0;
+            z-index: 1020;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+        }
+
+        .category-link {
+            font-size: 0.95rem;
+            font-weight: 700;
+            color: var(--news-ink);
+            padding: 12px 14px;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            transition: color 0.15s, border-color 0.15s;
+            border-bottom: 3px solid transparent;
+            white-space: nowrap;
+        }
+
+        .category-link:hover, .category-link.active {
+            color: var(--news-red);
+            border-bottom-color: var(--news-red);
+        }
+
+        .footer-newspaper {
+            background-color: #121212;
+            color: #d1d5db;
+            padding: 40px 0 20px;
+            margin-top: 60px;
+            border-top: 3px double #374151;
+        }
+
+        /* סרגל עליון ישן לגיבוי */
         .workspace-navbar {
             background-color: #ffffff;
             border-bottom: 1px solid var(--news-border);
@@ -397,28 +476,30 @@
 </head>
 <body>
 
-    <!-- סרגל ניווט עליון -->
-    <nav class="workspace-navbar py-2">
-        <div class="container-fluid px-4 d-flex justify-content-between align-items-center">
+    <!-- 1. Top Utility Header -->
+    <div class="top-utility-bar py-1">
+        <div class="container-fluid px-lg-5 d-flex justify-content-between align-items-center flex-wrap gap-2">
             <div class="d-flex align-items-center gap-3">
-                <a href="/" class="brand-logo">The Daily Web</a>
+                <span id="currentDateDisplay" class="fw-semibold">
+                    יום רביעי, 7 באוקטובר 2026 | כ"ו בתשרי תשפ"ז
+                </span>
+                <span class="text-muted d-none d-md-inline">|</span>
+                <span id="topWeatherSnippet" class="d-none d-md-inline-flex align-items-center gap-1">
+                    <i class="bi bi-cloud-sun text-warning"></i> תל אביב: <strong class="font-num">27°C</strong>
+                </span>
                 <span class="role-badge-reporter d-flex align-items-center gap-1">
                     <i class="bi bi-pencil-square"></i> אזור עבודה לכתב
                 </span>
             </div>
-
             <div class="d-flex align-items-center gap-3">
-                <a href="/" class="btn btn-sm btn-outline-secondary d-none d-md-inline-flex align-items-center gap-1">
-                    <i class="bi bi-house"></i> מעבר לאתר הראשי
+                <a href="/portal.html" class="btn btn-dark btn-sm py-1 px-3 fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
+                    <i class="bi bi-grid-3x3-gap-fill text-warning"></i> פורטל עובדים
                 </a>
-                <a href="/analytics.html" class="btn btn-sm btn-outline-primary d-none d-md-inline-flex align-items-center gap-1">
-                    <i class="bi bi-graph-up"></i> נתוני צפייה (Analytics)
-                </a>
-                
+                <span class="text-muted">|</span>
                 <div class="dropdown">
                     <button class="btn btn-sm btn-light border dropdown-toggle d-flex align-items-center gap-2 fw-semibold" type="button" id="userMenuBtn" data-bs-toggle="dropdown">
                         <i class="bi bi-person-circle text-primary"></i>
-                        <span id="navUserName">טוען משתמש...</span>
+                        <span id="navUserName">טוען כתב...</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm" aria-labelledby="userMenuBtn">
                         <li class="px-3 py-1 small text-muted">מחובר ככתב מערכת</li>
@@ -426,6 +507,42 @@
                         <li><a class="dropdown-item text-danger fw-bold" href="javascript:void(0)" onclick="logout()"><i class="bi bi-box-arrow-left me-1"></i> התנתק</a></li>
                     </ul>
                 </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Master Newspaper Masthead -->
+    <header class="newspaper-masthead">
+        <div class="container text-center">
+            <a href="/" class="masthead-title">The Daily Web</a>
+            <div class="masthead-tagline">
+                סביבת עבודה לכתב • יצירת תוכן, עריכה, שמירה אוטומטית ברקע והגשה לעורך
+            </div>
+        </div>
+    </header>
+
+    <!-- 3. Central Navigation Bar -->
+    <nav class="category-nav-bar mb-3">
+        <div class="container-fluid px-lg-5">
+            <div class="d-flex overflow-auto py-1 align-items-center justify-content-start justify-content-md-center gap-1">
+                <a href="/" class="category-link">
+                    <i class="bi bi-newspaper"></i> שער העיתון
+                </a>
+                <a href="/reporter.html" class="category-link active">
+                    <i class="bi bi-pencil-square text-danger"></i> סביבת כתבים
+                </a>
+                <a href="/editor.html" class="category-link">
+                    <i class="bi bi-shield-check"></i> דסק עורכים
+                </a>
+                <a href="/analytics.html" class="category-link">
+                    <i class="bi bi-bar-chart-line"></i> Impact Analytics
+                </a>
+                <a href="/test.html" class="category-link">
+                    <i class="bi bi-tools"></i> מעבדת Workflow
+                </a>
+                <a href="/portal.html" class="category-link">
+                    <i class="bi bi-grid-3x3-gap-fill"></i> פורטל עובדים
+                </a>
             </div>
         </div>
     </nav>
@@ -775,7 +892,7 @@
         async function verifySession() {
             const token = getAuthToken();
             if (!token) {
-                window.location.href = '/login.html';
+                window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
                 return;
             }
 
@@ -786,7 +903,7 @@
 
                 if (!res.ok) {
                     clearLocalLogin();
-                    window.location.href = '/login.html';
+                    window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
                     return;
                 }
 
@@ -795,6 +912,8 @@
                 document.getElementById('navUserName').innerText = currentUser.fullName || currentUser.username;
             } catch (err) {
                 console.error('Session verify error:', err);
+                clearLocalLogin();
+                window.location.href = '/login.html?redirect=' + encodeURIComponent(window.location.pathname);
             }
         }
 
@@ -1363,6 +1482,85 @@
             textarea.setSelectionRange(start + startTag.length, end + startTag.length);
             triggerAutoSave();
         }
+
+        // Dynamic Date Calculation
+        function updateDateDisplay() {
+            try {
+                const now = new Date();
+                const gregorianFormatter = new Intl.DateTimeFormat('he-IL', {
+                    weekday: 'long',
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric'
+                });
+                const gregStr = gregorianFormatter.format(now);
+                let hebrewStr = '';
+                try {
+                    const hebrewFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
+                        year: 'numeric',
+                        month: 'long',
+                        day: 'numeric'
+                    });
+                    hebrewStr = hebrewFormatter.format(now);
+                } catch(e) {}
+                const el = document.getElementById('currentDateDisplay');
+                if (el) el.innerText = hebrewStr ? `${gregStr} | ${hebrewStr}` : gregStr;
+            } catch(e) {}
+        }
+        document.addEventListener('DOMContentLoaded', updateDateDisplay);
     </script>
+
+    <!-- Unified Footer -->
+    <footer class="footer-newspaper">
+        <div class="container-fluid px-lg-5">
+            <div class="row g-4 pb-4 border-bottom border-secondary mb-4">
+                <div class="col-lg-4">
+                    <h4 class="font-editorial text-white fw-bold h4 mb-2">The Daily Web</h4>
+                    <p class="text-secondary small mb-3">
+                        עיתון החדשות והתוכן הדיגיטלי המוביל בישראל. דסק כתבים ומערכת ניהול תוכן עם שמירה אוטומטית ברקע.
+                    </p>
+                    <div class="badge bg-dark border border-secondary text-light py-2 px-3 small font-num">
+                        <i class="bi bi-shield-check text-success me-1"></i> Reporter Desk Suite
+                    </div>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <h5 class="text-white fw-bold small text-uppercase mb-3">סביבות עבודה</h5>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="/" class="text-secondary text-decoration-none">שער העיתון</a></li>
+                        <li class="mb-2"><a href="/editor.html" class="text-secondary text-decoration-none">דסק עורכים</a></li>
+                        <li class="mb-2"><a href="/analytics.html" class="text-secondary text-decoration-none">Impact Analytics</a></li>
+                        <li class="mb-2"><a href="/portal.html" class="text-secondary text-decoration-none">פורטל עובדים</a></li>
+                    </ul>
+                </div>
+                <div class="col-6 col-lg-2">
+                    <h5 class="text-white fw-bold small text-uppercase mb-3">דסקים ונושאים</h5>
+                    <ul class="list-unstyled small">
+                        <li class="mb-2"><a href="/?category=חדשות" class="text-secondary text-decoration-none">חדשות</a></li>
+                        <li class="mb-2"><a href="/?category=פוליטיקה" class="text-secondary text-decoration-none">פוליטיקה</a></li>
+                        <li class="mb-2"><a href="/?category=כלכלה" class="text-secondary text-decoration-none">כלכלה</a></li>
+                        <li class="mb-2"><a href="/?category=טכנולוגיה" class="text-secondary text-decoration-none">טכנולוגיה</a></li>
+                    </ul>
+                </div>
+                <div class="col-lg-4">
+                    <h5 class="text-white fw-bold small text-uppercase mb-3">מרכז העובדים</h5>
+                    <p class="text-secondary small mb-2">
+                        כניסה מהירה ומעבר בין כל דסקי המערכת:
+                    </p>
+                    <div class="d-flex gap-2">
+                        <a href="/portal.html" class="btn btn-warning text-dark fw-bold btn-sm px-3">
+                            <i class="bi bi-grid-3x3-gap-fill me-1"></i> פורטל עובדים
+                        </a>
+                        <a href="javascript:void(0)" onclick="logout()" class="btn btn-outline-danger btn-sm px-3">
+                            <i class="bi bi-box-arrow-left me-1"></i> התנתקות
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 text-secondary small">
+                <div>&copy; 2026 The Daily Web. כל הזכויות שמורות.</div>
+                <div class="font-num">Advanced Web Applications Project</div>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>
