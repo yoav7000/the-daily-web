@@ -283,6 +283,12 @@ const updateUser = async (req, res, next) => {
         if (typeof req.body.isActive === 'boolean') {
             user.isActive = req.body.isActive;
         }
+        if (req.body.password) {
+            if (typeof req.body.password !== 'string' || req.body.password.length < 6) {
+                return res.status(400).json({ success: false, message: 'הסיסמה חייבת להכיל לפחות 6 תווים' });
+            }
+            user.password = req.body.password;
+        }
 
         await user.save();
 
