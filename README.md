@@ -51,14 +51,19 @@ npm run create-editor -- <username> <password> "<full name>"
 ### Tests
 
 ```bash
-npm test
+npm test          # server + static front-end checks (fast, needs nothing but Node)
+npm run test:ui   # the real-browser "button checker" and the requirement flows (needs Chrome, Edge or Chromium)
+npm run test:all  # both
 ```
 
 Every test file starts its own temporary in-memory MongoDB, so tests never touch your real database. The suite covers:
 
 - **The server:** every API route, roles and permissions, the article workflow, comments and the spam limit, analytics, password storage (it reads the raw MongoDB documents), user management and login throttling.
-- **The front-end** (`tests/frontendChecks.test.js`): every page parses, every button handler exists, every shared helper a page calls is loaded, every link and every API address a page uses really exists, and the removed developer tooling is gone.
+- **The front-end, static** (`tests/frontendChecks.test.js`): every page parses, every `data-action` button has a handler, every shared helper a page calls is loaded, every link and every API address a page uses really exists, every icon exists, all pages are built from the same design system, permissions are never decided from data the visitor can edit, and **no external UI framework or library is used** (only the technologies of the course; Chart.js and Google Fonts are the only external resources).
 - **Regressions from the manual QA** (`tests/qaRegression.test.js`): exact dashboard counters, paging without repeated or skipped articles, the viewed filter, clean deletes, error pages and the favicon.
+- **The browser tests** (`tests/ui/`, `npm run test:ui`) drive a real Chrome/Edge with real clicks and typing, against the app filled with the demo data (520 articles). No extra package is needed: `tests/ui/browser.js` talks to the installed browser through the Chrome DevTools Protocol with Node's built-in WebSocket. Set `CHROME_PATH` to use another browser; without one the browser tests are skipped with a message.
+  - `siteCrawler.test.js` is the **button checker**. It opens every page at the size of a computer, a tablet and a phone (plus dark theme and the smallest phone), uses every field, presses every kind of button (including the ones inside dialogs) and clicks every link. After each step it checks that: there is no script error, failed request or native pop-up; a dialog fits the screen and closes with Escape; **nothing is cut off or sticks out of the screen, nothing lies on top of a button so that a click would miss it**, buttons are big enough for a finger, and every control has an accessible name.
+  - `userFlows.test.js` checks the requirements of the assignment through the real screens: infinite scroll (20 more articles by themselves), search / section / seen-not-seen / sorting without a page reload, the article page and instant comments (no more than 3 a minute), login by role and permissions, writing with continuous auto-save, submitting, review (returning with a mandatory note, approving, editing a published article without changing what the readers see, the difference view), deleting, the Impact Analytics graph and its update markers, and full CRUD in the management page.
 
 ---
 
@@ -84,15 +89,23 @@ the-daily-web/
 ├── Dockerfile, docker-compose.yml, .dockerignore
 ├── package.json
 ├── .env.example
-├── public/                      # Static client: HTML, vanilla JS, images
-│   ├── index.html               # Public home page (feed, search, filters, infinite scroll)
+├── public/                      # Static client: HTML, CSS, vanilla JS, images (no framework)
+│   ├── index.html               # Public home page (lead story, feed, search, filters, infinite scroll, weather)
 │   ├── login.html               # Staff login (no sign-up)
-│   ├── portal.html              # Staff portal: links to the desks the user may open
-│   ├── reporter.html            # Reporter dashboard (own articles, editor with auto-save)
-│   ├── editor.html              # Editor dashboard (review, diff view, approve / return)
+│   ├── portal.html              # Workspace home: what needs attention, links to the desks the user may open
+│   ├── reporter.html            # Reporter desk (own articles, writing studio with auto-save)
+│   ├── editor.html              # Editor desk (review, difference view, approve / return / direct edit / delete)
 │   ├── analytics.html           # Impact Analytics graph (Chart.js)
 │   ├── admin.html               # Editors: manage users, comments and view statistics (full CRUD)
-│   ├── js/common.js             # Shared client helpers (escapeHtml, token, logout)
+│   ├── css/base.css             # Design tokens (colours, type, space; light + dark theme), reset, typography
+│   ├── css/components.css       # Buttons, forms, cards, tables, dialogs, toasts, menus, tabs ...
+│   ├── css/layout.css           # The two page frames: public header/footer and the staff sidebar
+│   ├── css/pages.css            # Layouts of the individual pages
+│   ├── js/theme.js              # Light / dark theme (remembered, applied before the first paint)
+│   ├── js/icons.js              # Icon set as one SVG sprite (Lucide, ISC licence)
+│   ├── js/common.js             # Shared helpers: api() for every server call, login state, formatting, weather
+│   ├── js/ui.js                 # UI toolkit: data-action buttons, dialogs, confirm, toasts, menus, tabs
+│   ├── js/shell.js              # Builds the page frame (public header + footer, or the staff sidebar)
 │   ├── js/comments.js           # Comment list helpers (add a comment without reloading the list)
 │   └── images/                  # Default article image and SVG assets
 ├── src/
@@ -110,9 +123,32 @@ the-daily-web/
 │   ├── routes/                  # REST routes per controller
 │   ├── utils/                   # pagination, search filter, status filter, text cleaning, HTML sanitizer
 │   ├── scripts/                 # seed.js (demo data), createEditor.js
-│   └── views/article.ejs        # Server-rendered article page (SEO)
+│   └── views/                   # article.ejs (server-rendered article page, SEO) and error.ejs
 └── tests/                       # node:test suites (+ helpers/testEnv.js)
+    └── ui/                      # real-browser tests: browser.js (driver), audit.js, siteCrawler, userFlows
 ```
+
+---
+
+## 🎨 The interface
+
+One design system for every page: the same colours, type, spacing, buttons, dialogs and icons, in a light and a dark theme (the choice is remembered; the system setting is the default). It is plain HTML, CSS (Flexbox and Grid, written with logical properties so it is right-to-left by design) and vanilla JavaScript: **no UI framework or library**.
+
+- **Two page frames, built by `js/shell.js`:** readers get a header with the sections, a search box and the account menu; staff get a workspace sidebar (a drawer on phones) that shows only what their role may open.
+- **No browser pop-ups:** questions ("delete this article?") are our own dialogs with focus kept inside, Escape to close and focus returned to the button that opened them; messages are toasts that never cover a button.
+- **Every button is a `data-action`:** a button without a handler is reported in the console and fails the tests, so a dead button cannot hide.
+- **Responsive:** computer, tablet and phone. Tables become cards on phones; the writing studio and the review screen become full-screen sheets.
+- **Accessible:** semantic HTML5 landmarks, labelled fields, visible focus, keyboard use of dialogs / menus / tabs, reduced-motion support.
+- **Permissions are decided by the server.** The browser only keeps a copy of the user's name for display; the role in the menus comes from the server's answer on every page load, and every API call is checked by the server again.
+
+### Third-party assets (all free and permitted for this use)
+
+| Asset | Used for | Licence |
+| --- | --- | --- |
+| [Lucide](https://lucide.dev) icons (embedded in `js/icons.js`) | Icons | ISC |
+| [Heebo](https://fonts.google.com/specimen/Heebo), [Frank Ruhl Libre](https://fonts.google.com/specimen/Frank+Ruhl+Libre) via Google Fonts | Typefaces (fall back to system fonts when offline) | SIL Open Font License |
+| [Chart.js](https://www.chartjs.org) 4.4.3 from jsDelivr | The Impact Analytics graph (allowed by the assignment) | MIT |
+| [Unsplash](https://unsplash.com) photos used by the demo data | Article pictures | Unsplash License |
 
 ---
 
