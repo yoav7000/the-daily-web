@@ -59,3 +59,11 @@ async function requireAuth() {
         return null;
     }
 }
+
+// Hides links that only editors can use (the server refuses everyone else anyway; this just keeps the menu honest)
+function applyRoleVisibility(user) {
+    const isEditor = Boolean(user) && user.role === 'editor';
+    document.querySelectorAll('[data-editor-only]').forEach((el) => {
+        el.classList.toggle('d-none', !isEditor);
+    });
+}
