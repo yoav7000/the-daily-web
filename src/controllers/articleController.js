@@ -359,6 +359,14 @@ const getAllArticlesForEditor = async (req, res, next) => {
             // Articles that are published but have a draftVersion pending approval
             query.status = ARTICLE_STATUS.PUBLISHED;
             query['draftVersion.status'] = ARTICLE_STATUS.PENDING_APPROVAL;
+        } else if (status === 'needs_review') {
+            // Everything waiting for the editor: new submissions and updates to published articles
+            query.$and = [{
+                $or: [
+                    { status: ARTICLE_STATUS.PENDING_APPROVAL },
+                    { status: ARTICLE_STATUS.PUBLISHED, 'draftVersion.status': ARTICLE_STATUS.PENDING_APPROVAL }
+                ]
+            }];
         } else if (status) {
             query.status = normalizeStatus(status);
         }

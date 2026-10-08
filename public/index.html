@@ -674,7 +674,7 @@
         // LocalStorage Viewed Articles Set
         function getViewedArticles() {
             try {
-                return JSON.parse(localStorage.getItem('the_daily_web_viewed') || '[]');
+                return JSON.parse(localStorage.getItem('the_daily_web_viewed') || '[]').slice(-300);
             } catch {
                 return [];
             }
@@ -693,7 +693,15 @@
             await setupUserNavigation();
             await fetchWeather();
             await fetchTopArticles();
-            await loadFeed(true);
+
+            // Links such as /?category=ספורט open that section directly
+            const linkedCategory = new URLSearchParams(window.location.search).get('category');
+            const knownCategories = [...document.querySelectorAll('#categoryNavList .category-link')].map(link => link.textContent.trim());
+            if (linkedCategory && knownCategories.includes(linkedCategory)) {
+                filterByCategory(linkedCategory); // loads the feed for that category
+            } else {
+                await loadFeed(true);
+            }
 
             // Infinite Scroll Listener
             window.addEventListener('scroll', handleInfiniteScroll);
@@ -768,6 +776,9 @@
                             </a>
                             <a href="/analytics.html" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2">
                                 <i class="bi bi-bar-chart-line text-warning"></i> Impact Analytics
+                            </a>
+                            <a href="/admin.html" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2">
+                                <i class="bi bi-database-gear text-secondary"></i> ניהול נתונים
                             </a>
                             <a href="/portal.html" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2">
                                 <i class="bi bi-grid-3x3-gap-fill text-danger"></i> פורטל עובדים
@@ -953,6 +964,11 @@
                 let url = `/api/articles/public?page=${currentPage}&limit=20&sort=${currentSort}`;
                 if (activeCategory) url += `&category=${encodeURIComponent(activeCategory)}`;
                 if (currentSearchQuery) url += `&search=${encodeURIComponent(currentSearchQuery)}`;
+                // "viewed / not viewed": the server filters the whole archive using the ids this browser remembers
+                const viewedMode = currentStatusFilter === 'read' || currentStatusFilter === 'unread';
+                if (viewedMode) {
+                    url += `&viewed=${currentStatusFilter}&viewedIds=${getViewedArticles().join(',')}`;
+                }
 
                 const res = await fetch(url);
                 const data = await res.json();
@@ -962,8 +978,8 @@
                 if (data.success && data.articles) {
                     totalPages = data.pagination.totalPages;
 
-                    // If reset & first page: populate Hero Lead & Secondary leads
-                    if (reset && data.articles.length > 0) {
+                    // If reset & first page: populate Hero Lead & Secondary leads (not while browsing only viewed / unviewed)
+                    if (reset && data.articles.length > 0 && !viewedMode) {
                         populateHeroSection(data.articles);
                     }
 
@@ -1019,14 +1035,7 @@
             const grid = document.getElementById('articlesGrid');
             const viewedIds = getViewedArticles();
 
-            let displayedArticles = articles;
-
-            // Apply Viewed/Unviewed Client Filter
-            if (currentStatusFilter === 'read') {
-                displayedArticles = articles.filter(a => viewedIds.includes(a._id));
-            } else if (currentStatusFilter === 'unread') {
-                displayedArticles = articles.filter(a => !viewedIds.includes(a._id));
-            }
+            const displayedArticles = articles;
 
             if (isReset && displayedArticles.length === 0) {
                 grid.innerHTML = '<div class="col-12 text-center text-muted py-5">לא נמצאו כתבות התואמות את החיפוש והסינון.</div>';

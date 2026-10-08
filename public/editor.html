@@ -482,7 +482,7 @@
                             <button type="button" class="nav-link active" onclick="setStatusFilter('', this)">כל המצבים</button>
                         </li>
                         <li class="nav-item">
-                            <button type="button" class="nav-link" onclick="setStatusFilter('ממתינה לאישור עורך', this)">
+                            <button type="button" class="nav-link" onclick="setStatusFilter('needs_review', this)">
                                 <i class="bi bi-clock-history me-1"></i> ממתינות לאישור
                                 <span class="badge bg-primary ms-1" id="pendingPillCount">0</span>
                             </button>
@@ -523,7 +523,7 @@
                     </select>
                     
                     <div class="input-group">
-                        <input type="text" class="form-control" id="searchInput" placeholder="חיפוש חופשי..." oninput="debounceSearch()">
+                        <input type="text" class="form-control" id="searchInput" placeholder="חיפוש בכותרת או בתקציר..." oninput="debounceSearch()">
                         <button class="btn btn-outline-secondary" type="button" onclick="applyFilters()">
                             <i class="bi bi-search"></i>
                         </button>
@@ -550,12 +550,13 @@
                         <tr>
                             <td colspan="6" class="text-center py-5">
                                 <div class="spinner-border text-primary" role="status"></div>
-                                <div class="mt-2 text-muted fw-semibold">טוען את כלל הכתבות במערכת...</div>
+                                <div class="mt-2 text-muted fw-semibold">טוען כתבות...</div>
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
+            <div id="articlesPager" class="d-flex justify-content-between align-items-center flex-wrap gap-2 p-3 border-top small text-muted"></div>
         </div>
 
     </main>
@@ -792,7 +793,10 @@
     <script>
         // משתני מצב
         let currentUser = null;
-        let allArticles = []; // כלל הכתבות שנטענו מהשרת
+        const PAGE_SIZE = 25;
+        let allArticles = []; // the articles on the page currently shown (the server returns one page at a time)
+        let currentPage = 1;
+        let listRequestId = 0; // so an older answer never overwrites a newer one
         let currentStatusFilter = '';
         let currentCategoryFilter = '';
         let currentAuthorFilter = '';
@@ -826,7 +830,8 @@
             directEditModalInstance = new bootstrap.Modal(document.getElementById('directEditModal'));
 
             await verifyEditorSession();
-            await loadAllArticles();
+            populateAuthorDropdown();
+            await loadAllArticles(1);
         });
 
         // אימות הרשאות עורך
@@ -879,20 +884,57 @@
         }
 
         // טעינת כלל הכתבות במערכת
-        async function loadAllArticles() {
-            const token = getAuthToken();
+        // Reloads the counters and the page that is currently shown (used after every action)
+        async function loadAllArticles(page = currentPage) {
+            await Promise.all([loadStats(), loadArticles(page)]);
+        }
+
+        // Exact counters for the whole system, computed by the database
+        async function loadStats() {
             try {
-                const res = await fetch('/api/articles/editor/all?limit=500', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                const res = await fetch('/api/articles/editor/stats', { headers: { 'Authorization': `Bearer ${getAuthToken()}` } });
+                if (!res.ok) throw new Error('Failed to fetch stats');
+                const { stats } = await res.json();
+
+                const waiting = stats.pending_approval + stats.pendingUpdates;
+                document.getElementById('metricPending').innerText = waiting;
+                document.getElementById('metricPublished').innerText = stats.published;
+                document.getElementById('metricRevision').innerText = stats.revision_requested;
+                document.getElementById('metricTotal').innerText = stats.total;
+                document.getElementById('pendingPillCount').innerText = waiting;
+            } catch (err) {
+                console.error('Error loading editor stats:', err);
+            }
+        }
+
+        // One page of articles. Status, category, author and search are applied by the server on ALL articles.
+        async function loadArticles(page = 1) {
+            const requestId = ++listRequestId;
+            const params = new URLSearchParams({ page, limit: PAGE_SIZE });
+            if (currentStatusFilter) params.set('status', currentStatusFilter);
+            if (currentCategoryFilter) params.set('category', currentCategoryFilter);
+            if (currentAuthorFilter) params.set('author', currentAuthorFilter);
+            if (currentSearchQuery) params.set('search', currentSearchQuery);
+
+            try {
+                const res = await fetch(`/api/articles/editor/all?${params}`, {
+                    headers: { 'Authorization': `Bearer ${getAuthToken()}` }
                 });
 
                 if (!res.ok) throw new Error('Failed to fetch articles');
 
                 const data = await res.json();
+                if (requestId !== listRequestId) return;
+
+                // the last page can disappear after deleting its only article
+                if (data.articles.length === 0 && page > 1 && data.pagination.totalPages > 0) {
+                    return loadArticles(data.pagination.totalPages);
+                }
+
+                currentPage = data.pagination.currentPage;
                 allArticles = data.articles || [];
-                populateAuthorDropdown();
-                updateMetrics();
-                applyLocalFilters();
+                renderArticlesTable(allArticles);
+                renderPager(data.pagination);
             } catch (err) {
                 console.error('Error loading editor articles:', err);
                 document.getElementById('articlesTableBody').innerHTML = `
@@ -905,102 +947,30 @@
             }
         }
 
-        function populateAuthorDropdown() {
-            const authorSelect = document.getElementById('authorFilter');
-            const currentSelected = authorSelect.value;
-            const authorsMap = new Map();
-
-            allArticles.forEach(a => {
-                if (a.author && typeof a.author === 'object') {
-                    authorsMap.set(a.author._id, a.author.fullName || a.author.username);
-                }
-            });
-
-            let options = '<option value="">כל הכתבים</option>';
-            authorsMap.forEach((name, id) => {
-                options += `<option value="${escapeHtml(id)}" ${currentSelected === id ? 'selected' : ''}>${escapeHtml(name)}</option>`;
-            });
-            authorSelect.innerHTML = options;
+        function renderPager({ currentPage: page, totalPages, totalCount }) {
+            const pager = document.getElementById('articlesPager');
+            const from = totalCount === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+            const to = Math.min(page * PAGE_SIZE, totalCount);
+            pager.innerHTML = `
+                <span>מציג ${from}-${to} מתוך ${totalCount} כתבות</span>
+                <div class="d-flex align-items-center gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" ${page <= 1 ? 'disabled' : ''} onclick="loadArticles(${page - 1})">הקודם</button>
+                    <span>עמוד ${page} מתוך ${Math.max(totalPages, 1)}</span>
+                    <button type="button" class="btn btn-sm btn-outline-secondary" ${page >= totalPages ? 'disabled' : ''} onclick="loadArticles(${page + 1})">הבא</button>
+                </div>`;
         }
 
-        function updateMetrics() {
-            let total = allArticles.length;
-            let pending = 0;
-            let published = 0;
-            let revisions = 0;
-
-            allArticles.forEach(a => {
-                const s = STATUS_MAP[a.status] || a.status;
-                const hasPendingDraft = a.status === 'published' && a.draftVersion && (STATUS_MAP[a.draftVersion.status] || a.draftVersion.status) === 'ממתינה לאישור עורך';
-
-                if (s === 'ממתינה לאישור עורך' || hasPendingDraft) {
-                    pending++;
-                }
-                if (s === 'פורסמה') published++;
-                if (s === 'הוחזרה לתיקונים') revisions++;
-            });
-
-            document.getElementById('metricPending').innerText = pending;
-            document.getElementById('metricPublished').innerText = published;
-            document.getElementById('metricRevision').innerText = revisions;
-            document.getElementById('metricTotal').innerText = total;
-
-            document.getElementById('pendingPillCount').innerText = pending;
-        }
-
-        // סינון מקומי מיידי
-        function applyLocalFilters() {
-            let list = [...allArticles];
-
-            // 1. סינון סטטוס
-            if (currentStatusFilter) {
-                list = list.filter(a => {
-                    const s = STATUS_MAP[a.status] || a.status;
-                    const eng = a.status;
-                    const hasPendingDraft = a.status === 'published' && a.draftVersion && (STATUS_MAP[a.draftVersion.status] || a.draftVersion.status) === 'ממתינה לאישור עורך';
-                    const hasRevDraft = a.status === 'published' && a.draftVersion && (STATUS_MAP[a.draftVersion.status] || a.draftVersion.status) === 'הוחזרה לתיקונים';
-
-                    if (currentStatusFilter === 'pending_update') {
-                        return hasPendingDraft;
-                    }
-                    if (currentStatusFilter === 'בהכנה' || currentStatusFilter === 'draft') {
-                        return s === 'בהכנה' || eng === 'draft';
-                    }
-                    if (currentStatusFilter === 'ממתינה לאישור עורך' || currentStatusFilter === 'pending_approval' || currentStatusFilter === 'ממתינה לאישור') {
-                        return s === 'ממתינה לאישור עורך' || eng === 'pending_approval' || hasPendingDraft;
-                    }
-                    if (currentStatusFilter === 'פורסמה' || currentStatusFilter === 'published') {
-                        return s === 'פורסמה' || eng === 'published';
-                    }
-                    if (currentStatusFilter === 'הוחזרה לתיקונים' || currentStatusFilter === 'revision_requested') {
-                        return s === 'הוחזרה לתיקונים' || eng === 'revision_requested' || hasRevDraft;
-                    }
-                    return s === currentStatusFilter || eng === currentStatusFilter;
-                });
+        // The author filter lists the reporters (and editors) of the system, not just the authors on the loaded page
+        async function populateAuthorDropdown() {
+            try {
+                const res = await fetch('/api/users?limit=100', { headers: { 'Authorization': `Bearer ${getAuthToken()}` } });
+                if (!res.ok) return;
+                const { users } = await res.json();
+                document.getElementById('authorFilter').innerHTML = '<option value="">כל הכתבים</option>' +
+                    users.map(u => `<option value="${escapeHtml(u._id)}">${escapeHtml(u.fullName || u.username)}</option>`).join('');
+            } catch (err) {
+                console.error('Could not load authors:', err);
             }
-
-            // 2. סינון קטגוריה
-            if (currentCategoryFilter) {
-                list = list.filter(a => a.category === currentCategoryFilter);
-            }
-
-            // 3. סינון כתב
-            if (currentAuthorFilter) {
-                list = list.filter(a => a.author && (a.author._id === currentAuthorFilter || a.author === currentAuthorFilter));
-            }
-
-            // 4. חיפוש טקסט
-            if (currentSearchQuery) {
-                const q = currentSearchQuery.toLowerCase();
-                list = list.filter(a => {
-                    const title = (a.title || '').toLowerCase();
-                    const summary = (a.summary || '').toLowerCase();
-                    const authorName = (a.author?.fullName || a.author?.username || '').toLowerCase();
-                    return title.includes(q) || summary.includes(q) || authorName.includes(q);
-                });
-            }
-
-            renderArticlesTable(list);
         }
 
         // רינדור טבלת הכתבות
@@ -1110,14 +1080,14 @@
             if (btnElement) {
                 btnElement.classList.add('active');
             }
-            applyLocalFilters();
+            loadArticles(1);
         }
 
         function applyFilters() {
             currentCategoryFilter = document.getElementById('categoryFilter').value;
             currentAuthorFilter = document.getElementById('authorFilter').value;
             currentSearchQuery = document.getElementById('searchInput').value.trim();
-            applyLocalFilters();
+            loadArticles(1);
         }
 
         function debounceSearch() {
