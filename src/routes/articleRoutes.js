@@ -23,6 +23,7 @@ router.put('/:id/autosave', requireReporter, articleController.autoSaveArticle);
 
 // Reporter's article management
 router.get('/my-articles', requireReporter, articleController.getMyArticles);
+router.get('/my-stats', requireReporter, articleController.getMyStats);
 router.get('/:id/edit', requireReporter, articleController.getArticleForEdit);
 router.post('/:id/submit', requireReporter, articleController.submitForApproval);
 
@@ -30,6 +31,7 @@ router.post('/:id/submit', requireReporter, articleController.submitForApproval)
 // EDITOR ROUTES (Authenticated editors only)
 // ==========================================
 router.get('/editor/all', requireEditor, articleController.getAllArticlesForEditor);
+router.get('/editor/stats', requireEditor, articleController.getEditorStats);
 router.get('/editor/pending', requireEditor, articleController.getPendingArticlesForEditor);
 router.get('/editor/:id/review', requireEditor, articleController.getArticleReviewDetails);
 router.put('/editor/:id', requireEditor, articleController.editorDirectEdit);

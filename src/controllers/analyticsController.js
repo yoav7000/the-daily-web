@@ -353,7 +353,7 @@ const getAllViewStats = async (req, res, next) => {
         const [stats, totalCount] = await Promise.all([
             ViewStat.find(query)
                 .populate('article', 'title category')
-                .sort({ viewedAt: -1 })
+                .sort({ viewedAt: -1, _id: -1 })
                 .skip(skip)
                 .limit(limit)
                 .lean(),
