@@ -3,686 +3,547 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f5f5f2">
+    <meta name="description" content="The Daily Web – חדשות, פוליטיקה, כלכלה, טכנולוגיה, ספורט ועוד. כתבות מעודכנות כל היום.">
+    <title>The Daily Web — חדשות מעודכנות כל היום</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <title>The Daily Web — עיתון החדשות והתוכן הדיגיטלי המוביל</title>
-
-    <!-- Google Fonts: Frank Ruhl Libre (Classic Editorial Serif) + Assistant (Modern Clean Hebrew) + Inter (Data & Numbers) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&family=Frank+Ruhl+Libre:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Bootstrap 5 CSS & Icons (Approved course technology via CDN) -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-
-    <style>
-        /* Always reserve the space of the page scrollbar. Without it, buttons jump sideways whenever a filter
-           makes the page short enough for the scrollbar to disappear (and back). */
-        html {
-            overflow-y: scroll;
-        }
-        :root {
-            --font-editorial: 'Frank Ruhl Libre', serif;
-            --font-sans: 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            --font-num: 'Inter', monospace;
-            
-            --news-dark: #121212;
-            --news-ink: #1f2937;
-            --news-muted: #6b7280;
-            --news-border: #e5e7eb;
-            --news-bg-subtle: #f9fafb;
-            --news-red: #b91c1c;
-            --news-blue: #1d4ed8;
-            --news-gold: #b45309;
-        }
-
-        body {
-            font-family: var(--font-sans);
-            background-color: #ffffff;
-            color: var(--news-ink);
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        .font-editorial { font-family: var(--font-editorial); }
-        .font-num { font-family: var(--font-num); }
-
-        /* 1. Top Utility Header */
-        .top-utility-bar {
-            background-color: #fafafa;
-            border-bottom: 1px solid var(--news-border);
-            font-size: 0.82rem;
-            color: var(--news-muted);
-        }
-
-        /* 2. Main Newspaper Masthead */
-        .newspaper-masthead {
-            text-align: center;
-            padding: 24px 0 16px;
-            border-bottom: 3px double var(--news-dark);
-        }
-
-        .masthead-title {
-            font-family: var(--font-editorial);
-            font-size: 3.4rem;
-            font-weight: 900;
-            letter-spacing: -1px;
-            color: var(--news-dark);
-            text-decoration: none;
-            display: inline-block;
-            line-height: 1;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-        }
-
-        @media (max-width: 768px) {
-            .masthead-title { font-size: 2.2rem; }
-        }
-
-        .masthead-tagline {
-            font-size: 0.9rem;
-            color: var(--news-muted);
-            letter-spacing: 0.5px;
-            text-transform: uppercase;
-            font-weight: 600;
-        }
-
-        /* 3. Category Navigation */
-        .category-nav-bar {
-            background-color: #ffffff;
-            border-bottom: 1px solid var(--news-border);
-            position: sticky;
-            top: 0;
-            z-index: 1020;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-        }
-
-        .category-link {
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: var(--news-ink);
-            padding: 12px 14px;
-            text-decoration: none;
-            display: inline-block;
-            transition: color 0.15s, border-color 0.15s;
-            border-bottom: 3px solid transparent;
-        }
-
-        .category-link:hover, .category-link.active {
-            color: var(--news-red);
-            border-bottom-color: var(--news-red);
-        }
-
-        /* 4. Breaking News Strip */
-        .breaking-strip {
-            background-color: #fef2f2;
-            border-bottom: 1px solid #fee2e2;
-            padding: 8px 16px;
-            font-size: 0.85rem;
-        }
-
-        .breaking-badge {
-            background-color: var(--news-red);
-            color: #ffffff;
-            font-weight: 800;
-            font-size: 0.75rem;
-            padding: 2px 8px;
-            border-radius: 4px;
-            letter-spacing: 0.5px;
-            margin-inline-end: 8px;
-        }
-
-        /* 5. Lead Story & Grid Layouts */
-        .lead-headline {
-            font-family: var(--font-editorial);
-            font-size: 2.4rem;
-            font-weight: 900;
-            line-height: 1.15;
-            color: var(--news-dark);
-            text-decoration: none;
-            transition: color 0.15s;
-        }
-
-        .lead-headline:hover {
-            color: var(--news-red);
-        }
-
-        @media (max-width: 768px) {
-            .lead-headline { font-size: 1.7rem; }
-        }
-
-        .lead-image-container {
-            position: relative;
-            overflow: hidden;
-            border-radius: 8px;
-            height: 380px;
-            background-color: #e5e7eb;
-        }
-
-        .lead-image-container img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.4s ease;
-        }
-
-        .lead-image-container:hover img {
-            transform: scale(1.02);
-        }
-
-        /* 6. Standard Article Cards */
-        .news-card {
-            border: none;
-            border-bottom: 1px solid var(--news-border);
-            border-radius: 0;
-            background: transparent;
-            padding-bottom: 18px;
-            margin-bottom: 20px;
-            transition: transform 0.15s;
-            cursor: pointer;
-        }
-
-        .news-card-img-wrap {
-            position: relative;
-            overflow: hidden;
-            border-radius: 6px;
-            height: 180px;
-            background-color: #f3f4f6;
-            margin-bottom: 10px;
-        }
-
-        .news-card-img-wrap img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            transition: transform 0.3s ease;
-        }
-
-        .news-card:hover .news-card-img-wrap img {
-            transform: scale(1.03);
-        }
-
-        .category-tag {
-            font-size: 0.72rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--news-red);
-            margin-bottom: 4px;
-            display: inline-block;
-        }
-
-        .card-title-news {
-            font-family: var(--font-editorial);
-            font-size: 1.25rem;
-            font-weight: 800;
-            line-height: 1.25;
-            color: var(--news-dark);
-            margin-bottom: 6px;
-        }
-
-        .card-title-news:hover {
-            color: var(--news-red);
-        }
-
-        .card-snippet {
-            font-size: 0.9rem;
-            color: var(--news-muted);
-            line-height: 1.45;
-            display: -webkit-box;
-            -webkit-line-clamp: 2;
-            -webkit-box-orient: vertical;
-            overflow: hidden;
-            margin-bottom: 8px;
-        }
-
-        .byline {
-            font-size: 0.78rem;
-            color: #9ca3af;
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .viewed-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 3px;
-            font-size: 0.72rem;
-            font-weight: 700;
-            padding: 1px 6px;
-            border-radius: 4px;
-            background-color: #f3f4f6;
-            color: #4b5563;
-        }
-
-        .viewed-badge.is-viewed {
-            background-color: #ecfdf5;
-            color: #059669;
-        }
-
-        /* 7. Sidebar Widgets */
-        .sidebar-widget {
-            border: 1px solid var(--news-border);
-            border-radius: 8px;
-            padding: 18px;
-            background-color: #ffffff;
-            margin-bottom: 24px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
-        }
-
-        .sidebar-title {
-            font-family: var(--font-editorial);
-            font-size: 1.15rem;
-            font-weight: 900;
-            border-bottom: 2px solid var(--news-dark);
-            padding-bottom: 8px;
-            margin-bottom: 14px;
-            color: var(--news-dark);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .weather-display {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .weather-temp {
-            font-size: 2.2rem;
-            font-weight: 800;
-            font-family: var(--font-num);
-            line-height: 1;
-        }
-
-        .trending-item {
-            display: flex;
-            gap: 12px;
-            padding: 10px 0;
-            border-bottom: 1px solid var(--news-border);
-            cursor: pointer;
-        }
-
-        .trending-item:last-child { border-bottom: none; }
-
-        .trending-num {
-            font-family: var(--font-num);
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: var(--news-red);
-            line-height: 1;
-            width: 24px;
-        }
-
-        /* 8. Filter / Control Toolbar */
-        .filter-toolbar {
-            background-color: var(--news-bg-subtle);
-            border: 1px solid var(--news-border);
-            border-radius: 8px;
-            padding: 12px 18px;
-            margin-bottom: 24px;
-        }
-
-        /* Infinite Scroll Loader */
-        .infinite-loader {
-            display: none;
-            text-align: center;
-            padding: 30px;
-        }
-
-        /* Full Article Modal Reader */
-        /* Breaking-news ticker (CSS animation, replaces the obsolete marquee tag) */
-        .ticker {
-            flex: 1;
-            overflow: hidden;
-            white-space: nowrap;
-        }
-
-        .ticker-track {
-            display: inline-block;
-            padding-inline-start: 100%;
-            animation: ticker-scroll 45s linear infinite;
-        }
-
-        .ticker:hover .ticker-track {
-            animation-play-state: paused;
-        }
-
-        @keyframes ticker-scroll {
-            from { transform: translateX(0); }
-            to { transform: translateX(100%); }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-            .ticker-track {
-                animation: none;
-                padding-inline-start: 0;
-            }
-        }
-
-        .footer-newspaper {
-            background-color: #121212;
-            color: #d1d5db;
-            padding: 40px 0 20px;
-            margin-top: 60px;
-            border-top: 3px double #374151;
-        }
-    </style>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Heebo:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/pages.css">
+    <script src="/js/theme.js"></script>
+    <script src="/js/icons.js"></script>
+    <script src="/js/common.js"></script>
+    <script src="/js/ui.js"></script>
 </head>
-<body>
+<body data-shell="public" data-page="home">
+    <script src="/js/shell.js"></script>
 
-    <!-- 1. Top Utility Header -->
-    <div class="top-utility-bar py-1">
-        <div class="container d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <div class="d-flex align-items-center gap-3">
-                <span id="currentDateDisplay" class="fw-semibold">
-                    יום רביעי, 7 באוקטובר 2026 | כ"ו בתשרי תשפ"ז
-                </span>
-                <span class="text-muted d-none d-md-inline">|</span>
-                <span id="topWeatherSnippet" class="d-none d-md-inline-flex align-items-center gap-1">
-                    <i class="bi bi-cloud-sun text-warning"></i> תל אביב: <strong class="font-num">27°C</strong>
-                </span>
-            </div>
-            <div class="d-flex align-items-center gap-3" id="topBarAuthArea">
-                <a href="/login.html?redirect=/portal.html" class="btn btn-dark btn-sm py-1 px-3 fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
-                    <i class="bi bi-person-lock"></i> כניסת עובדים
-                </a>
-            </div>
+    <main class="container home" id="main" tabindex="-1">
+        <h1 class="sr-only">The Daily Web: חדשות מעודכנות כל היום</h1>
+        <div class="today-strip">
+            <span id="currentDateDisplay">&nbsp;</span>
+            <span class="dot" aria-hidden="true"></span>
+            <span class="weather-chip" id="weatherChip">מזג האוויר נטען...</span>
         </div>
-    </div>
 
-    <!-- 2. Master Newspaper Masthead -->
-    <header class="newspaper-masthead">
-        <div class="container">
-            <a href="/" class="masthead-title">The Daily Web</a>
-            <div class="masthead-tagline">
-                עיתון החדשות הדיגיטלי המוביל בישראל • דיווחים שוטפים ופרשנויות בזמן אמת
-            </div>
+        <!-- latest headlines, rotating -->
+        <div class="ticker" id="ticker">
+            <span class="ticker-label">עכשיו באתר</span>
+            <a class="ticker-link" id="tickerLink" href="/">טוענים את הכותרות האחרונות...</a>
+            <span class="ticker-count" id="tickerCount" aria-hidden="true"></span>
         </div>
-    </header>
 
-    <!-- 3. Category Navigation Bar -->
-    <nav class="category-nav-bar">
-        <div class="container d-flex justify-content-between align-items-center overflow-auto">
-            <div class="d-flex align-items-center flex-nowrap" id="categoryNavList">
-                <a href="#" class="category-link active" onclick="filterByCategory('')">ראשי</a>
-                <a href="#" class="category-link" onclick="filterByCategory('חדשות')">חדשות</a>
-                <a href="#" class="category-link" onclick="filterByCategory('פוליטיקה')">פוליטיקה</a>
-                <a href="#" class="category-link" onclick="filterByCategory('כלכלה')">כלכלה</a>
-                <a href="#" class="category-link" onclick="filterByCategory('טכנולוגיה')">טכנולוגיה</a>
-                <a href="#" class="category-link" onclick="filterByCategory('ספורט')">ספורט</a>
-                <a href="#" class="category-link" onclick="filterByCategory('תרבות')">תרבות</a>
-                <a href="#" class="category-link" onclick="filterByCategory('בריאות')">בריאות</a>
-                <a href="#" class="category-link" onclick="filterByCategory('דעות')">דעות</a>
-            </div>
-            <button class="btn btn-outline-dark btn-sm d-inline-flex align-items-center gap-1 px-2 py-1 ms-2 flex-shrink-0" type="button" data-bs-toggle="offcanvas" data-bs-target="#staffMenuOffcanvas" aria-label="תפריט ניווט">
-                <i class="bi bi-list fs-5"></i>
+        <!-- search, "seen / not seen" filter and sorting. Above the lead story, so it never moves when the story goes away. -->
+        <div class="card toolbar filter-bar" id="filterBar" role="search">
+            <label class="input-icon grow">
+                <svg class="icon"><use href="#i-search"></use></svg>
+                <input class="input" type="search" id="searchInput" placeholder="חיפוש כתבות לפי כותרת או תקציר..." aria-label="חיפוש כתבות" autocomplete="off" data-search-input>
+            </label>
+            <button type="button" class="btn btn-secondary show-sm" id="filterToggle" data-action="toggle-filters" aria-expanded="false" aria-controls="filterPanel">
+                <svg class="icon"><use href="#i-sliders-horizontal"></use></svg> סינון ומיון <span class="count" id="filterCount" hidden></span>
             </button>
+            <div class="toolbar-fields" id="filterPanel">
+                <div class="segmented" role="radiogroup" aria-label="סינון לפי קריאה">
+                    <label><input type="radio" name="statusFilter" id="filterAll" value="all" checked><span>הכל</span></label>
+                    <label><input type="radio" name="statusFilter" id="filterUnread" value="unread"><span>לא נצפו</span></label>
+                    <label><input type="radio" name="statusFilter" id="filterRead" value="read"><span>נצפו</span></label>
+                </div>
+                <select id="sortSelect" class="select select-sm" aria-label="מיון הכתבות">
+                    <option value="newest">החדשות ביותר</option>
+                    <option value="oldest">הישנות ביותר</option>
+                    <option value="popular">הפופולריות ביותר</option>
+                </select>
+            </div>
         </div>
-    </nav>
 
-    <!-- Navigation Hamburger Menu Offcanvas -->
-    <div class="offcanvas offcanvas-end" tabindex="-1" id="staffMenuOffcanvas" aria-labelledby="staffMenuLabel">
-        <div class="offcanvas-header border-bottom">
-            <h5 class="offcanvas-title font-editorial fw-bold" id="staffMenuLabel">
-                <i class="bi bi-newspaper text-danger me-2"></i>תפריט העיתון
-            </h5>
-            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="סגור"></button>
-        </div>
-        <div class="offcanvas-body p-0 d-flex flex-column">
-            <!-- Staff Section (Visible ONLY for authenticated staff) -->
-            <div id="offcanvasStaffSection" class="p-3 bg-light border-bottom" style="display: none;"></div>
-
-            <!-- Public Section -->
-            <div class="p-3">
-                <h6 class="text-uppercase small fw-bold text-muted mb-2"><i class="bi bi-compass me-1"></i>מדורים בעיתון</h6>
-                <div class="list-group list-group-flush">
-                    <a href="#" class="list-group-item list-group-item-action py-2" onclick="filterByCategory(''); bootstrap.Offcanvas.getInstance(document.getElementById('staffMenuOffcanvas')).hide();"><i class="bi bi-house me-2 text-muted"></i>ראשי</a>
-                    <a href="#" class="list-group-item list-group-item-action py-2" onclick="filterByCategory('חדשות'); bootstrap.Offcanvas.getInstance(document.getElementById('staffMenuOffcanvas')).hide();">חדשות</a>
-                    <a href="#" class="list-group-item list-group-item-action py-2" onclick="filterByCategory('פוליטיקה'); bootstrap.Offcanvas.getInstance(document.getElementById('staffMenuOffcanvas')).hide();">פוליטיקה</a>
-                    <a href="#" class="list-group-item list-group-item-action py-2" onclick="filterByCategory('כלכלה'); bootstrap.Offcanvas.getInstance(document.getElementById('staffMenuOffcanvas')).hide();">כלכלה</a>
-                    <a href="#" class="list-group-item list-group-item-action py-2" onclick="filterByCategory('טכנולוגיה'); bootstrap.Offcanvas.getInstance(document.getElementById('staffMenuOffcanvas')).hide();">טכנולוגיה</a>
-                    <a href="#" class="list-group-item list-group-item-action py-2" onclick="filterByCategory('ספורט'); bootstrap.Offcanvas.getInstance(document.getElementById('staffMenuOffcanvas')).hide();">ספורט</a>
-                    <a href="#" class="list-group-item list-group-item-action py-2" onclick="filterByCategory('תרבות'); bootstrap.Offcanvas.getInstance(document.getElementById('staffMenuOffcanvas')).hide();">תרבות</a>
-                    <a href="#" class="list-group-item list-group-item-action py-2" onclick="filterByCategory('בריאות'); bootstrap.Offcanvas.getInstance(document.getElementById('staffMenuOffcanvas')).hide();">בריאות</a>
-                    <a href="#" class="list-group-item list-group-item-action py-2" onclick="filterByCategory('דעות'); bootstrap.Offcanvas.getInstance(document.getElementById('staffMenuOffcanvas')).hide();">דעות</a>
+        <!-- the lead story and the next three -->
+        <section class="hero" id="heroSection" aria-label="הכתבות המרכזיות">
+            <a class="hero-lead is-loading" id="heroLead" href="/" aria-busy="true">
+                <img id="heroImage" src="/images/default-article.svg" alt="" hidden>
+                <div class="hero-lead-body">
+                    <span class="tag" id="heroCategory" hidden></span>
+                    <h2 class="display hero-title" id="heroTitle"></h2>
+                    <p class="hero-summary clamp-3" id="heroSummary"></p>
+                    <div class="byline" id="heroByline"></div>
+                </div>
+            </a>
+            <div class="hero-side">
+                <h2 class="hero-side-title">עוד בכותרות</h2>
+                <div id="heroSide" class="hero-side-list" style="display: contents">
+                    <div class="card mini"><span class="skeleton mini-media"></span><div><span class="skeleton" style="height: 14px; width: 40%"></span><span class="skeleton" style="height: 18px; margin-top: 8px"></span></div></div>
+                    <div class="card mini"><span class="skeleton mini-media"></span><div><span class="skeleton" style="height: 14px; width: 40%"></span><span class="skeleton" style="height: 18px; margin-top: 8px"></span></div></div>
+                    <div class="card mini"><span class="skeleton mini-media"></span><div><span class="skeleton" style="height: 14px; width: 40%"></span><span class="skeleton" style="height: 18px; margin-top: 8px"></span></div></div>
                 </div>
             </div>
+        </section>
 
-            <!-- Login / Logout Action Button -->
-            <div class="p-3 border-top mt-auto" id="offcanvasAuthFooter">
-                <a href="/login.html?redirect=/portal.html" class="btn btn-dark w-100 fw-bold d-flex align-items-center justify-content-center gap-2">
-                    <i class="bi bi-box-arrow-in-right"></i> התחברות לצוות המערכת
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- 4. Breaking News Ticker Strip -->
-    <div class="breaking-strip">
-        <div class="container d-flex align-items-center">
-            <span class="breaking-badge">מבזק</span>
-            <div class="ticker fw-semibold text-dark">
-                <div class="ticker-track">
-                מערכת The Daily Web באוויר: מעל 500 כתבות זמינות בפיד • שבב ה-AI הישראלי רושם זינוק שיא בצפיות • החלטת הריבית של בנק ישראל מעוררת סערה בשוק המשכנתאות • מזג האוויר מתעדכן אחת ל-15 דקות ללא חריגת קצב
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Main Content Layout -->
-    <main class="container my-4">
-
-        <!-- 5. Front-Page Hero Section (Lead Story + Top Editorial Column) -->
-        <section id="heroSection" class="mb-5 pb-4 border-bottom">
-            <div class="row g-4">
-                <!-- Lead Story -->
-                <div class="col-lg-8" id="heroLeadStory">
-                    <div class="lead-image-container mb-3" onclick="openHeroArticle()">
-                        <img id="heroImage" src="https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200&q=80" alt="Lead News" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200&q=80';">
-                    </div>
+        <div class="feed-layout">
+            <section class="feed" aria-labelledby="feedHeading">
+                <div class="feed-head">
                     <div>
-                        <span id="heroCategory" class="category-tag">כתבה ראשית</span>
-                        <h1 class="lead-headline mb-3">
-                            <a href="#" id="heroTitle" class="text-decoration-none text-dark">טוען את הידיעה המרכזית...</a>
-                        </h1>
-                        <p id="heroSummary" class="text-muted fs-5 mb-3 lead">
-                            טוען תקציר...
-                        </p>
-                        <div class="byline">
-                            <span id="heroAuthor" class="fw-bold text-dark">כתב המערכת</span>
-                            <span>•</span>
-                            <span id="heroDate">היום</span>
-                            <span>•</span>
-                            <span id="heroViewsBadge" class="viewed-badge font-num"><i class="bi bi-eye"></i> 0</span>
-                        </div>
+                        <h2 id="feedHeading">הפיד הראשי</h2>
+                        <p class="muted small" id="feedMeta" aria-live="polite">&nbsp;</p>
                     </div>
+                    <button type="button" class="btn btn-ghost btn-sm" id="clearFiltersBtn" data-action="clear-filters" hidden>
+                        <svg class="icon"><use href="#i-x"></use></svg> ניקוי סינון
+                    </button>
                 </div>
 
-                <!-- Secondary Top Editorial Column -->
-                <div class="col-lg-4">
-                    <div class="sidebar-title">
-                        <span>מבזקים וידיעות בולטות</span>
-                        <i class="bi bi-fire text-danger"></i>
+                <div class="card-grid" id="articlesGrid" aria-live="off"></div>
+
+                <div class="feed-status" id="feedStatus"></div>
+                <div id="feedSentinel" aria-hidden="true" style="height: 1px"></div>
+            </section>
+
+            <aside class="side-col" aria-label="מידע נוסף">
+                <!-- weather (the server asks the weather service at most once every 15 minutes) -->
+                <section class="card widget weather-widget" id="weatherWidget" aria-labelledby="weatherTitle">
+                    <h2 id="weatherTitle">מזג האוויר</h2>
+                    <div class="weather-row">
+                        <div class="weather-temp" id="weatherTemp">--°</div>
+                        <span id="weatherIconBox"><svg class="icon weather-icon"><use href="#i-cloud-sun"></use></svg></span>
                     </div>
-                    <div id="secondaryLeadList">
-                        <div class="text-muted small py-3">טוען מבזקים...</div>
+                    <div class="weather-meta">
+                        <strong id="weatherCity">&nbsp;</strong>
+                        <span id="weatherCondition">&nbsp;</span>
+                        <span id="weatherWind" style="display: block"></span>
                     </div>
-                </div>
-            </div>
-        </section>
+                </section>
 
-        <!-- 6. Filter, Search and Sort Toolbar -->
-        <section class="filter-toolbar">
-            <div class="row g-3 align-items-center">
-                <!-- Search Input -->
-                <div class="col-md-4 col-sm-12">
-                    <div class="input-group">
-                        <span class="input-group-text bg-white border-end-0"><i class="bi bi-search text-muted"></i></span>
-                        <input type="text" id="searchInput" class="form-control border-start-0" placeholder="חיפוש כתבות לפי כותרת או מילות מפתח..." oninput="debounceSearch()">
-                    </div>
-                </div>
-
-                <!-- Read Status Filter (נצפה / לא נצפה) -->
-                <div class="col-md-4 col-sm-6">
-                    <div class="btn-group w-100" role="group">
-                        <input type="radio" class="btn-check" name="statusFilter" id="filterAll" value="all" checked onchange="applyFilters()">
-                        <label class="btn btn-outline-secondary btn-sm fw-bold" for="filterAll">הכל</label>
-
-                        <input type="radio" class="btn-check" name="statusFilter" id="filterUnread" value="unread" onchange="applyFilters()">
-                        <label class="btn btn-outline-secondary btn-sm fw-bold" for="filterUnread">לא נצפו</label>
-
-                        <input type="radio" class="btn-check" name="statusFilter" id="filterRead" value="read" onchange="applyFilters()">
-                        <label class="btn btn-outline-secondary btn-sm fw-bold" for="filterRead">נקראו</label>
-                    </div>
-                </div>
-
-                <!-- Sort Dropdown -->
-                <div class="col-md-4 col-sm-6">
-                    <select id="sortSelect" class="form-select form-select-sm fw-bold" onchange="applyFilters()">
-                        <option value="newest">מיון: תאריך פרסום (החדש ביותר)</option>
-                        <option value="oldest">מיון: תאריך פרסום (הישן ביותר)</option>
-                        <option value="popular">מיון: פופולריות (הנצפים ביותר)</option>
-                    </select>
-                </div>
-            </div>
-        </section>
-
-        <!-- 7. News Feed Grid & Sidebar -->
-        <div class="row g-4">
-            <!-- Articles Grid (Infinite Scroll) -->
-            <div class="col-lg-8">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h2 class="fs-4 fw-bold font-editorial m-0" id="feedHeading">הפיד הראשי</h2>
-                    <span id="articlesCountBadge" class="text-muted small">מציג כתבות שפורסמו</span>
-                </div>
-
-                <div class="row g-4" id="articlesGrid">
-                    <!-- Cards injected dynamically via Vanilla JS -->
-                </div>
-
-                <!-- Infinite Scroll Loading Indicator -->
-                <div id="infiniteScrollLoader" class="infinite-loader">
-                    <div class="spinner-border text-danger" role="status">
-                        <span class="visually-hidden">טוען כתבות נוספות...</span>
-                    </div>
-                    <div class="text-muted small mt-2">טוען 20 כתבות נוספות (גלילה אינסופית)...</div>
-                </div>
-
-                <div id="endOfFeedMessage" class="text-center py-4 text-muted small d-none">
-                    — הגעת לסוף פיד הכתבות —
-                </div>
-            </div>
-
-            <!-- Sidebar Column -->
-            <div class="col-lg-4">
-                <!-- Weather Widget (Fulfilling course specs: OpenWeatherMap/Open-Meteo with 15-min cache) -->
-                <div class="sidebar-widget">
-                    <div class="sidebar-title">
-                        <span>תחזית מזג אוויר</span>
-                        <i id="weatherIcon" class="bi bi-cloud-sun fs-4 text-warning"></i>
-                    </div>
-                    <div class="weather-display">
-                        <div>
-                            <div class="weather-temp" id="weatherTemp">27°C</div>
-                            <div class="fw-bold text-dark mt-1" id="weatherCity">תל אביב-יפו</div>
-                            <div class="text-muted small" id="weatherCondition">מעונן חלקית</div>
-                        </div>
-                        <div class="text-end small text-muted">
-                            <div>רוח: <strong id="weatherWind" class="font-num">11 קמ"ש</strong></div>
-                            <div class="mt-2 text-success small">
-                                <i class="bi bi-check2-circle"></i> מטמון שרת (עד 15 דק')
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Most Read / Trending Column -->
-                <div class="sidebar-widget">
-                    <div class="sidebar-title">
-                        <span>הכתבות הנקראות ביותר</span>
-                        <span class="badge bg-danger-subtle text-danger font-num">TOP</span>
-                    </div>
-                    <div id="topArticlesList">
-                        <div class="text-muted small py-3">טוען דירוג צפיות...</div>
-                    </div>
-                </div>
-            </div>
+                <section class="card widget" aria-labelledby="topTitle">
+                    <h2 id="topTitle">הנקראות ביותר</h2>
+                    <ol class="trending" id="topArticlesList">
+                        <li><span class="skeleton" style="height: 36px; width: 28px"></span><span class="skeleton" style="height: 36px"></span></li>
+                        <li><span class="skeleton" style="height: 36px; width: 28px"></span><span class="skeleton" style="height: 36px"></span></li>
+                        <li><span class="skeleton" style="height: 36px; width: 28px"></span><span class="skeleton" style="height: 36px"></span></li>
+                    </ol>
+                </section>
+            </aside>
         </div>
     </main>
 
-    <!-- Unified Footer -->
-    <footer class="footer-newspaper">
-        <div class="container-fluid px-lg-5">
-            <div class="row g-4 pb-4 border-bottom border-secondary mb-4">
-                <div class="col-lg-4">
-                    <h4 class="font-editorial text-white fw-bold h4 mb-2">The Daily Web</h4>
-                    <p class="text-secondary small mb-3">
-                        עיתון החדשות והתוכן הדיגיטלי המוביל בישראל. דיווחים שוטפים, פרשנויות עומק ומערכת עיתונאית מתקדמת.
-                    </p>
-                    <div class="badge bg-dark border border-secondary text-light py-2 px-3 small font-num">
-                        <i class="bi bi-shield-check text-success me-1"></i> Edition 2026 Live
-                    </div>
-                </div>
-                <div class="col-6 col-lg-3">
-                    <h5 class="text-white fw-bold small text-uppercase mb-3">מדורים בעיתון</h5>
-                    <ul class="list-unstyled small">
-                        <li class="mb-2"><a href="#" onclick="filterByCategory('חדשות')" class="text-secondary text-decoration-none">חדשות</a></li>
-                        <li class="mb-2"><a href="#" onclick="filterByCategory('פוליטיקה')" class="text-secondary text-decoration-none">פוליטיקה</a></li>
-                        <li class="mb-2"><a href="#" onclick="filterByCategory('כלכלה')" class="text-secondary text-decoration-none">כלכלה</a></li>
-                        <li class="mb-2"><a href="#" onclick="filterByCategory('טכנולוגיה')" class="text-secondary text-decoration-none">טכנולוגיה</a></li>
-                        <li class="mb-2"><a href="#" onclick="filterByCategory('ספורט')" class="text-secondary text-decoration-none">ספורט</a></li>
-                    </ul>
-                </div>
-                <div class="col-6 col-lg-3">
-                    <h5 class="text-white fw-bold small text-uppercase mb-3">אודות המערכת</h5>
-                    <p class="text-secondary small mb-2">
-                        מערכת עיתון דיגיטלי מתקדמת התומכת בסינון לפי קטגוריות, תגובות בזמן אמת, איסוף נתוני קריאה וסקירת שינויים.
-                    </p>
-                </div>
-                <div class="col-lg-2">
-                    <h5 class="text-white fw-bold small text-uppercase mb-3">פרטי מערכת</h5>
-                    <ul class="list-unstyled small text-secondary">
-                        <li class="mb-2">The Daily Web Edition</li>
-                        <li class="mb-2">כל הזכויות שמורות</li>
-                    </ul>
-                </div>
-            </div>
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 text-secondary small">
-                <div>&copy; 2026 The Daily Web. כל הזכויות שמורות.</div>
-            </div>
-        </div>
-    </footer>
-
-    <!-- Bootstrap 5 JS Bundle via CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script src="/js/common.js"></script>
-
-    <!-- Client-side Logic (Vanilla JS, AJAX, Infinite Scroll) -->
     <script>
-        let currentPage = 1;
-        let totalPages = 1;
-        let isLoading = false;
-        let activeCategory = '';
-        let currentSearchQuery = '';
-        let currentSort = 'newest';
-        let currentStatusFilter = 'all'; // all, read, unread
-        let searchTimeout = null;
-        let heroArticleData = null;
+        const PAGE_LIMIT = 20;          // articles per request: the next 20 load as the reader nears the bottom
+        const VIEWED_KEY = 'the_daily_web_viewed';
+        const HERO_SIDE_COUNT = 3;
 
-        // LocalStorage Viewed Articles Set
+        // Everything the feed currently shows, in one place
+        const feed = {
+            page: 1, totalPages: 1, totalCount: 0, loaded: 0,
+            started: false, loading: false, failed: false, request: 0,
+            category: '', search: '', sort: 'newest', viewed: 'all'
+        };
+
+        const grid = document.getElementById('articlesGrid');
+        const statusBox = document.getElementById('feedStatus');
+        const searchInput = document.getElementById('searchInput');
+        const sortSelect = document.getElementById('sortSelect');
+
+        // The ids of the articles this browser has opened (written by the article page)
         function getViewedArticles() {
             try {
-                return JSON.parse(localStorage.getItem('the_daily_web_viewed') || '[]').slice(-300);
-            } catch {
+                return JSON.parse(localStorage.getItem(VIEWED_KEY) || '[]').slice(-300);
+            } catch (e) {
                 return [];
             }
         }
 
-        // Initialize on DOM load
-        document.addEventListener('DOMContentLoaded', async () => {
+        const hasFilters = () => Boolean(feed.category || feed.search || feed.viewed !== 'all' || feed.sort !== 'newest');
+        const authorOf = (article) => (article.author && article.author.fullName) || 'כתב המערכת';
+
+        // ------------------------------------------------------------------------------------
+        // Drawing
+        // ------------------------------------------------------------------------------------
+
+        function storyCard(article, viewedIds) {
+            const seen = viewedIds.includes(article._id);
+            return `
+                <article class="card card-hover story">
+                    <div class="story-media"><img src="${escapeHtml(article.mainImage || FALLBACK_IMAGE)}" alt="" loading="lazy" width="640" height="400"></div>
+                    <div class="story-body">
+                        <div class="story-meta">
+                            <span class="tag">${escapeHtml(article.category)}</span>
+                            <span class="viewed ${seen ? '' : 'is-new'}">${seen ? icon('check') + ' נצפתה' : 'חדש'}</span>
+                        </div>
+                        <h3 class="story-title"><a class="stretched" href="/article/${escapeHtml(article._id)}">${escapeHtml(article.title)}</a></h3>
+                        <p class="story-summary clamp-2">${escapeHtml(article.summary || '')}</p>
+                        <div class="story-foot">${escapeHtml(authorOf(article))} · ${escapeHtml(formatDate(article.publishedAt))}</div>
+                    </div>
+                </article>`;
+        }
+
+        function miniCard(article) {
+            return `
+                <article class="card card-hover mini">
+                    <div class="mini-media"><img src="${escapeHtml(article.mainImage || FALLBACK_IMAGE)}" alt="" loading="lazy"></div>
+                    <div>
+                        <span class="tag">${escapeHtml(article.category)}</span>
+                        <h3 class="mini-title clamp-3"><a class="stretched" href="/article/${escapeHtml(article._id)}">${escapeHtml(article.title)}</a></h3>
+                        <span class="muted xsmall">${escapeHtml(formatDate(article.publishedAt))}</span>
+                    </div>
+                </article>`;
+        }
+
+        function skeletonCards(count) {
+            return Array.from({ length: count }, () => `
+                <div class="card story is-skeleton" aria-hidden="true">
+                    <div class="story-media skeleton"></div>
+                    <div class="story-body"><span class="skeleton" style="height: 12px; width: 30%"></span><span class="skeleton" style="height: 22px"></span><span class="skeleton" style="height: 14px; width: 80%"></span></div>
+                </div>`).join('');
+        }
+
+        function showHero(articles) {
+            const hero = document.getElementById('heroSection');
+            if (articles.length === 0) {
+                hero.hidden = true;
+                return;
+            }
+            const [lead, ...others] = articles;
+            hero.hidden = false;
+            const link = document.getElementById('heroLead');
+            link.classList.remove('is-loading');
+            link.removeAttribute('aria-busy');
+            link.href = `/article/${lead._id}`;
+            const image = document.getElementById('heroImage');
+            image.hidden = false;
+            image.dataset.fallbackApplied = '';
+            image.src = lead.mainImage || FALLBACK_IMAGE;
+            const category = document.getElementById('heroCategory');
+            category.textContent = lead.category;
+            category.hidden = false;
+            document.getElementById('heroTitle').textContent = lead.title;
+            document.getElementById('heroSummary').textContent = lead.summary || '';
+            document.getElementById('heroByline').innerHTML =
+                `<span>${escapeHtml(authorOf(lead))}</span><span class="sep"></span><span>${escapeHtml(formatDate(lead.publishedAt))}</span>`;
+            document.getElementById('heroSide').innerHTML = others.slice(0, HERO_SIDE_COUNT).map(miniCard).join('');
+        }
+
+        function resetHeroToLoading() {
+            const link = document.getElementById('heroLead');
+            link.classList.add('is-loading');
+            link.setAttribute('aria-busy', 'true');
+            document.getElementById('heroImage').hidden = true;
+            document.getElementById('heroCategory').hidden = true;
+            document.getElementById('heroTitle').textContent = '';
+            document.getElementById('heroSummary').textContent = '';
+            document.getElementById('heroByline').textContent = '';
+        }
+
+        function updateMeta() {
+            const heading = feed.search ? 'תוצאות חיפוש' : (feed.category ? `מדור ${feed.category}` : 'הפיד הראשי');
+            document.getElementById('feedHeading').textContent = heading;
+            const meta = document.getElementById('feedMeta');
+            if (feed.loading && feed.loaded === 0) meta.textContent = 'טוענים כתבות...';
+            else if (feed.failed && feed.loaded === 0) meta.textContent = '';
+            else meta.textContent = feed.totalCount === 0 ? 'לא נמצאו כתבות' : `מוצגות ${feed.loaded} מתוך ${feed.totalCount} כתבות`;
+            document.getElementById('clearFiltersBtn').hidden = !hasFilters();
+
+            // small screens keep sorting and "seen / not seen" behind a button: show how many of them are active
+            const active = (feed.viewed !== 'all' ? 1 : 0) + (feed.sort !== 'newest' ? 1 : 0);
+            const count = document.getElementById('filterCount');
+            count.textContent = active;
+            count.hidden = active === 0;
+        }
+
+        UI.on('toggle-filters', (button) => {
+            const open = document.getElementById('filterBar').classList.toggle('is-open');
+            button.setAttribute('aria-expanded', String(open));
+        });
+
+        function updateStatus() {
+            if (feed.loading) {
+                statusBox.innerHTML = feed.loaded > 0 ? '<span class="spinner"></span><span>טוענים עוד כתבות...</span>' : '';
+            } else if (feed.failed) {
+                statusBox.innerHTML = UI.stateHtml({ icon: 'triangle-alert', title: 'לא הצלחנו לטעון כתבות', text: 'בדקו את החיבור ונסו שוב.', action: { name: 'retry-feed', label: 'ניסיון חוזר' } });
+            } else if (feed.loaded === 0) {
+                statusBox.innerHTML = UI.stateHtml({
+                    icon: 'search',
+                    title: 'לא נמצאו כתבות',
+                    text: 'נסו מילות חיפוש אחרות, או הסירו חלק מהמסננים.',
+                    action: hasFilters() ? { name: 'clear-filters', label: 'ניקוי כל המסננים' } : null
+                });
+            } else if (feed.page > feed.totalPages) {
+                statusBox.innerHTML = '<div class="feed-end">הגעתם לסוף הפיד</div>';
+            } else {
+                statusBox.innerHTML = '<button type="button" class="btn btn-secondary" data-action="load-more">טעינת כתבות נוספות</button>';
+            }
+        }
+
+        // ------------------------------------------------------------------------------------
+        // Loading (search, filters, sorting and "more" all happen here, without reloading the page)
+        // ------------------------------------------------------------------------------------
+
+        function feedUrl() {
+            const params = new URLSearchParams({ page: feed.page, limit: PAGE_LIMIT, sort: feed.sort });
+            if (feed.category) params.set('category', feed.category);
+            if (feed.search) params.set('search', feed.search);
+            // "seen / not seen": the server filters the whole archive using the ids this browser remembers
+            if (feed.viewed !== 'all') {
+                params.set('viewed', feed.viewed);
+                params.set('viewedIds', getViewedArticles().join(','));
+            }
+            return `/api/articles/public?${params}`;
+        }
+
+        async function loadFeed(reset) {
+            if (!reset && (!feed.started || feed.loading || feed.page > feed.totalPages || feed.failed)) return;
+            const thisRequest = ++feed.request; // a newer request makes this answer obsolete
+
+            if (reset) {
+                feed.started = true;
+                feed.page = 1;
+                feed.totalPages = 1;
+                feed.totalCount = 0;
+                feed.loaded = 0;
+                grid.innerHTML = skeletonCards(6);
+                if (!showsHero()) document.getElementById('heroSection').hidden = true;
+                else resetHeroToLoading();
+            }
+            feed.loading = true;
+            feed.failed = false;
+            updateMeta();
+            updateStatus();
+
+            try {
+                const data = await api('GET', feedUrl());
+                if (thisRequest !== feed.request) return;
+
+                feed.totalPages = data.pagination.totalPages;
+                feed.totalCount = data.pagination.totalCount;
+                let articles = data.articles;
+
+                // the first page of the plain feed opens with the lead story; the cards below start after it
+                if (reset) {
+                    grid.innerHTML = '';
+                    if (showsHero()) {
+                        const heroCount = 1 + HERO_SIDE_COUNT;
+                        showHero(articles.slice(0, heroCount));
+                        articles = articles.slice(heroCount);
+                    }
+                }
+
+                const viewedIds = getViewedArticles();
+                grid.insertAdjacentHTML('beforeend', articles.map((article) => storyCard(article, viewedIds)).join(''));
+                feed.loaded += data.articles.length;
+                feed.page += 1;
+            } catch (err) {
+                if (thisRequest !== feed.request) return;
+                feed.failed = true;
+                if (reset) grid.innerHTML = '';
+            } finally {
+                if (thisRequest === feed.request) {
+                    feed.loading = false;
+                    updateMeta();
+                    updateStatus();
+                    keepFilling();
+                }
+            }
+        }
+
+        // The lead story belongs to the plain feed: it is not shown among search results or "seen" lists
+        function showsHero() {
+            return !feed.search && feed.viewed === 'all' && feed.sort === 'newest';
+        }
+
+        // ------------------------------------------------------------------------------------
+        // Infinite scroll
+        // ------------------------------------------------------------------------------------
+
+        function nearBottom() {
+            const sentinel = document.getElementById('feedSentinel');
+            return sentinel.getBoundingClientRect().top < window.innerHeight + 600;
+        }
+
+        // If the loaded cards do not reach far enough below the screen yet, load the next batch
+        function keepFilling() {
+            requestAnimationFrame(() => {
+                if (!feed.loading && !feed.failed && feed.page <= feed.totalPages && nearBottom()) loadFeed(false);
+            });
+        }
+
+        if ('IntersectionObserver' in window) {
+            new IntersectionObserver((entries) => {
+                if (entries.some((entry) => entry.isIntersecting)) loadFeed(false);
+            }, { rootMargin: '600px 0px' }).observe(document.getElementById('feedSentinel'));
+        } else {
+            window.addEventListener('scroll', keepFilling, { passive: true });
+        }
+
+        // ------------------------------------------------------------------------------------
+        // Filters
+        // ------------------------------------------------------------------------------------
+
+        function syncUrl(push) {
+            const params = new URLSearchParams();
+            if (feed.category) params.set('category', feed.category);
+            if (feed.search) params.set('q', feed.search);
+            const url = window.location.pathname + (params.toString() ? `?${params}` : '');
+            if (url !== window.location.pathname + window.location.search) {
+                window.history[push ? 'pushState' : 'replaceState'](null, '', url);
+            }
+        }
+
+        function setCategory(category, push) {
+            feed.category = category;
+            Shell.setActiveCategory(category);
+            if (push !== false) syncUrl(true);
+            loadFeed(true);
+        }
+
+        function readUrlIntoState() {
+            const params = new URLSearchParams(window.location.search);
+            const category = params.get('category') || '';
+            const known = [...document.querySelectorAll('#siteNav .nav-pill')].map((pill) => pill.dataset.category);
+            feed.category = known.includes(category) ? category : '';
+            feed.search = (params.get('q') || '').trim();
+            searchInput.value = feed.search;
+            Shell.setActiveCategory(feed.category);
+        }
+
+        // Clicking a section in the header filters in place (opening it in a new tab still works normally)
+        document.addEventListener('click', (event) => {
+            const link = event.target.closest('#siteNav a[data-category]');
+            if (!link || event.button !== 0 || event.ctrlKey || event.metaKey || event.shiftKey) return;
+            event.preventDefault();
+            setCategory(link.dataset.category);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        });
+
+        window.addEventListener('popstate', () => {
+            readUrlIntoState();
+            loadFeed(true);
+        });
+
+        searchInput.addEventListener('input', debounce(() => {
+            feed.search = searchInput.value.trim();
+            syncUrl(false);
+            loadFeed(true);
+        }, 300));
+
+        document.querySelectorAll('input[name="statusFilter"]').forEach((radio) => {
+            radio.addEventListener('change', () => {
+                feed.viewed = document.querySelector('input[name="statusFilter"]:checked').value;
+                loadFeed(true);
+            });
+        });
+
+        sortSelect.addEventListener('change', () => {
+            feed.sort = sortSelect.value;
+            loadFeed(true);
+        });
+
+        UI.on('clear-filters', () => {
+            feed.category = '';
+            feed.search = '';
+            feed.viewed = 'all';
+            feed.sort = 'newest';
+            searchInput.value = '';
+            sortSelect.value = 'newest';
+            document.getElementById('filterAll').checked = true;
+            Shell.setActiveCategory('');
+            syncUrl(true);
+            loadFeed(true);
+        });
+
+        UI.on('retry-feed', () => {
+            feed.failed = false;
+            loadFeed(feed.loaded === 0);
+        });
+
+        UI.on('load-more', () => loadFeed(false));
+
+        // ------------------------------------------------------------------------------------
+        // Side widgets, headlines ticker
+        // ------------------------------------------------------------------------------------
+
+        async function showWeather() {
+            const weather = await loadWeather();
+            const chip = document.getElementById('weatherChip');
+            if (!weather) {
+                chip.textContent = 'מזג האוויר אינו זמין כרגע';
+                document.getElementById('weatherCondition').textContent = 'מזג האוויר אינו זמין כרגע';
+                return;
+            }
+            chip.innerHTML = `${icon(weather.icon)} ${escapeHtml(weather.city)} · <span class="num">${escapeHtml(weather.temp)}°</span>`;
+            document.getElementById('weatherTemp').textContent = `${weather.temp}°`;
+            document.getElementById('weatherCity').textContent = weather.city;
+            document.getElementById('weatherCondition').textContent = weather.condition;
+            document.getElementById('weatherWind').textContent = `רוח: ${weather.windSpeed} קמ"ש`;
+            document.getElementById('weatherIconBox').innerHTML = icon(weather.icon, 'weather-icon');
+        }
+
+        async function showTopArticles() {
+            const list = document.getElementById('topArticlesList');
+            try {
+                const data = await api('GET', '/api/analytics/overview/top?limit=5');
+                if (!data.topArticles || data.topArticles.length === 0) {
+                    list.innerHTML = '<li style="display: block" class="muted small">עדיין אין נתוני צפייה.</li>';
+                    return;
+                }
+                list.innerHTML = data.topArticles.map((article, index) => `
+                    <li>
+                        <span class="rank" aria-hidden="true">${index + 1}</span>
+                        <div>
+                            <span class="tag xsmall">${escapeHtml(article.category)}</span>
+                            <div class="trend-title"><a class="stretched" href="/article/${escapeHtml(article._id)}">${escapeHtml(article.title)}</a></div>
+                            <div class="trend-meta num">${icon('eye')} ${Number(article.totalViews).toLocaleString('he-IL')} צפיות</div>
+                        </div>
+                    </li>`).join('');
+            } catch (err) {
+                list.innerHTML = '<li style="display: block" class="muted small">לא הצלחנו לטעון את הדירוג.</li>';
+            }
+        }
+
+        // The newest headlines, one at a time (it stands still for people who asked for less motion)
+        async function startTicker() {
+            try {
+                const data = await api('GET', '/api/articles/public?limit=6&sort=newest');
+                const items = data.articles || [];
+                const ticker = document.getElementById('ticker');
+                if (items.length < 2) {
+                    ticker.hidden = true;
+                    return;
+                }
+                const link = document.getElementById('tickerLink');
+                const count = document.getElementById('tickerCount');
+                let index = 0;
+                let paused = false;
+
+                const show = () => {
+                    link.href = `/article/${items[index]._id}`;
+                    link.textContent = items[index].title;
+                    count.textContent = `${index + 1}/${items.length}`;
+                };
+                show();
+
+                if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+                ticker.addEventListener('mouseenter', () => { paused = true; });
+                ticker.addEventListener('mouseleave', () => { paused = false; });
+                ticker.addEventListener('focusin', () => { paused = true; });
+                ticker.addEventListener('focusout', () => { paused = false; });
+                setInterval(() => {
+                    if (paused || document.hidden) return;
+                    link.classList.add('is-swapping');
+                    setTimeout(() => {
+                        index = (index + 1) % items.length;
+                        show();
+                        link.classList.remove('is-swapping');
+                    }, 250);
+                }, 6000);
+            } catch (err) {
+                document.getElementById('ticker').hidden = true; // the ticker is optional
+            }
+        }
+
+        // ------------------------------------------------------------------------------------
+        // Start
+        // ------------------------------------------------------------------------------------
+
+        document.addEventListener('DOMContentLoaded', () => {
             // Old links like /?articleId=... lead to the real article page
             const linkedArticleId = new URLSearchParams(window.location.search).get('articleId');
             if (linkedArticleId) {
@@ -690,434 +551,13 @@
                 return;
             }
 
-            updateCurrentDateDisplay();
-            await setupUserNavigation();
-            await fetchWeather();
-            await fetchTopArticles();
-
-            // Links such as /?category=ספורט open that section directly
-            const linkedCategory = new URLSearchParams(window.location.search).get('category');
-            const knownCategories = [...document.querySelectorAll('#categoryNavList .category-link')].map(link => link.textContent.trim());
-            if (linkedCategory && knownCategories.includes(linkedCategory)) {
-                filterByCategory(linkedCategory); // loads the feed for that category
-            } else {
-                await loadFeed(true);
-            }
-
-            // Infinite Scroll Listener
-            window.addEventListener('scroll', handleInfiniteScroll);
+            document.getElementById('currentDateDisplay').textContent = formatToday();
+            readUrlIntoState();
+            loadFeed(true);
+            showWeather();
+            showTopArticles();
+            startTicker();
         });
-
-        // Setup User Auth State in Header and Offcanvas Menu
-        async function setupUserNavigation() {
-            const token = localStorage.getItem('token');
-            let user = null;
-            try {
-                user = JSON.parse(localStorage.getItem('user'));
-            } catch {}
-
-            const topBarAuth = document.getElementById('topBarAuthArea');
-            const staffSection = document.getElementById('offcanvasStaffSection');
-            const authFooter = document.getElementById('offcanvasAuthFooter');
-
-            if (token) {
-                try {
-                    const res = await fetch('/api/auth/me', {
-                        headers: { 'Authorization': `Bearer ${token}` }
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
-                        user = data.user || data;
-                        localStorage.setItem('user', JSON.stringify(user));
-                    } else if (res.status === 401 || res.status === 403) {
-                        localStorage.removeItem('token');
-                        localStorage.removeItem('user');
-                        user = null;
-                    }
-                } catch {
-                    // Retain cached user in case of temporary network issue
-                }
-            } else {
-                user = null;
-            }
-
-            if (user && (user.role === 'reporter' || user.role === 'editor')) {
-                const isEditor = user.role === 'editor';
-                const roleLabel = isEditor ? 'עורך תוכן' : 'כתב מערכת';
-                const roleBadgeClass = isEditor ? 'bg-success text-white' : 'bg-primary text-white';
-                const deskHref = isEditor ? '/editor.html' : '/reporter.html';
-                const deskName = isEditor ? 'דסק עורכים' : 'דסק כתבים';
-
-                if (topBarAuth) {
-                    topBarAuth.innerHTML = `
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge ${roleBadgeClass} small px-2 py-1">${roleLabel}</span>
-                            <span class="small fw-bold text-dark d-none d-sm-inline">${escapeHtml(user.fullName || user.username)}</span>
-                            <a href="${deskHref}" class="btn btn-outline-dark btn-sm py-1 px-2 fw-semibold">
-                                <i class="bi bi-speedometer2 me-1"></i>${deskName}
-                            </a>
-                            <button type="button" class="btn btn-outline-danger btn-sm py-1 px-2" title="התנתקות" onclick="logoutStaffUser()">
-                                <i class="bi bi-box-arrow-left"></i>
-                            </button>
-                        </div>
-                    `;
-                }
-
-                if (staffSection) {
-                    staffSection.style.display = 'block';
-                    let staffLinks = '';
-
-                    if (isEditor) {
-                        staffLinks = `
-                            <a href="/editor.html" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2">
-                                <i class="bi bi-shield-check text-success"></i> דסק עורכים ראשי
-                            </a>
-                            <a href="/reporter.html" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2">
-                                <i class="bi bi-pencil-square text-primary"></i> דסק כתבים
-                            </a>
-                            <a href="/analytics.html" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2">
-                                <i class="bi bi-bar-chart-line text-warning"></i> Impact Analytics
-                            </a>
-                            <a href="/admin.html" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2">
-                                <i class="bi bi-database-gear text-secondary"></i> ניהול נתונים
-                            </a>
-                            <a href="/portal.html" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2">
-                                <i class="bi bi-grid-3x3-gap-fill text-danger"></i> פורטל עובדים
-                            </a>
-                        `;
-                    } else {
-                        staffLinks = `
-                            <a href="/reporter.html" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2">
-                                <i class="bi bi-pencil-square text-primary"></i> דסק כתבים
-                            </a>
-                            <a href="/portal.html" class="list-group-item list-group-item-action d-flex align-items-center gap-2 py-2">
-                                <i class="bi bi-grid-3x3-gap-fill text-danger"></i> פורטל עובדים
-                            </a>
-                        `;
-                    }
-
-                    staffSection.innerHTML = `
-                        <div class="d-flex align-items-center gap-2 mb-2 pb-2 border-bottom">
-                            <div class="bg-dark text-white rounded-circle d-flex align-items-center justify-content-center fw-bold" style="width:34px;height:34px;font-size:0.9rem;">
-                                ${(user.fullName || user.username || 'U').charAt(0)}
-                            </div>
-                            <div>
-                                <div class="fw-bold small text-dark">${escapeHtml(user.fullName || user.username)}</div>
-                                <span class="badge ${roleBadgeClass} small" style="font-size:0.7rem;">${roleLabel}</span>
-                            </div>
-                        </div>
-                        <h6 class="text-uppercase small fw-bold text-muted mb-2"><i class="bi bi-person-workspace me-1"></i>סביבות עבודה מורשות</h6>
-                        <div class="list-group list-group-flush">
-                            ${staffLinks}
-                        </div>
-                    `;
-                }
-
-                if (authFooter) {
-                    authFooter.innerHTML = `
-                        <button type="button" class="btn btn-outline-danger w-100 fw-bold d-flex align-items-center justify-content-center gap-2" onclick="logoutStaffUser()">
-                            <i class="bi bi-box-arrow-left"></i> התנתקות מהמערכת
-                        </button>
-                    `;
-                }
-            } else {
-                if (topBarAuth) {
-                    topBarAuth.innerHTML = `
-                        <a href="/login.html?redirect=/portal.html" class="btn btn-dark btn-sm py-1 px-3 fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
-                            <i class="bi bi-person-lock"></i> כניסת עובדים
-                        </a>
-                    `;
-                }
-                if (staffSection) {
-                    staffSection.style.display = 'none';
-                    staffSection.innerHTML = '';
-                }
-                if (authFooter) {
-                    authFooter.innerHTML = `
-                        <a href="/login.html?redirect=/portal.html" class="btn btn-dark w-100 fw-bold d-flex align-items-center justify-content-center gap-2">
-                            <i class="bi bi-box-arrow-in-right"></i> התחברות לצוות המערכת
-                        </a>
-                    `;
-                }
-            }
-        }
-
-        async function logoutStaffUser() {
-            try {
-                await fetch('/api/auth/logout', { method: 'POST' });
-            } catch {}
-            localStorage.removeItem('token');
-            localStorage.removeItem('user');
-            window.location.reload();
-        }
-
-        // Dynamic Header Date
-        function updateCurrentDateDisplay() {
-            const dateEl = document.getElementById('currentDateDisplay');
-            if (!dateEl) return;
-            const now = new Date();
-            const greg = now.toLocaleDateString('he-IL', {
-                weekday: 'long',
-                day: 'numeric',
-                month: 'long',
-                year: 'numeric'
-            });
-
-            try {
-                const parts = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
-                    day: 'numeric',
-                    month: 'long',
-                    year: 'numeric'
-                }).formatToParts(now);
-
-                let dayVal = '', monthVal = '', yearVal = '';
-                parts.forEach(p => {
-                    if (p.type === 'day') dayVal = p.value;
-                    if (p.type === 'month') monthVal = p.value;
-                    if (p.type === 'year') yearVal = p.value;
-                });
-
-                const dayMap = {
-                    1: "א'", 2: "ב'", 3: "ג'", 4: "ד'", 5: "ה'", 6: "ו'", 7: "ז'", 8: "ח'", 9: "ט'",
-                    10: "י'", 11: 'י"א', 12: 'י"ב', 13: 'י"ג', 14: 'י"ד', 15: 'ט"ו', 16: 'ט"ז', 17: 'י"ז', 18: 'י"ח', 19: 'י"ט',
-                    20: "כ'", 21: 'כ"א', 22: 'כ"ב', 23: 'כ"ג', 24: 'כ"ד', 25: 'כ"ה', 26: 'כ"ו', 27: 'כ"ז', 28: 'כ"ח', 29: 'כ"ט',
-                    30: "ל'"
-                };
-                const yearMap = {
-                    5784: 'תשפ"ד', 5785: 'תשפ"ה', 5786: 'תשפ"ו', 5787: 'תשפ"ז', 5788: 'תשפ"ח', 5789: 'תשפ"ט', 5790: 'תש"צ'
-                };
-
-                const hebDay = dayMap[parseInt(dayVal, 10)] || dayVal;
-                const hebYear = yearMap[parseInt(yearVal, 10)] || yearVal;
-                const hebDateStr = `${hebDay} ב${monthVal} ${hebYear}`;
-                dateEl.textContent = `${greg} | ${hebDateStr}`;
-            } catch {
-                dateEl.textContent = greg;
-            }
-        }
-
-        // 1. Weather Widget Fetch
-        async function fetchWeather() {
-            try {
-                const res = await fetch('/api/weather');
-                const data = await res.json();
-                if (data.success && data.data) {
-                    const w = data.data;
-                    document.getElementById('weatherTemp').textContent = `${w.temp}°C`;
-                    document.getElementById('weatherCity').textContent = w.city;
-                    // fallback = the weather service is not reachable or has no API key: say so instead of showing fake data as real
-                    document.getElementById('weatherCondition').textContent = data.fallback
-                        ? 'נתוני דוגמה (שירות מזג האוויר אינו זמין)'
-                        : w.condition;
-                    document.getElementById('weatherWind').textContent = `${w.windSpeed} קמ"ש`;
-                    document.getElementById('weatherIcon').className = `bi ${w.icon} fs-4 text-warning`;
-                    document.getElementById('topWeatherSnippet').innerHTML = 
-                        `<i class="bi ${w.icon} text-warning"></i> ${w.city}: <strong class="font-num">${w.temp}°C</strong>`;
-                }
-            } catch (err) {
-                console.error('Weather load error:', err);
-            }
-        }
-
-        // 2. Fetch Top Viewed Articles for Sidebar
-        async function fetchTopArticles() {
-            try {
-                const res = await fetch('/api/analytics/overview/top?limit=5');
-                const data = await res.json();
-                const container = document.getElementById('topArticlesList');
-
-                if (data.success && data.topArticles.length > 0) {
-                    container.innerHTML = '';
-                    data.topArticles.forEach((art, idx) => {
-                        const div = document.createElement('a');
-                        div.href = `/article/${art._id}`;
-                        div.className = 'trending-item text-decoration-none text-dark d-block';
-                        div.innerHTML = `
-                            <span class="trending-num">${idx + 1}</span>
-                            <div>
-                                <span class="category-tag" style="font-size:0.65rem;">${escapeHtml(art.category)}</span>
-                                <div class="fw-bold text-dark small leading-tight">${escapeHtml(art.title)}</div>
-                                <div class="font-num text-muted" style="font-size:0.75rem;"><i class="bi bi-eye"></i> ${art.totalViews.toLocaleString()} צפיות</div>
-                            </div>
-                        `;
-                        container.appendChild(div);
-                    });
-                }
-            } catch (err) {
-                console.error('Top articles error:', err);
-            }
-        }
-
-        // 3. Main Articles Feed Loader
-        async function loadFeed(reset = false) {
-            if (isLoading) return;
-            isLoading = true;
-
-            if (reset) {
-                currentPage = 1;
-                document.getElementById('articlesGrid').innerHTML = '';
-                document.getElementById('endOfFeedMessage').classList.add('d-none');
-            }
-
-            document.getElementById('infiniteScrollLoader').style.display = 'block';
-
-            try {
-                let url = `/api/articles/public?page=${currentPage}&limit=20&sort=${currentSort}`;
-                if (activeCategory) url += `&category=${encodeURIComponent(activeCategory)}`;
-                if (currentSearchQuery) url += `&search=${encodeURIComponent(currentSearchQuery)}`;
-                // "viewed / not viewed": the server filters the whole archive using the ids this browser remembers
-                const viewedMode = currentStatusFilter === 'read' || currentStatusFilter === 'unread';
-                if (viewedMode) {
-                    url += `&viewed=${currentStatusFilter}&viewedIds=${getViewedArticles().join(',')}`;
-                }
-
-                const res = await fetch(url);
-                const data = await res.json();
-
-                document.getElementById('infiniteScrollLoader').style.display = 'none';
-
-                if (data.success && data.articles) {
-                    totalPages = data.pagination.totalPages;
-
-                    // If reset & first page: populate Hero Lead & Secondary leads (not while browsing only viewed / unviewed)
-                    if (reset && data.articles.length > 0 && !viewedMode) {
-                        populateHeroSection(data.articles);
-                    }
-
-                    renderArticleCards(data.articles, reset);
-                    currentPage++;
-
-                    if (currentPage > totalPages) {
-                        document.getElementById('endOfFeedMessage').classList.remove('d-none');
-                    }
-                }
-            } catch (err) {
-                console.error('Feed load error:', err);
-                document.getElementById('infiniteScrollLoader').style.display = 'none';
-            } finally {
-                isLoading = false;
-            }
-        }
-
-        // 4. Populate Hero Front Page
-        function populateHeroSection(articles) {
-            if (articles.length === 0) return;
-
-            heroArticleData = articles[0];
-            document.getElementById('heroImage').src = heroArticleData.mainImage || 'https://images.unsplash.com/photo-1504711434969-e33886168f5c?auto=format&fit=crop&w=1200&q=80';
-            document.getElementById('heroCategory').textContent = heroArticleData.category;
-            document.getElementById('heroTitle').textContent = heroArticleData.title;
-            document.getElementById('heroTitle').href = `/article/${heroArticleData._id}`;
-            document.getElementById('heroSummary').textContent = heroArticleData.summary || 'לחצו לקריאת הדיווח המלא...';
-            document.getElementById('heroAuthor').textContent = heroArticleData.author ? heroArticleData.author.fullName : 'כתב The Daily Web';
-            document.getElementById('heroDate').textContent = new Date(heroArticleData.publishedAt).toLocaleDateString('he-IL');
-
-            // Secondary sidebar leads (articles 1, 2, 3)
-            const secondaryList = document.getElementById('secondaryLeadList');
-            secondaryList.innerHTML = '';
-            articles.slice(1, 4).forEach(art => {
-                const item = document.createElement('a');
-                item.href = `/article/${art._id}`;
-                item.className = 'd-flex gap-3 py-2 border-bottom text-decoration-none text-dark';
-                item.innerHTML = `
-                    <img src="${art.mainImage || 'https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=150&q=80'}" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1585829365295-ab7cd400c167?auto=format&fit=crop&w=150&q=80';" style="width: 75px; height: 60px; object-fit: cover; border-radius: 4px;">
-                    <div>
-                        <span class="category-tag" style="font-size: 0.65rem;">${escapeHtml(art.category)}</span>
-                        <div class="fw-bold small text-dark leading-tight">${escapeHtml(art.title)}</div>
-                        <span class="text-muted" style="font-size: 0.7rem;">${new Date(art.publishedAt).toLocaleDateString('he-IL')}</span>
-                    </div>
-                `;
-                secondaryList.appendChild(item);
-            });
-        }
-
-        // 5. Render Articles Cards in Feed Grid
-        function renderArticleCards(articles, isReset) {
-            const grid = document.getElementById('articlesGrid');
-            const viewedIds = getViewedArticles();
-
-            const displayedArticles = articles;
-
-            if (isReset && displayedArticles.length === 0) {
-                grid.innerHTML = '<div class="col-12 text-center text-muted py-5">לא נמצאו כתבות התואמות את החיפוש והסינון.</div>';
-                return;
-            }
-
-            displayedArticles.forEach(art => {
-                const isViewed = viewedIds.includes(art._id);
-                const col = document.createElement('div');
-                col.className = 'col-md-6';
-                col.innerHTML = `
-                    <a href="/article/${art._id}" class="text-decoration-none text-dark d-block">
-                        <article class="news-card">
-                        <div class="news-card-img-wrap">
-                            <img src="${art.mainImage || 'https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=600&q=80'}" alt="${escapeHtml(art.title)}" loading="lazy" onerror="this.onerror=null; this.src='https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=600&q=80';">
-                        </div>
-                        <span class="category-tag">${escapeHtml(art.category)}</span>
-                        <h3 class="card-title-news">${escapeHtml(art.title)}</h3>
-                        <p class="card-snippet">${escapeHtml(art.summary || '')}</p>
-                        <div class="byline justify-content-between">
-                            <span>${art.author ? escapeHtml(art.author.fullName) : 'כתב המערכת'} • ${new Date(art.publishedAt).toLocaleDateString('he-IL')}</span>
-                            <span class="viewed-badge ${isViewed ? 'is-viewed' : ''}">
-                                <i class="bi ${isViewed ? 'bi-check2' : 'bi-circle'}"></i> ${isViewed ? 'נקרא' : 'חדש'}
-                            </span>
-                        </div>
-                    </article>
-                    </a>
-                `;
-                grid.appendChild(col);
-            });
-        }
-
-        // 6. Infinite Scroll Handler
-        function handleInfiniteScroll() {
-            if (isLoading || currentPage > totalPages) return;
-
-            const scrollPos = window.innerHeight + window.scrollY;
-            const threshold = document.documentElement.offsetHeight - 600;
-
-            if (scrollPos >= threshold) {
-                loadFeed(false);
-            }
-        }
-
-        // 7. Filter & Search Controls
-        function filterByCategory(cat) {
-            activeCategory = cat;
-            document.querySelectorAll('#categoryNavList .category-link').forEach(link => {
-                link.classList.remove('active');
-                if ((cat === '' && link.textContent === 'ראשי') || link.textContent === cat) {
-                    link.classList.add('active');
-                }
-            });
-            document.getElementById('feedHeading').textContent = cat ? `חדשות בתחום ה-${cat}` : 'הפיד הראשי';
-            loadFeed(true);
-        }
-
-        function debounceSearch() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                currentSearchQuery = document.getElementById('searchInput').value.trim();
-                loadFeed(true);
-            }, 300);
-        }
-
-        function applyFilters() {
-            const radios = document.getElementsByName('statusFilter');
-            for (let r of radios) {
-                if (r.checked) currentStatusFilter = r.value;
-            }
-            currentSort = document.getElementById('sortSelect').value;
-            loadFeed(true);
-        }
-
-        // The hero image opens the full article page
-        function openHeroArticle() {
-            if (heroArticleData) {
-                window.location.href = `/article/${heroArticleData._id}`;
-            }
-        }
     </script>
 </body>
 </html>
-
