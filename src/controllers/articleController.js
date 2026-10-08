@@ -835,9 +835,11 @@ const getPublicArticleById = async (req, res, next) => {
  * (the dashboards only load one page of articles, so they cannot count them in the browser).
  */
 const countByStatus = async (match = {}) => {
-    const [grouped, pendingUpdates] = await Promise.all([
+    const published = { ...match, status: ARTICLE_STATUS.PUBLISHED };
+    const [grouped, pendingUpdates, revisionUpdates] = await Promise.all([
         Article.aggregate([{ $match: match }, { $group: { _id: '$status', count: { $sum: 1 } } }]),
-        Article.countDocuments({ ...match, status: ARTICLE_STATUS.PUBLISHED, 'draftVersion.status': ARTICLE_STATUS.PENDING_APPROVAL })
+        Article.countDocuments({ ...published, 'draftVersion.status': ARTICLE_STATUS.PENDING_APPROVAL }),
+        Article.countDocuments({ ...published, 'draftVersion.status': ARTICLE_STATUS.REVISION_REQUESTED })
     ]);
 
     const counts = Object.fromEntries(Object.values(ARTICLE_STATUS).map((status) => [status, 0]));
@@ -846,7 +848,8 @@ const countByStatus = async (match = {}) => {
     return {
         total: Object.values(counts).reduce((sum, n) => sum + n, 0),
         ...counts,
-        pendingUpdates
+        pendingUpdates, // published articles whose update waits for the editor
+        revisionUpdates // published articles whose update was sent back for fixes
     };
 };
 

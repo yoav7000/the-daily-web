@@ -978,39 +978,34 @@
         }
 
         // עדכון מוני הסטטיסטיקה
-        function updateMetrics() {
-            let total = allMyArticles.length;
-            let drafts = 0;
-            let pending = 0;
-            let revisions = 0;
-            let published = 0;
+        // Counters come from the server, so they stay exact however many articles the reporter has
+        async function updateMetrics() {
+            try {
+                const res = await fetch('/api/articles/my-stats', { headers: { 'Authorization': `Bearer ${getAuthToken()}` } });
+                if (!res.ok) throw new Error('Failed to load stats');
+                const { stats } = await res.json();
 
-            allMyArticles.forEach(a => {
-                const s = STATUS_MAP[a.status] || a.status;
-                const hasPendingDraft = a.status === 'published' && a.draftVersion && (STATUS_MAP[a.draftVersion.status] || a.draftVersion.status) === 'ממתינה לאישור עורך';
-                const hasRevDraft = a.status === 'published' && a.draftVersion && (STATUS_MAP[a.draftVersion.status] || a.draftVersion.status) === 'הוחזרה לתיקונים';
+                const pending = stats.pending_approval + stats.pendingUpdates;
+                const revisions = stats.revision_requested + stats.revisionUpdates;
 
-                if (s === 'בהכנה') drafts++;
-                if (s === 'ממתינה לאישור עורך' || hasPendingDraft) pending++;
-                if (s === 'הוחזרה לתיקונים' || hasRevDraft) revisions++;
-                if (s === 'פורסמה') published++;
-            });
+                document.getElementById('metricTotal').innerText = stats.total;
+                document.getElementById('metricDraft').innerText = stats.draft;
+                document.getElementById('metricPending').innerText = pending;
+                document.getElementById('metricRevision').innerText = revisions;
 
-            document.getElementById('metricTotal').innerText = total;
-            document.getElementById('metricDraft').innerText = drafts;
-            document.getElementById('metricPending').innerText = pending;
-            document.getElementById('metricRevision').innerText = revisions;
+                const cardRev = document.getElementById('cardRevisions');
+                const pillRev = document.getElementById('revisionBadgePill');
 
-            const cardRev = document.getElementById('cardRevisions');
-            const pillRev = document.getElementById('revisionBadgePill');
-
-            if (revisions > 0) {
-                cardRev.classList.add('border-danger', 'bg-danger-subtle');
-                pillRev.classList.remove('d-none');
-                pillRev.innerText = revisions;
-            } else {
-                cardRev.classList.remove('border-danger', 'bg-danger-subtle');
-                pillRev.classList.add('d-none');
+                if (revisions > 0) {
+                    cardRev.classList.add('border-danger', 'bg-danger-subtle');
+                    pillRev.classList.remove('d-none');
+                    pillRev.innerText = revisions;
+                } else {
+                    cardRev.classList.remove('border-danger', 'bg-danger-subtle');
+                    pillRev.classList.add('d-none');
+                }
+            } catch (err) {
+                console.error('Error loading counters:', err);
             }
         }
 

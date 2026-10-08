@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>The Daily Web — Impact Analytics & Comments</title>
+    <title>The Daily Web — Impact Analytics</title>
 
     <script>
         if (!localStorage.getItem('token')) {
@@ -403,7 +403,7 @@
         <div class="container text-center">
             <a href="/" class="masthead-title">The Daily Web</a>
             <div class="masthead-tagline">
-                דשבורד Impact Analytics ומדדי חשיפה • נתוני קריאה בזמן אמת, גרף עומס ותגובות
+                דשבורד Impact Analytics ומדדי חשיפה • נתוני קריאה בזמן אמת, גרף צפיות ועדכוני עורך
             </div>
         </div>
     </header>
@@ -440,6 +440,7 @@
                     <label for="articleSelect" class="form-label text-muted fw-bold small mb-1">
                         <i class="bi bi-file-earmark-text text-primary me-1"></i> בחר כתבה לניתוח השפעה סטטיסטי:
                     </label>
+                    <input type="search" id="articleSearch" class="form-control form-control-sm mb-2" placeholder="חיפוש כתבה לפי כותרת..." oninput="debouncedArticleSearch()">
                     <select id="articleSelect" class="form-select form-select-custom" onchange="loadAnalyticsForSelectedArticle()">
                         <option value="">טוען רשימת כתבות מהשרת...</option>
                     </select>
@@ -574,7 +575,7 @@
         async function initializeArticleDropdown() {
             const selectEl = document.getElementById('articleSelect');
             try {
-                const res = await fetch('/api/articles/public?limit=100');
+                const res = await fetch('/api/articles/public?limit=50');
                 const data = await res.json();
 
                 if (data.success && data.articles.length > 0) {
@@ -619,7 +620,46 @@
             }
         }
 
-        // 2. Load Analytics & Comments for Selected Article
+        // The picker shows the 50 newest articles, or the 50 best matches of the search box (any published article can be found)
+        let articleSearchTimer = null;
+        function debouncedArticleSearch() {
+            clearTimeout(articleSearchTimer);
+            articleSearchTimer = setTimeout(reloadArticleOptions, 300);
+        }
+
+        async function reloadArticleOptions() {
+            const selectEl = document.getElementById('articleSelect');
+            const term = document.getElementById('articleSearch').value.trim();
+            const selected = selectEl.value ? { value: selectEl.value, text: selectEl.selectedOptions[0].textContent } : null;
+
+            try {
+                const res = await fetch(`/api/articles/public?limit=50${term ? '&search=' + encodeURIComponent(term) : ''}`);
+                const data = await res.json();
+                const options = (data.articles || []).map(art => ({ value: art._id, text: `[${art.category}] ${art.title}` }));
+
+                // the article being analysed stays selectable even when it is not among the matches
+                if (selected && !options.some(o => o.value === selected.value)) {
+                    options.unshift(selected);
+                }
+
+                selectEl.innerHTML = '';
+                options.forEach(o => {
+                    const opt = document.createElement('option');
+                    opt.value = o.value;
+                    opt.textContent = o.text;
+                    selectEl.appendChild(opt);
+                });
+                if (options.length === 0) {
+                    selectEl.innerHTML = '<option value="">לא נמצאו כתבות</option>';
+                } else if (selected) {
+                    selectEl.value = selected.value;
+                }
+            } catch (err) {
+                console.error('Article search failed:', err);
+            }
+        }
+
+        // 2. Load Analytics for Selected Article
         async function loadAnalyticsForSelectedArticle() {
             const selectEl = document.getElementById('articleSelect');
             activeArticleId = selectEl.value;
