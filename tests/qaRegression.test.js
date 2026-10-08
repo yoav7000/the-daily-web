@@ -74,7 +74,7 @@ test('QA 1: dashboards get exact counts and can page through every article (noth
         const res = await api('GET', '/api/articles/editor/stats', { token: editor.token });
         assert.equal(res.status, 200);
         assert.deepEqual(res.body.stats, {
-            total: 536, published: 520, draft: 9, pending_approval: 4, revision_requested: 3, pendingUpdates: 1
+            total: 536, published: 520, draft: 9, pending_approval: 4, revision_requested: 3, pendingUpdates: 1, revisionUpdates: 0
         });
     });
 
@@ -96,6 +96,13 @@ test('QA 1: dashboards get exact counts and can page through every article (noth
         assert.equal(drafts.body.pagination.totalCount, 9);
         const updates = await api('GET', '/api/articles/editor/all?status=pending_update&limit=1', { token: editor.token });
         assert.equal(updates.body.pagination.totalCount, 1);
+    });
+
+    await t.test('"waiting for review" covers new submissions and updates to published articles, with search on top', async () => {
+        const all = await api('GET', '/api/articles/editor/all?status=needs_review&limit=100', { token: editor.token });
+        assert.equal(all.body.pagination.totalCount, 5, '4 submissions + 1 update to a published article');
+        const searched = await api('GET', `/api/articles/editor/all?status=needs_review&search=${encodeURIComponent('pending_approval 1')}`, { token: editor.token });
+        assert.equal(searched.body.pagination.totalCount, 1);
     });
 
     await t.test('reporter counters only count their own articles', async () => {
