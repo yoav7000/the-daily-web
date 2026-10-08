@@ -424,7 +424,16 @@
             updateWordStats();
         }
 
+        function resetAutoSaveState() {
+            clearTimeout(autoSaveTimer);
+            autoSaveTimer = null;
+            hasUnsavedChanges = false;
+            changeCounter = 0;
+            currentSave = null;
+        }
+
         function openNewArticle() {
+            resetAutoSaveState();
             fillForm(null);
             setStatusBadge('draft');
             field('modalPublishedWarning').hidden = true;
@@ -436,6 +445,7 @@
         UI.on('new-article', openNewArticle);
 
         async function openEditor(articleId) {
+            resetAutoSaveState();
             const { article } = await api('GET', `/api/articles/${articleId}/edit`);
             fillForm(article);
             setStatusBadge(article.status);
