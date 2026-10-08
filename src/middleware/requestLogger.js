@@ -13,6 +13,9 @@ const httpLogPath = path.join(logsDir, 'access.log');
  * HTTP access logger - one line per request with status and duration
  */
 const httpLogger = (req, res, next) => {
+    if (process.env.NODE_ENV === 'test') {
+        return next(); // the test runner talks over stdout, stray log lines can corrupt its messages
+    }
     const start = Date.now();
     res.on('finish', () => {
         const line = `[${new Date().toISOString()}] ${req.method} ${req.originalUrl} ${res.statusCode} ${Date.now() - start}ms

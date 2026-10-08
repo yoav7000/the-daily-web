@@ -47,14 +47,6 @@ const resolveUser = async (req) => {
         }
     }
 
-    // 4. Optional header for internal test environment (e.g. x-test-user-id)
-    if (!token && process.env.NODE_ENV === 'test' && req.headers['x-test-user-id']) {
-        const testUser = await User.findById(req.headers['x-test-user-id']);
-        if (testUser) {
-            return testUser;
-        }
-    }
-
     if (!token) {
         return null;
     }
