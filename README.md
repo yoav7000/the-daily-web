@@ -54,7 +54,11 @@ npm run create-editor -- <username> <password> "<full name>"
 npm test
 ```
 
-Every test file starts its own temporary in-memory MongoDB, so tests never touch your real database.
+Every test file starts its own temporary in-memory MongoDB, so tests never touch your real database. The suite covers:
+
+- **The server:** every API route, roles and permissions, the article workflow, comments and the spam limit, analytics, password storage (it reads the raw MongoDB documents), user management and login throttling.
+- **The front-end** (`tests/frontendChecks.test.js`): every page parses, every button handler exists, every shared helper a page calls is loaded, every link and every API address a page uses really exists, and the removed developer tooling is gone.
+- **Regressions from the manual QA** (`tests/qaRegression.test.js`): exact dashboard counters, paging without repeated or skipped articles, the viewed filter, clean deletes, error pages and the favicon.
 
 ---
 
@@ -119,6 +123,8 @@ the-daily-web/
 - **Passwords are stored only as bcrypt hashes** and every rule about them runs on the server, never in the browser. The model hashes on every way of writing a user (`save`, `insertMany`, `updateOne` / `findOneAndUpdate`), a password must be 6 to 72 characters, and API responses never contain a password or hash. `tests/passwordStorage.test.js` reads the raw MongoDB documents to prove it, including users made by the seeder and by `npm run create-editor`.
 - Logins are kept in a server session stored in MongoDB (`connect-mongo`), so they survive a server restart. The dashboards authenticate with a signed token, and the server accepts the session cookie as well.
 - No public sign-up: only an editor can create accounts. The login page only follows `?redirect=` to paths on this site.
+- **Login throttling:** after 10 wrong passwords for the same username from the same address (or 50 from one address) logins are refused for 15 minutes with a `429`. Tune it with `LOGIN_MAX_ATTEMPTS` and `LOGIN_WINDOW_MINUTES`.
+- The server does not advertise its framework and sends basic protective headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`).
 - **User management (editors only, also in `/admin.html`):** `GET /api/users?search=&role=` (list and search by part of the name), `GET /api/users/:id`, `POST /api/users`, `PUT /api/users/:id` (name, role, active flag, password), `DELETE /api/users/:id` (also reachable under `/api/auth/users`). The last active editor cannot be removed, and a user who wrote articles is deactivated instead of deleted.
 - Article HTML is sanitized on save (small allowlist of tags, safe links only), and the dashboards escape all text they render.
 - Centralized error handling, with errors in `logs/error.log`, HTTP requests in `logs/access.log`, and operational events in `logs/operations.log`.
@@ -128,10 +134,13 @@ the-daily-web/
 - **Auto-save:** `POST /api/articles/autosave` and `PUT /api/articles/:id/autosave` save work continuously in the background.
 - **Editing a published article:** changes go to an isolated `draftVersion`. The public keeps seeing the approved version until an editor approves the update, which is recorded in `revisionsHistory` for the analytics timeline.
 - **Locked while under review:** once an article (or the update of a published article) is waiting for the editor, the server refuses further edits until the editor approves it or returns it for revisions.
+- **Dashboards at any size:** the editor desk and the reporter desk get exact counters from the database (`GET /api/articles/editor/stats`, `GET /api/articles/my-stats`), and the editor list loads one page at a time with the filters applied by the server, so thousands of articles stay fast.
 - **Editor tools:** filter all articles by status, side-by-side diff of the live version against the proposed one, approve, return with notes, direct edit, delete.
 
 ### Public site
-- Home page feed with infinite scroll (20 articles per request via `fetch`), search by title or summary (any part of a word matches), filter by category and viewed / not viewed, sort by date or popularity. Every article opens its own page.
+- Home page feed with infinite scroll (20 articles per request via `fetch`), search by title or summary (any part of a word matches), filter by category and viewed / not viewed, sort by date or popularity. All of it is done by the server over the whole archive: the browser only sends what it remembers having read (`viewed=read|unread&viewedIds=...`). Section links such as `/?category=ספורט` open that section. Every article opens its own page.
+- Paging is stable: articles published at the same moment are ordered by id, so scrolling never repeats or skips one.
+- Mistyped or deleted links get a styled "not found" page (API calls still answer with JSON), and every page has a favicon.
 - Server-rendered article page (`/article/:id`, EJS) for search engines.
 - Weather widget in the sidebar. `GET /api/weather` calls OpenWeatherMap at most once every 15 minutes, however many visitors there are. If the service is unavailable, the last real reading is shown (or labelled sample data).
 
