@@ -175,7 +175,7 @@ test('QA 4: broken links get a proper page, the favicon exists, and headers are 
         assert.equal(res.status, 404);
         assert.match(res.headers.get('content-type'), /text\/html/);
         assert.match(res.text, /The Daily Web/);
-        assert.match(res.text, /<a class="button" href="\/">/);
+        assert.match(res.text, /<a class="btn btn-primary btn-lg" href="\/">/);
         assert.doesNotMatch(res.text, /"success"/);
     });
 
