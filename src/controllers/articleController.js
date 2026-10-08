@@ -898,7 +898,7 @@ const renderArticlePage = async (req, res, next) => {
 
         recordViewInternal(article._id);
 
-        res.render('article', { article: toPublicArticle(article) });
+        res.render('article', { article: toPublicArticle(article), categories: ARTICLE_CATEGORIES });
     } catch (error) {
         next(error);
     }

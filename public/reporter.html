@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml">
     <title>The Daily Web — סביבת עבודה לכתב</title>
 
     <script>
@@ -536,10 +537,10 @@
                 <a href="/reporter.html" class="category-link active">
                     <i class="bi bi-pencil-square text-danger"></i> סביבת כתבים
                 </a>
-                <a href="/editor.html" class="category-link">
+                <a href="/editor.html" class="category-link" data-editor-only>
                     <i class="bi bi-shield-check"></i> דסק עורכים
                 </a>
-                <a href="/analytics.html" class="category-link">
+                <a href="/analytics.html" class="category-link" data-editor-only>
                     <i class="bi bi-bar-chart-line"></i> Impact Analytics
                 </a>
                 <a href="/portal.html" class="category-link">
@@ -915,6 +916,7 @@
 
                 const data = await res.json();
                 currentUser = data.user;
+                applyRoleVisibility(currentUser);
                 document.getElementById('navUserName').innerText = currentUser.fullName || currentUser.username;
             } catch (err) {
                 console.error('Session verify error:', err);
