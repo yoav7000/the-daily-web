@@ -26,6 +26,25 @@ const logError = (err, req) => {
 };
 
 /**
+ * Pages (anything outside /api) get a styled error page, API calls get JSON.
+ */
+const isApiRequest = (req) => req.originalUrl.startsWith('/api/') || req.originalUrl === '/api';
+
+const PAGE_TEXT = {
+    404: { heading: 'העמוד לא נמצא', message: 'הקישור שגוי, או שהכתבה הוסרה או שטרם פורסמה.' },
+    400: { heading: 'הבקשה אינה תקינה', message: 'לא הצלחנו להבין את הכתובת שביקשת.' },
+    500: { heading: 'משהו השתבש', message: 'אירעה תקלה בשרת. נסו שוב בעוד רגע.' }
+};
+
+const sendError = (req, res, status, message, extra = {}) => {
+    if (isApiRequest(req) || req.method !== 'GET') {
+        return res.status(status).json({ success: false, message, ...extra });
+    }
+    const text = PAGE_TEXT[status] || PAGE_TEXT[500];
+    return res.status(status).render('error', { status, heading: text.heading, message: text.message });
+};
+
+/**
  * Centralized Express Error Handling Middleware
  */
 const errorHandler = (err, req, res, next) => {
@@ -34,37 +53,32 @@ const errorHandler = (err, req, res, next) => {
     // Mongoose validation error
     if (err.name === 'ValidationError') {
         const errors = Object.values(err.errors).map(el => el.message);
-        return res.status(400).json({
-            success: false,
-            message: 'שגיאת תקינות נתונים',
-            errors
-        });
+        return sendError(req, res, 400, 'שגיאת תקינות נתונים', { errors });
     }
 
     // Mongoose duplicate key error (code 11000)
     if (err.code === 11000) {
         const field = Object.keys(err.keyValue)[0];
-        return res.status(400).json({
-            success: false,
-            message: `ערך זה כבר קיים במערכת (${field})`
-        });
+        return sendError(req, res, 400, `ערך זה כבר קיים במערכת (${field})`);
     }
 
-    // Mongoose CastError (invalid ObjectId)
+    // Mongoose CastError (invalid ObjectId): in the browser a mistyped link is simply "not found"
     if (err.name === 'CastError') {
-        return res.status(400).json({
-            success: false,
-            message: `מזהה פריט אינו תקין: ${err.value}`
-        });
+        if (isApiRequest(req) || req.method !== 'GET') {
+            return sendError(req, res, 400, `מזהה פריט אינו תקין: ${err.value}`);
+        }
+        return sendError(req, res, 404, 'העמוד לא נמצא');
     }
 
-    // Custom status code if provided
-    const statusCode = err.statusCode || 500;
-    const message = err.message || 'שגיאת שרת פנימית';
+    // Invalid JSON body or other client errors raised by Express itself
+    if (err.type === 'entity.parse.failed') {
+        return sendError(req, res, 400, 'גוף הבקשה אינו JSON תקין');
+    }
 
-    res.status(statusCode).json({
-        success: false,
-        message,
+    const statusCode = err.statusCode || err.status || 500;
+    const message = statusCode >= 500 ? (err.message || 'שגיאת שרת פנימית') : err.message;
+
+    return sendError(req, res, statusCode, message, {
         ...(process.env.NODE_ENV === 'development' ? { stack: err.stack } : {})
     });
 };

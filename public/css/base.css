@@ -1,0 +1,341 @@
+/* ==========================================================================
+   The Daily Web — design tokens, reset and typography
+   One source of truth for colour, type, space and motion. Every page uses these tokens,
+   so a change here changes the whole site (light and dark theme included).
+   The layout is written with logical properties (inline-start/end) so it works in RTL.
+   ========================================================================== */
+
+:root {
+    color-scheme: light;
+
+    /* Type */
+    --font-ui: 'Heebo', 'Assistant', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --font-serif: 'Frank Ruhl Libre', 'David Libre', 'Times New Roman', Georgia, serif;
+
+    /* Surfaces */
+    --bg: #f5f5f2;
+    --surface: #ffffff;
+    --surface-2: #f0f0ec;
+    --surface-3: #e7e7e2;
+    --line: #e3e2dc;
+    --line-strong: #cbc9c0;
+    --overlay: rgb(14 16 22 / 0.55);
+
+    /* Text */
+    --text: #14161b;
+    --text-2: #444955;
+    --muted: #666b79;
+
+    /* Brand */
+    --accent: #4f46e5;
+    --accent-hover: #4338ca;
+    --accent-soft: #ecebfd;
+    --accent-text: #4338ca;
+    --on-accent: #ffffff;
+    --on-solid: #ffffff;
+    --grad: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #c026d3 100%);
+
+    /* Meaning */
+    --ok: #15803d;
+    --warn: #96470a;
+    --danger: #c0271d;
+    --info: #0b66c3;
+    --ok-soft: color-mix(in srgb, var(--ok) 12%, var(--surface));
+    --warn-soft: color-mix(in srgb, #d97706 14%, var(--surface));
+    --danger-soft: color-mix(in srgb, var(--danger) 11%, var(--surface));
+    --info-soft: color-mix(in srgb, var(--info) 11%, var(--surface));
+
+    /* Shape and depth */
+    --radius-sm: 8px;
+    --radius: 12px;
+    --radius-lg: 18px;
+    --radius-xl: 26px;
+    --shadow-1: 0 1px 2px rgb(16 18 27 / 0.06), 0 1px 1px rgb(16 18 27 / 0.04);
+    --shadow-2: 0 6px 18px rgb(16 18 27 / 0.08), 0 1px 3px rgb(16 18 27 / 0.06);
+    --shadow-3: 0 24px 60px rgb(16 18 27 / 0.22), 0 6px 16px rgb(16 18 27 / 0.1);
+    --ring: 0 0 0 3px color-mix(in srgb, var(--accent) 38%, transparent);
+
+    /* Layout */
+    --container: 1240px;
+    --gutter: clamp(16px, 4vw, 32px);
+    --sidebar-w: 276px;
+    --header-h: 64px;
+
+    /* Motion */
+    --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+    --t-fast: 120ms;
+    --t: 200ms;
+}
+
+[data-theme='dark'] {
+    color-scheme: dark;
+    --bg: #0c0e13;
+    --surface: #151821;
+    --surface-2: #1b1f2a;
+    --surface-3: #252a39;
+    --line: #272c3a;
+    --line-strong: #394057;
+    --overlay: rgb(0 0 0 / 0.66);
+
+    --text: #eceef5;
+    --text-2: #c2c7d4;
+    --muted: #9198ab;
+
+    --accent: #8f91ff;
+    --accent-hover: #aaabff;
+    --accent-soft: #23264a;
+    --accent-text: #b7b8ff;
+    --on-accent: #0c0e13;
+    --on-solid: #0c0e13;
+    --grad: linear-gradient(135deg, #6366f1 0%, #8b5cf6 55%, #d946ef 100%);
+
+    --ok: #4ade80;
+    --warn: #fbbf24;
+    --danger: #ff7b72;
+    --info: #60a5fa;
+    --warn-soft: color-mix(in srgb, #f59e0b 16%, var(--surface));
+
+    --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
+    --shadow-2: 0 8px 22px rgb(0 0 0 / 0.38);
+    --shadow-3: 0 28px 70px rgb(0 0 0 / 0.6);
+}
+
+/* ---------- Reset ---------- */
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    /* reserve the scrollbar so nothing jumps sideways when a list gets short or long */
+    scrollbar-gutter: stable;
+    scroll-behavior: smooth;
+    scroll-padding-top: calc(var(--header-h) + 24px);
+}
+
+body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-ui);
+    font-size: 1rem;
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    overflow-wrap: break-word;
+}
+
+body.is-locked {
+    overflow: hidden;
+}
+
+h1, h2, h3, h4, h5, h6, p, ul, ol, figure, blockquote, dl, dd {
+    margin: 0;
+}
+
+ul[role='list'], ol[role='list'], .list-reset {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+img, svg, video, canvas {
+    max-width: 100%;
+}
+
+img {
+    display: block;
+    height: auto;
+}
+
+a {
+    color: var(--accent-text);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 3px;
+}
+
+a:hover {
+    color: var(--accent-hover);
+}
+
+button, input, select, textarea {
+    font: inherit;
+    color: inherit;
+}
+
+button {
+    cursor: pointer;
+}
+
+[hidden] {
+    display: none !important;
+}
+
+:focus {
+    outline: none;
+}
+
+:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+    border-radius: 4px;
+}
+
+::selection {
+    background: color-mix(in srgb, var(--accent) 28%, transparent);
+}
+
+/* ---------- Typography ---------- */
+
+h1, h2, h3, h4 {
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    color: var(--text);
+}
+
+.display {
+    font-family: var(--font-serif);
+    font-weight: 900;
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+}
+
+.h1 { font-size: clamp(1.6rem, 1.2rem + 1.6vw, 2.25rem); font-weight: 800; }
+.h2 { font-size: clamp(1.3rem, 1.1rem + 0.8vw, 1.6rem); font-weight: 700; }
+.h3 { font-size: 1.125rem; font-weight: 700; }
+.h4 { font-size: 1rem; font-weight: 700; }
+
+.eyebrow {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--accent-text);
+}
+
+.muted { color: var(--muted); }
+.text-2 { color: var(--text-2); }
+.small { font-size: 0.875rem; }
+.xsmall { font-size: 0.78rem; }
+.num { font-variant-numeric: tabular-nums; }
+.nowrap { white-space: nowrap; }
+.strong { font-weight: 700; }
+
+.truncate {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.clamp-2, .clamp-3 {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+}
+.clamp-2 { -webkit-line-clamp: 2; line-clamp: 2; }
+.clamp-3 { -webkit-line-clamp: 3; line-clamp: 3; }
+
+/* ---------- Helpers ---------- */
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.skip-link {
+    position: fixed;
+    inset-block-start: 8px;
+    inset-inline-start: 8px;
+    z-index: 1000;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    background: var(--text);
+    color: var(--bg);
+    text-decoration: none;
+    font-weight: 700;
+    transform: translateY(-200%);
+}
+
+.skip-link:focus {
+    transform: none;
+}
+
+.container {
+    width: 100%;
+    max-width: var(--container);
+    margin-inline: auto;
+    padding-inline: var(--gutter);
+}
+
+.icon {
+    width: 1.15em;
+    height: 1.15em;
+    flex: none;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 2;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vertical-align: -0.2em;
+}
+
+.icon-lg { width: 1.5em; height: 1.5em; }
+.icon-xl { width: 2.25em; height: 2.25em; }
+
+.flex { display: flex; }
+.inline-flex { display: inline-flex; }
+.items-center { align-items: center; }
+.justify-between { justify-content: space-between; }
+.wrap { flex-wrap: wrap; }
+.grow { flex: 1 1 auto; min-width: 0; }
+.gap-1 { gap: 4px; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
+.gap-6 { gap: 24px; }
+.mt-1 { margin-block-start: 4px; }
+.mt-2 { margin-block-start: 8px; }
+.mt-3 { margin-block-start: 12px; }
+.mt-4 { margin-block-start: 16px; }
+.mt-6 { margin-block-start: 24px; }
+.mb-2 { margin-block-end: 8px; }
+.mb-3 { margin-block-end: 12px; }
+.mb-4 { margin-block-end: 16px; }
+.mb-6 { margin-block-end: 24px; }
+.ms-auto { margin-inline-start: auto; }
+.center { text-align: center; }
+.w-full { width: 100%; }
+
+@media (max-width: 719px) {
+    .hide-sm { display: none !important; }
+}
+
+@media (min-width: 720px) {
+    .show-sm { display: none !important; }
+}
+
+@media (max-width: 1023px) {
+    .hide-md { display: none !important; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}

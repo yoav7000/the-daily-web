@@ -17,6 +17,9 @@ const { httpLogger } = require('./middleware/requestLogger');
 
 const app = express();
 
+// Do not advertise the framework to every visitor
+app.disable('x-powered-by');
+
 // View engine setup (EJS as mandated in course requirements)
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -27,17 +30,28 @@ if (Number(process.env.TRUST_PROXY) > 0) {
     app.set('trust proxy', Number(process.env.TRUST_PROXY));
 }
 
+// Basic protective headers for every response
+app.use((req, res, next) => {
+    res.setHeader('X-Content-Type-Options', 'nosniff');
+    res.setHeader('X-Frame-Options', 'SAMEORIGIN');
+    res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+    next();
+});
+
 // Core middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
+// Browsers ask for /favicon.ico on their own; answer with the site icon instead of a 404
+app.get('/favicon.ico', (req, res) => {
+    res.type('image/svg+xml').sendFile(path.join(__dirname, '../public/favicon.svg'));
+});
+
 // Static files (CSS, Vanilla JS client scripts, images)
 app.use(express.static(path.join(__dirname, '../public')));
 
-// Request logging (skipped in tests)
-if (process.env.NODE_ENV !== 'test') {
-    app.use(httpLogger);
-}
+// Request logging (httpLogger stays silent while tests run)
+app.use(httpLogger);
 
 // Server-side sessions (MongoDB store) so logins survive a server restart
 app.use(sessionMiddleware);
@@ -66,6 +80,11 @@ app.use('/api/*', (req, res) => {
         success: false,
         message: `נתיב ה-API המבוקש לא קיים: ${req.originalUrl}`
     });
+});
+
+// Any other address: a styled "not found" page for browsers
+app.use((req, res) => {
+    res.status(404).render('error', { status: 404, heading: 'העמוד לא נמצא', message: 'הקישור שגוי, או שהעמוד הוסר.' });
 });
 
 // Centralized error handler
