@@ -3,733 +3,246 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#f5f5f2">
+    <title>Impact Analytics — The Daily Web</title>
     <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-    <title>The Daily Web — Impact Analytics</title>
-
-    <script>
-        if (!localStorage.getItem('token')) {
-            window.location.replace('/login.html?redirect=' + encodeURIComponent(window.location.pathname));
-        }
-    </script>
-
-    <!-- Google Fonts: Frank Ruhl Libre (Classic Editorial Serif) + Assistant (Modern Clean Hebrew) + Inter (Data & Numbers) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Assistant:wght@300;400;500;600;700;800&family=Frank+Ruhl+Libre:wght@700;800;900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-
-    <!-- Bootstrap 5 CSS & Icons (Approved course technologies via CDN) -->
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-
-    <!-- Chart.js via CDN -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <style>
-        /* Always reserve the space of the page scrollbar. Without it, buttons jump sideways whenever a filter
-           makes the page short enough for the scrollbar to disappear (and back). */
-        html {
-            overflow-y: scroll;
-        }
-        :root {
-            --font-editorial: 'Frank Ruhl Libre', serif;
-            --font-sans: 'Assistant', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            --font-num: 'Inter', monospace;
-            --font-main: var(--font-sans);
-            --font-mono: var(--font-num);
-            
-            --news-dark: #121212;
-            --news-ink: #1f2937;
-            --news-muted: #6b7280;
-            --news-border: #e5e7eb;
-            --news-bg-subtle: #f9fafb;
-            --news-red: #b91c1c;
-            --news-blue: #1d4ed8;
-            --news-gold: #b45309;
-            --news-green: #15803d;
-            
-            --bg-page: #f8fafc;
-            --bg-surface: #ffffff;
-            --bg-subtle: #f1f5f9;
-            
-            --border-light: #e2e8f0;
-            --border-medium: #cbd5e1;
-            
-            --text-heading: #0f172a;
-            --text-body: #334155;
-            --text-muted: #64748b;
-            
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --primary-subtle: #eff6ff;
-            
-            --success: #16a34a;
-            --success-subtle: #f0fdf4;
-            
-            --warning: #d97706;
-            --warning-subtle: #fffbeb;
-            
-            --danger: #dc2626;
-            --danger-subtle: #fef2f2;
-            
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.08), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.05);
-            --radius-md: 10px;
-            --radius-lg: 14px;
-        }
-
-        body {
-            font-family: var(--font-main);
-            background-color: var(--bg-page);
-            color: var(--text-body);
-            line-height: 1.6;
-            -webkit-font-smoothing: antialiased;
-        }
-
-        .font-editorial { font-family: var(--font-editorial); }
-        .font-num { font-family: var(--font-num); }
-
-        /* 1. Top Utility Header */
-        .top-utility-bar {
-            background-color: #fafafa;
-            border-bottom: 1px solid var(--news-border);
-            font-size: 0.84rem;
-            color: var(--news-muted);
-        }
-
-        /* 2. Main Newspaper Masthead */
-        .newspaper-masthead {
-            text-align: center;
-            padding: 24px 0 16px;
-            background-color: #ffffff;
-            border-bottom: 3px double var(--news-dark);
-        }
-
-        .masthead-title {
-            font-family: var(--font-editorial);
-            font-size: 3.2rem;
-            font-weight: 900;
-            letter-spacing: -1px;
-            color: var(--news-dark);
-            text-decoration: none;
-            display: inline-block;
-            line-height: 1;
-            margin-bottom: 6px;
-            text-transform: uppercase;
-        }
-
-        .masthead-tagline {
-            font-size: 0.92rem;
-            color: var(--news-muted);
-            letter-spacing: 0.5px;
-            font-weight: 600;
-        }
-
-        /* 3. Category & Navigation Bar */
-        .category-nav-bar {
-            background-color: #ffffff;
-            border-bottom: 1px solid var(--news-border);
-            position: sticky;
-            top: 0;
-            z-index: 1020;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
-        }
-
-        .category-link {
-            font-size: 0.95rem;
-            font-weight: 700;
-            color: var(--news-ink);
-            padding: 12px 14px;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            transition: color 0.15s, border-color 0.15s;
-            border-bottom: 3px solid transparent;
-            white-space: nowrap;
-        }
-
-        .category-link:hover, .category-link.active {
-            color: var(--news-red);
-            border-bottom-color: var(--news-red);
-        }
-
-        .footer-newspaper {
-            background-color: #121212;
-            color: #d1d5db;
-            padding: 40px 0 20px;
-            margin-top: 60px;
-            border-top: 3px double #374151;
-        }
-
-        /* Elevating Card Components */
-        .analytics-card {
-            background: var(--bg-surface);
-            border: 1px solid var(--border-light);
-            border-radius: var(--radius-lg);
-            box-shadow: var(--shadow-sm);
-            transition: box-shadow 0.2s ease;
-        }
-
-        .analytics-card:hover {
-            box-shadow: var(--shadow-md);
-        }
-
-        .card-header-clean {
-            padding: 18px 24px;
-            border-bottom: 1px solid var(--border-light);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: transparent;
-        }
-
-        .card-header-clean h2 {
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--text-heading);
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        /* Metric KPI Cards */
-        .kpi-card {
-            background: var(--bg-surface);
-            border: 1px solid var(--border-light);
-            border-radius: var(--radius-md);
-            padding: 20px;
-            box-shadow: var(--shadow-sm);
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .kpi-card::before {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 4px;
-            height: 100%;
-            background: var(--primary);
-        }
-
-        .kpi-card.kpi-orange::before { background: var(--warning); }
-        .kpi-card.kpi-green::before { background: var(--success); }
-        .kpi-card.kpi-purple::before { background: #8b5cf6; }
-
-        .kpi-label {
-            font-size: 0.85rem;
-            font-weight: 600;
-            color: var(--text-muted);
-            text-transform: uppercase;
-            letter-spacing: 0.3px;
-            margin-bottom: 8px;
-        }
-
-        .kpi-value {
-            font-size: 2rem;
-            font-weight: 800;
-            color: var(--text-heading);
-            font-family: var(--font-mono);
-            line-height: 1.1;
-            margin-bottom: 6px;
-        }
-
-        .kpi-subtext {
-            font-size: 0.8rem;
-            color: var(--text-muted);
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        .growth-badge {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
-            padding: 2px 8px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 700;
-            font-family: var(--font-mono);
-        }
-
-        .growth-badge.positive {
-            background-color: var(--success-subtle);
-            color: var(--success);
-        }
-
-        .growth-badge.negative {
-            background-color: var(--danger-subtle);
-            color: var(--danger);
-        }
-
-        /* Selector Bar */
-        .selector-bar {
-            background: var(--bg-surface);
-            border: 1px solid var(--border-light);
-            border-radius: var(--radius-lg);
-            padding: 16px 20px;
-            box-shadow: var(--shadow-sm);
-        }
-
-        .form-select-custom {
-            font-size: 0.95rem;
-            font-weight: 600;
-            padding: 10px 16px;
-            border: 1px solid var(--border-medium);
-            border-radius: var(--radius-md);
-            background-color: var(--bg-surface);
-            color: var(--text-heading);
-            box-shadow: var(--shadow-sm);
-        }
-
-        .form-select-custom:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-        }
-
-        /* Chart Canvas Container */
-        .chart-box {
-            position: relative;
-            height: 360px;
-            width: 100%;
-            padding: 10px 0;
-        }
-
-        /* Milestones Timeline */
-        .timeline-item {
-            position: relative;
-            padding-right: 28px;
-            padding-bottom: 16px;
-            border-right: 2px solid var(--border-light);
-        }
-
-        .timeline-item:last-child {
-            border-right-color: transparent;
-            padding-bottom: 0;
-        }
-
-        .timeline-dot {
-            position: absolute;
-            top: 2px;
-            right: -7px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            background: var(--primary);
-            border: 2px solid #ffffff;
-            box-shadow: 0 0 0 2px var(--primary);
-        }
-
-        .timeline-dot.revision {
-            background: var(--warning);
-            box-shadow: 0 0 0 2px var(--warning);
-        }
-
-        /* Modern Comment Stream */
-        .comments-stream {
-            max-height: 400px;
-            overflow-y: auto;
-            padding-left: 8px;
-        }
-
-        .comment-item {
-            background-color: var(--bg-subtle);
-            border: 1px solid var(--border-light);
-            border-radius: var(--radius-md);
-            padding: 14px 18px;
-            margin-bottom: 12px;
-            transition: transform 0.15s ease, border-color 0.15s ease;
-        }
-
-        .comment-item:hover {
-            border-color: var(--border-medium);
-            transform: translateY(-1px);
-        }
-
-        .avatar-circle {
-            width: 36px;
-            height: 36px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-            color: #ffffff;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: 700;
-            font-size: 0.85rem;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(-4px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-    </style>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@500;700;900&family=Heebo:wght@400;500;600;700;800&display=swap">
+    <link rel="stylesheet" href="/css/base.css">
+    <link rel="stylesheet" href="/css/components.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/pages.css">
+    <script src="/js/theme.js"></script>
+    <script src="/js/icons.js"></script>
+    <script src="/js/common.js"></script>
+    <script src="/js/ui.js"></script>
 </head>
-<body>
+<body data-shell="staff" data-page="analytics">
+    <script src="/js/shell.js"></script>
 
-    <!-- 1. Top Utility Header -->
-    <div class="top-utility-bar py-1">
-        <div class="container-fluid px-lg-5 d-flex justify-content-between align-items-center flex-wrap gap-2">
-            <div class="d-flex align-items-center gap-3">
-                <span id="currentDateDisplay" class="fw-semibold">
-                    יום רביעי, 7 באוקטובר 2026 | כ"ו בתשרי תשפ"ז
-                </span>
-                <span class="text-muted d-none d-md-inline">|</span>
-                <span id="topWeatherSnippet" class="d-none d-md-inline-flex align-items-center gap-1">
-                    <i class="bi bi-cloud-sun text-warning"></i> תל אביב: <strong class="font-num">27°C</strong>
-                </span>
+    <main class="staff-main stack" id="main" tabindex="-1">
+        <header class="page-head">
+            <div>
+                <p class="eyebrow">Impact Analytics</p>
+                <h1>איך עדכונים משפיעים על הקוראים</h1>
+                <p>בוחרים כתבה ורואים כמה קוראים נכנסו אליה לאורך זמן, ומה קרה לצפיות בכל פעם שעורך אישר עדכון.</p>
             </div>
-            <div class="d-flex align-items-center gap-2">
-                <a href="/portal.html" class="btn btn-dark btn-sm py-1 px-3 fw-bold d-inline-flex align-items-center gap-1 shadow-sm">
-                    <i class="bi bi-grid-3x3-gap-fill text-warning"></i> כניסת עובדים וצוות
-                </a>
-                <span class="text-muted">|</span>
-                <a href="/" class="text-decoration-none text-dark fw-semibold small">
-                    <i class="bi bi-house-door me-1"></i> שער העיתון
-                </a>
+        </header>
+
+        <!-- 1. choose the article -->
+        <section class="card picker" aria-label="בחירת כתבה">
+            <div class="field">
+                <label class="label" for="articleSearch">חיפוש כתבה</label>
+                <label class="input-icon">
+                    <svg class="icon"><use href="#i-search"></use></svg>
+                    <input type="search" class="input" id="articleSearch" placeholder="חיפוש לפי כותרת..." autocomplete="off" data-search-input>
+                </label>
             </div>
-        </div>
-    </div>
-
-    <!-- 2. Master Newspaper Masthead -->
-    <header class="newspaper-masthead">
-        <div class="container text-center">
-            <a href="/" class="masthead-title">The Daily Web</a>
-            <div class="masthead-tagline">
-                דשבורד Impact Analytics ומדדי חשיפה • נתוני קריאה בזמן אמת, גרף צפיות ועדכוני עורך
+            <div class="field">
+                <label class="label" for="articleSelect">הכתבה לניתוח</label>
+                <select class="select" id="articleSelect"><option value="">טוענים את רשימת הכתבות...</option></select>
             </div>
-        </div>
-    </header>
+            <button type="button" class="btn btn-secondary" data-action="refresh"><svg class="icon"><use href="#i-refresh-cw"></use></svg> רענון</button>
+        </section>
 
-    <!-- 3. Central Navigation Bar -->
-    <nav class="category-nav-bar mb-4">
-        <div class="container-fluid px-lg-5">
-            <div class="d-flex overflow-auto py-1 align-items-center justify-content-start justify-content-md-center gap-1">
-                <a href="/" class="category-link">
-                    <i class="bi bi-newspaper"></i> שער העיתון
-                </a>
-                <a href="/analytics.html" class="category-link active">
-                    <i class="bi bi-bar-chart-line text-danger"></i> Impact Analytics
-                </a>
-                <a href="/reporter.html" class="category-link">
-                    <i class="bi bi-pencil-square"></i> סביבת כתבים
-                </a>
-                <a href="/editor.html" class="category-link">
-                    <i class="bi bi-shield-check"></i> דסק עורכים
-                </a>
-                <a href="/portal.html" class="category-link">
-                    <i class="bi bi-grid-3x3-gap-fill"></i> פורטל עובדים
-                </a>
+        <!-- 2. the numbers -->
+        <section class="stats" aria-label="מדדים עיקריים">
+            <div class="stat">
+                <span class="stat-icon"><svg class="icon"><use href="#i-eye"></use></svg></span>
+                <span class="stat-value" id="totalViewsDisplay">0</span>
+                <span class="stat-label">סך הצפיות בכתבה</span>
+                <span class="stat-note" id="articleCategoryDisplay">מדור: -</span>
             </div>
-        </div>
-    </nav>
-
-    <main class="container-fluid px-4 mb-5">
-
-        <!-- 2. Interactive Article Selector & Quick Action Bar -->
-        <section class="selector-bar mb-4">
-            <div class="row g-3 align-items-center">
-                <div class="col-lg-5 col-md-12">
-                    <label for="articleSelect" class="form-label text-muted fw-bold small mb-1">
-                        <i class="bi bi-file-earmark-text text-primary me-1"></i> בחר כתבה לניתוח השפעה סטטיסטי:
-                    </label>
-                    <input type="search" id="articleSearch" class="form-control form-control-sm mb-2" placeholder="חיפוש כתבה לפי כותרת..." oninput="debouncedArticleSearch()">
-                    <select id="articleSelect" class="form-select form-select-custom" onchange="loadAnalyticsForSelectedArticle()">
-                        <option value="">טוען רשימת כתבות מהשרת...</option>
-                    </select>
-                </div>
-
-                <div class="col-lg-7 col-md-12 d-flex align-items-end justify-content-lg-end flex-wrap gap-2 pt-2 pt-lg-0">
-                    <button class="btn btn-light border fw-semibold text-secondary d-inline-flex align-items-center gap-2" onclick="loadAnalyticsForSelectedArticle()">
-                        <i class="bi bi-arrow-clockwise"></i> רענן נתונים
-                    </button>
-                </div>
+            <div class="stat">
+                <span class="stat-icon is-warn"><svg class="icon"><use href="#i-refresh-cw"></use></svg></span>
+                <span class="stat-value" id="revisionsCountDisplay">0</span>
+                <span class="stat-label">עדכוני עורך שאושרו</span>
+                <span class="stat-note">כל נקודה כזו מסומנת בגרף</span>
+            </div>
+            <div class="stat">
+                <span class="stat-icon is-info"><svg class="icon"><use href="#i-history"></use></svg></span>
+                <span class="stat-value" id="beforeAvgDisplay">-</span>
+                <span class="stat-label">צפיות לשעה, לפני העדכון</span>
+                <span class="stat-note" id="beforeCountDisplay">ממוצע לשעה</span>
+            </div>
+            <div class="stat">
+                <span class="stat-icon is-ok"><svg class="icon"><use href="#i-trending-up"></use></svg></span>
+                <span class="stat-value" id="afterAvgDisplay">-</span>
+                <span class="stat-label">צפיות לשעה, אחרי העדכון</span>
+                <span id="impactPercentageContainer"><span class="impact" id="impactPercentageBadge">-</span></span>
             </div>
         </section>
 
-        <!-- 3. Key Performance Indicators (KPI Cards) -->
-        <section class="row g-3 mb-4">
-            <div class="col-xl-3 col-sm-6">
-                <div class="kpi-card h-100">
+        <!-- 3. the graph and the milestones -->
+        <section class="analytics-grid">
+            <div class="card card-pad">
+                <div class="flex justify-between wrap gap-4 mb-4">
                     <div>
-                        <div class="kpi-label">סה"כ צפיות בכתבה</div>
-                        <div class="kpi-value text-primary" id="totalViewsDisplay">0</div>
+                        <h2 class="h3">צפיות לאורך זמן</h2>
+                        <p class="muted small">שעות בלי צפיות מוצגות כ-0. בכתבות ותיקות הציר מתקבץ לימים או לשבועות.</p>
                     </div>
-                    <div class="kpi-subtext" id="articleCategoryDisplay">
-                        <i class="bi bi-tag text-muted"></i> קטגוריה: -
+                    <div class="legend" aria-label="מקרא הגרף">
+                        <span><i style="background: var(--accent)"></i> צפיות</span>
+                        <span><i style="background: #16a34a"></i> פרסום ראשוני</span>
+                        <span><i style="background: #d97706"></i> אישור עדכון</span>
+                        <span><i class="band" style="background: rgb(217 119 6 / 0.2)"></i> אחרי העדכון האחרון</span>
                     </div>
                 </div>
-            </div>
-
-            <div class="col-xl-3 col-sm-6">
-                <div class="kpi-card kpi-orange h-100">
-                    <div>
-                        <div class="kpi-label">עדכוני עורך שאושרו</div>
-                        <div class="kpi-value text-warning" id="revisionsCountDisplay">0</div>
-                    </div>
-                    <div class="kpi-subtext">
-                        <i class="bi bi-check-circle text-warning"></i> נקודות פרסום גרסאות
-                    </div>
+                <div class="chart-box">
+                    <canvas id="impactChart" role="img" aria-label="גרף צפיות לאורך זמן"></canvas>
                 </div>
+                <div id="chartMessage" class="state" hidden></div>
             </div>
 
-            <div class="col-xl-3 col-sm-6">
-                <div class="kpi-card kpi-purple h-100">
-                    <div>
-                        <div class="kpi-label">קצב צפיות לפני העדכון</div>
-                        <div class="kpi-value" id="beforeAvgDisplay">-</div>
-                    </div>
-                    <div class="kpi-subtext" id="beforeCountDisplay">
-                        <i class="bi bi-clock-history"></i> ממוצע צפיות לשעה
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-xl-3 col-sm-6">
-                <div class="kpi-card kpi-green h-100">
-                    <div>
-                        <div class="kpi-label">קצב צפיות אחרי העדכון</div>
-                        <div class="kpi-value text-success" id="afterAvgDisplay">-</div>
-                    </div>
-                    <div class="kpi-subtext" id="impactPercentageContainer">
-                        <span id="impactPercentageBadge" class="growth-badge positive">-</span>
-                    </div>
+            <div class="card card-pad">
+                <h2 class="h3">אבני דרך בכתבה</h2>
+                <p class="muted small mb-4">מתי פורסמה הכתבה, ומתי עורך אישר עדכון.</p>
+                <div id="milestonesTimeline" class="timeline">
+                    <div class="muted small center">טוענים נתוני גרסאות...</div>
                 </div>
             </div>
         </section>
-
-        <!-- 4. Interactive Impact Analytics Chart (Chart.js) -->
-        <section class="row g-4 mb-4">
-            <div class="col-xl-8 col-lg-12">
-                <div class="analytics-card p-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                        <div>
-                            <h2 class="fs-5 fw-bold text-dark m-0">
-                                <i class="bi bi-graph-up text-primary me-2"></i>עקומת צפיות לאורך ציר הזמן
-                            </h2>
-                            <p class="text-muted small m-0">מעקב רציף לפי דליי זמן (שעה, ובכתבות ותיקות יום או שבוע). שעות בלי צפיות מוצגות כ-0.</p>
-                        </div>
-                        <div class="d-flex align-items-center gap-3">
-                            <span class="small text-muted d-flex align-items-center gap-1">
-                                <span style="display:inline-block; width:10px; height:10px; background:#2563eb; border-radius:50%;"></span>
-                                צפיות שוטפות
-                            </span>
-                            <span class="small text-muted d-flex align-items-center gap-1">
-                                <span style="display:inline-block; width:10px; height:10px; background:#16a34a; border-radius:50%;"></span>
-                                פרסום ראשוני
-                            </span>
-                            <span class="small text-muted d-flex align-items-center gap-1">
-                                <span style="display:inline-block; width:10px; height:10px; background:#d97706; border-radius:50%;"></span>
-                                אישור עדכון עורך
-                            </span>
-                            <span class="small text-muted d-flex align-items-center gap-1">
-                                <span style="display:inline-block; width:14px; height:10px; background:rgba(217, 119, 6, 0.15); border-radius:2px;"></span>
-                                אחרי העדכון האחרון
-                            </span>
-                        </div>
-                    </div>
-
-                    <div class="chart-box">
-                        <canvas id="impactChart"></canvas>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Milestones & Editorial Timeline -->
-            <div class="col-xl-4 col-lg-12">
-                <div class="analytics-card p-4 h-100">
-                    <h2 class="fs-5 fw-bold text-dark mb-3">
-                        <i class="bi bi-flag text-warning me-2"></i>אבני דרך בתוכן הכתבה
-                    </h2>
-                    <p class="text-muted small mb-4">מועדי אישור ופרסום עדכוני גרסה על ידי העורכים:</p>
-                    
-                    <div id="milestonesTimeline" class="mt-2">
-                        <div class="text-muted small text-center py-4">טוען נתוני גרסאות...</div>
-                    </div>
-                </div>
-            </div>
-        </section>
-
     </main>
 
-    <!-- Client-side Logic (Vanilla JS, AJAX, Chart.js) -->
-    <script src="/js/common.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
     <script>
         let currentChart = null;
-        let activeArticleId = null;
+        let lastData = null;       // the answer for the article on screen, kept to redraw the graph when the theme changes
+        let activeRequest = 0;     // so an older answer never overwrites a newer one
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            const user = await requireAuth();
-            if (!user) return;
-            await initializeArticleDropdown();
-        });
+        const selectEl = document.getElementById('articleSelect');
+        const MILESTONE_COLORS = { INITIAL_PUBLISH: '#16a34a', REVISION_UPDATE: '#d97706' };
 
-        // 1. Initial Data Fetch for Dropdown
+        const cssVar = (name) => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+        const optionLabel = (article) => `[${article.category}] ${article.title}`;
+
+        function setOptions(items, selectedValue) {
+            selectEl.innerHTML = items.map((item) => `<option value="${escapeHtml(item.value)}">${escapeHtml(item.text)}</option>`).join('');
+            if (selectedValue) selectEl.value = selectedValue;
+        }
+
+        // ---- the article picker -------------------------------------------------------------
         async function initializeArticleDropdown() {
-            const selectEl = document.getElementById('articleSelect');
             try {
-                const res = await fetch('/api/articles/public?limit=50');
-                const data = await res.json();
-
-                if (data.success && data.articles.length > 0) {
-                    selectEl.innerHTML = '';
-                    data.articles.forEach(art => {
-                        const opt = document.createElement('option');
-                        opt.value = art._id;
-                        opt.textContent = `[${art.category}] ${art.title}`;
-                        selectEl.appendChild(opt);
-                    });
-
-                    // Check for URL query param
-                    const urlParams = new URLSearchParams(window.location.search);
-                    const queryArticleId = urlParams.get('articleId');
-                    if (queryArticleId) {
-                        const exists = Array.from(selectEl.options).some(o => o.value === queryArticleId);
-                        if (!exists) {
-                            try {
-                                const artRes = await fetch(`/api/articles/public/${queryArticleId}`);
-                                const artData = await artRes.json();
-                                if (artData.success && artData.article) {
-                                    const opt = document.createElement('option');
-                                    opt.value = artData.article._id;
-                                    opt.textContent = `[${artData.article.category}] ${artData.article.title} (כתבת דגל)`;
-                                    selectEl.prepend(opt);
-                                }
-                            } catch (e) {
-                                console.warn('Could not fetch custom articleId:', e);
-                            }
-                        }
-                        selectEl.value = queryArticleId;
-                    }
-
-                    activeArticleId = selectEl.value;
-                    await loadAnalyticsForSelectedArticle();
-                } else {
-                    selectEl.innerHTML = '<option value="">אין כתבות מפורסמות כרגע במערכת</option>';
+                const data = await api('GET', '/api/articles/public?limit=50');
+                if (data.articles.length === 0) {
+                    setOptions([{ value: '', text: 'אין כתבות מפורסמות כרגע במערכת' }]);
+                    return;
                 }
+                setOptions(data.articles.map((article) => ({ value: article._id, text: optionLabel(article) })));
+
+                // /analytics.html?articleId=... opens that article, even when it is not among the 50 newest
+                const wanted = new URLSearchParams(window.location.search).get('articleId');
+                if (wanted) {
+                    if (![...selectEl.options].some((option) => option.value === wanted)) {
+                        try {
+                            const { article } = await api('GET', `/api/articles/public/${wanted}`);
+                            selectEl.insertAdjacentHTML('afterbegin', `<option value="${escapeHtml(article._id)}">${escapeHtml(optionLabel(article))}</option>`);
+                        } catch (err) { /* an unknown id: stay with the newest article */ }
+                    }
+                    if ([...selectEl.options].some((option) => option.value === wanted)) selectEl.value = wanted;
+                }
+                await loadAnalyticsForSelectedArticle();
             } catch (err) {
-                console.error('Failed to load articles:', err);
-                selectEl.innerHTML = '<option value="">שגיאה בתקשורת עם השרת</option>';
+                setOptions([{ value: '', text: 'שגיאה בתקשורת עם השרת' }]);
+                showChartMessage('triangle-alert', 'לא הצלחנו לטעון את רשימת הכתבות', err.message);
             }
         }
 
         // The picker shows the 50 newest articles, or the 50 best matches of the search box (any published article can be found)
-        let articleSearchTimer = null;
-        function debouncedArticleSearch() {
-            clearTimeout(articleSearchTimer);
-            articleSearchTimer = setTimeout(reloadArticleOptions, 300);
-        }
-
         async function reloadArticleOptions() {
-            const selectEl = document.getElementById('articleSelect');
             const term = document.getElementById('articleSearch').value.trim();
             const selected = selectEl.value ? { value: selectEl.value, text: selectEl.selectedOptions[0].textContent } : null;
-
             try {
-                const res = await fetch(`/api/articles/public?limit=50${term ? '&search=' + encodeURIComponent(term) : ''}`);
-                const data = await res.json();
-                const options = (data.articles || []).map(art => ({ value: art._id, text: `[${art.category}] ${art.title}` }));
-
+                const data = await api('GET', `/api/articles/public?limit=50${term ? '&search=' + encodeURIComponent(term) : ''}`);
+                const options = data.articles.map((article) => ({ value: article._id, text: optionLabel(article) }));
                 // the article being analysed stays selectable even when it is not among the matches
-                if (selected && !options.some(o => o.value === selected.value)) {
-                    options.unshift(selected);
-                }
-
-                selectEl.innerHTML = '';
-                options.forEach(o => {
-                    const opt = document.createElement('option');
-                    opt.value = o.value;
-                    opt.textContent = o.text;
-                    selectEl.appendChild(opt);
-                });
-                if (options.length === 0) {
-                    selectEl.innerHTML = '<option value="">לא נמצאו כתבות</option>';
-                } else if (selected) {
-                    selectEl.value = selected.value;
-                }
+                if (selected && !options.some((option) => option.value === selected.value)) options.unshift(selected);
+                if (options.length === 0) setOptions([{ value: '', text: 'לא נמצאו כתבות' }]);
+                else setOptions(options, selected && selected.value);
             } catch (err) {
-                console.error('Article search failed:', err);
+                UI.toast(err.message, 'error');
             }
         }
+        document.getElementById('articleSearch').addEventListener('input', debounce(reloadArticleOptions, 300));
+        selectEl.addEventListener('change', loadAnalyticsForSelectedArticle);
+        UI.on('refresh', loadAnalyticsForSelectedArticle);
 
-        // 2. Load Analytics for Selected Article
+        // ---- loading the numbers ------------------------------------------------------------
+        function showChartMessage(iconName, title, text) {
+            const box = document.getElementById('chartMessage');
+            box.innerHTML = `${icon(iconName)}<h3>${escapeHtml(title)}</h3>${text ? `<p>${escapeHtml(text)}</p>` : ''}`;
+            box.hidden = false;
+            document.querySelector('.chart-box').hidden = true;
+        }
+
+        function hideChartMessage() {
+            document.getElementById('chartMessage').hidden = true;
+            document.querySelector('.chart-box').hidden = false;
+        }
+
         async function loadAnalyticsForSelectedArticle() {
-            const selectEl = document.getElementById('articleSelect');
-            activeArticleId = selectEl.value;
-            if (!activeArticleId) return;
+            const articleId = selectEl.value;
+            if (!articleId) return;
+            const request = ++activeRequest;
 
             try {
-                const res = await fetch(`/api/analytics/article/${activeArticleId}`);
-                const data = await res.json();
-
-                if (data.success) {
-                    renderKpis(data);
-                    renderImpactChart(data);
-                    renderMilestonesTimeline(data.milestones);
-                }
-
+                const data = await api('GET', `/api/analytics/article/${articleId}`);
+                if (request !== activeRequest) return;
+                lastData = data;
+                hideChartMessage();
+                renderKpis(data);
+                renderImpactChart(data);
+                renderMilestonesTimeline(data.milestones);
             } catch (err) {
-                console.error('Failed to load article analytics:', err);
+                if (request !== activeRequest) return;
+                showChartMessage('triangle-alert', 'לא הצלחנו לטעון את נתוני הכתבה', err.message);
             }
         }
 
-        // 3. Render KPI Summary Cards
         function renderKpis(data) {
-            document.getElementById('totalViewsDisplay').textContent = (data.totalViews || 0).toLocaleString();
-            document.getElementById('revisionsCountDisplay').textContent = (data.milestones ? Math.max(0, data.milestones.length - 1) : 0);
-            document.getElementById('articleCategoryDisplay').innerHTML = `<i class="bi bi-tag text-muted"></i> קטגוריה: <strong>${data.article.category || 'כללי'}</strong>`;
+            const set = (id, value) => { document.getElementById(id).textContent = value; };
+            set('totalViewsDisplay', (data.totalViews || 0).toLocaleString('he-IL'));
+            set('revisionsCountDisplay', data.milestones ? Math.max(0, data.milestones.length - 1) : 0);
+            set('articleCategoryDisplay', `מדור: ${data.article.category || 'כללי'}`);
 
             const impact = data.impactAnalysis;
             const badge = document.getElementById('impactPercentageBadge');
-
             if (impact) {
-                document.getElementById('beforeAvgDisplay').textContent = impact.avgHourlyBefore;
-                document.getElementById('beforeCountDisplay').innerHTML = `<i class="bi bi-clock-history"></i> סה"כ ${impact.viewsBeforeUpdate.toLocaleString()} צפיות קודם`;
-
-                document.getElementById('afterAvgDisplay').textContent = impact.avgHourlyAfter;
+                set('beforeAvgDisplay', impact.avgHourlyBefore);
+                set('beforeCountDisplay', `בסך הכל ${impact.viewsBeforeUpdate.toLocaleString('he-IL')} צפיות לפני העדכון`);
+                set('afterAvgDisplay', impact.avgHourlyAfter);
                 const sign = impact.percentageChange >= 0 ? '+' : '';
-                badge.className = `growth-badge ${impact.isPositiveImpact ? 'positive' : 'negative'}`;
-                badge.innerHTML = `<i class="bi ${impact.isPositiveImpact ? 'bi-graph-up-arrow' : 'bi-graph-down-arrow'}"></i> ${sign}${impact.percentageChange}% שינוי בצפיות`;
+                badge.className = `impact ${impact.isPositiveImpact ? 'is-up' : 'is-down'}`;
+                badge.innerHTML = `${icon(impact.isPositiveImpact ? 'trending-up' : 'trending-down')} ${sign}${impact.percentageChange}% שינוי בצפיות`;
             } else {
-                document.getElementById('beforeAvgDisplay').textContent = '-';
-                document.getElementById('beforeCountDisplay').innerHTML = `<i class="bi bi-clock-history"></i> טרם פורסם עדכון תוכן`;
-                document.getElementById('afterAvgDisplay').textContent = '-';
-                badge.className = 'growth-badge';
-                badge.textContent = 'אין עדכונים להשוואה';
+                set('beforeAvgDisplay', '-');
+                set('beforeCountDisplay', 'עדיין לא פורסם עדכון תוכן');
+                set('afterAvgDisplay', '-');
+                badge.className = 'impact';
+                badge.textContent = 'אין עדכון להשוואה';
             }
         }
 
+        // ---- the graph ----------------------------------------------------------------------
         // Marks the publication and every editor-approved update on the graph itself:
         // a dashed vertical line at each point in time, and a tinted area after the last update
-        const MILESTONE_COLORS = { INITIAL_PUBLISH: '#16a34a', REVISION_UPDATE: '#d97706' };
-
         const milestoneMarkersPlugin = {
             id: 'milestoneMarkers',
             beforeDatasetsDraw(chart, args, options) {
-                const milestones = options.milestones || [];
-                const updates = milestones.filter(m => m.type === 'REVISION_UPDATE');
+                const updates = (options.milestones || []).filter((m) => m.type === 'REVISION_UPDATE');
                 if (updates.length === 0) return;
-
                 const { ctx, chartArea, scales } = chart;
                 const x = scales.x.getPixelForValue(updates[updates.length - 1].pointIndex);
                 ctx.save();
-                ctx.fillStyle = 'rgba(217, 119, 6, 0.08)';
+                ctx.fillStyle = 'rgba(217, 119, 6, 0.1)';
                 ctx.fillRect(x, chartArea.top, chartArea.right - x, chartArea.bottom - chartArea.top);
                 ctx.restore();
             },
             afterDatasetsDraw(chart, args, options) {
-                const milestones = options.milestones || [];
                 const { ctx, chartArea, scales } = chart;
-
-                milestones.forEach((m, i) => {
+                (options.milestones || []).forEach((m, i) => {
                     const x = scales.x.getPixelForValue(m.pointIndex);
                     const color = MILESTONE_COLORS[m.type] || '#64748b';
                     const text = m.type === 'INITIAL_PUBLISH' ? 'פרסום' : m.title.replace('עדכון גרסה ', 'עדכון ');
@@ -745,222 +258,129 @@
 
                     // label pill above the line (staggered so close milestones do not overlap)
                     ctx.setLineDash([]);
-                    ctx.font = 'bold 11px Assistant, sans-serif';
-                    const width = ctx.measureText(text).width + 12;
+                    ctx.font = 'bold 11px Heebo, sans-serif';
+                    const width = ctx.measureText(text).width + 14;
                     const labelX = Math.min(Math.max(x - width / 2, chartArea.left), chartArea.right - width);
-                    const labelY = chartArea.top + 4 + (i % 2) * 20;
+                    const labelY = chartArea.top + 4 + (i % 2) * 22;
                     ctx.fillStyle = color;
                     ctx.beginPath();
-                    ctx.roundRect(labelX, labelY, width, 18, 9);
+                    ctx.roundRect(labelX, labelY, width, 19, 9.5);
                     ctx.fill();
                     ctx.fillStyle = '#ffffff';
                     ctx.textBaseline = 'middle';
                     ctx.textAlign = 'center';
-                    ctx.fillText(text, labelX + width / 2, labelY + 9.5);
+                    ctx.fillText(text, labelX + width / 2, labelY + 10);
                     ctx.restore();
                 });
             }
         };
 
-        // 4. Render Chart.js with Beautiful Modern Aesthetics
         function renderImpactChart(data) {
-            const ctx = document.getElementById('impactChart').getContext('2d');
-
-            if (currentChart) {
-                currentChart.destroy();
+            const canvas = document.getElementById('impactChart');
+            if (currentChart) currentChart.destroy();
+            if (typeof Chart === 'undefined') {
+                showChartMessage('triangle-alert', 'ספריית הגרפים לא נטענה', 'בדקו את החיבור לאינטרנט ורעננו את העמוד.');
+                return;
             }
 
+            const accent = cssVar('--accent');
+            const muted = cssVar('--muted');
+            const grid = cssVar('--line');
+            const surface = cssVar('--surface');
+            const ctx = canvas.getContext('2d');
             const labels = data.timeline.labels.length > 0 ? data.timeline.labels : ['התחלה'];
             const viewValues = data.timeline.views.length > 0 ? data.timeline.views : [0];
-
-            // Build soft blue gradient
-            const gradient = ctx.createLinearGradient(0, 0, 0, 320);
-            gradient.addColorStop(0, 'rgba(37, 99, 235, 0.25)');
-            gradient.addColorStop(1, 'rgba(37, 99, 235, 0.00)');
-
             const milestones = data.milestones || [];
+
+            const gradient = ctx.createLinearGradient(0, 0, 0, 340);
+            gradient.addColorStop(0, `${accent}40`);
+            gradient.addColorStop(1, `${accent}00`);
+
+            canvas.setAttribute('aria-label', `גרף צפיות לאורך זמן. ${(data.totalViews || 0).toLocaleString('he-IL')} צפיות בסך הכל, ${Math.max(0, milestones.length - 1)} עדכונים שאושרו.`);
 
             currentChart = new Chart(ctx, {
                 type: 'line',
                 plugins: [milestoneMarkersPlugin],
                 data: {
-                    labels: labels,
+                    labels,
                     datasets: [{
-                        label: 'צפיות לשעה',
+                        label: 'צפיות',
                         data: viewValues,
-                        borderColor: '#2563eb',
+                        borderColor: accent,
                         backgroundColor: gradient,
                         borderWidth: 2.5,
                         fill: true,
                         tension: 0.35,
-                        pointBackgroundColor: '#ffffff',
-                        pointBorderColor: '#2563eb',
+                        pointBackgroundColor: surface,
+                        pointBorderColor: accent,
                         pointBorderWidth: 2,
-                        pointRadius: 3.5,
+                        pointRadius: 3,
                         pointHoverRadius: 6,
-                        pointHoverBackgroundColor: '#2563eb',
-                        pointHoverBorderColor: '#ffffff'
+                        pointHoverBackgroundColor: accent,
+                        pointHoverBorderColor: surface
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    interaction: {
-                        mode: 'index',
-                        intersect: false
-                    },
+                    interaction: { mode: 'index', intersect: false },
                     plugins: {
                         legend: { display: false },
                         milestoneMarkers: { milestones },
                         tooltip: {
                             backgroundColor: '#0f172a',
-                            titleFont: { family: 'Assistant', size: 13, weight: 'bold' },
-                            bodyFont: { family: 'Inter', size: 12 },
+                            titleFont: { family: 'Heebo', size: 13, weight: 'bold' },
+                            bodyFont: { family: 'Heebo', size: 12 },
                             padding: 10,
-                            cornerRadius: 8,
+                            cornerRadius: 10,
                             displayColors: false,
                             callbacks: {
-                                label: (item) => ` כמות צפיות: ${item.parsed.y.toLocaleString()}`,
+                                label: (item) => ` כמות צפיות: ${item.parsed.y.toLocaleString('he-IL')}`,
                                 afterBody: (items) => milestones
-                                    .filter(m => m.pointIndex === items[0].dataIndex)
-                                    .map(m => `● ${m.title}${m.editorName ? ' (' + m.editorName + ')' : ''}`)
+                                    .filter((m) => m.pointIndex === items[0].dataIndex)
+                                    .map((m) => `● ${m.title}${m.editorName ? ' (' + m.editorName + ')' : ''}`)
                             }
                         }
                     },
                     scales: {
-                        x: {
-                            grid: { display: false },
-                            ticks: {
-                                color: '#94a3b8',
-                                font: { family: 'Inter', size: 11 },
-                                maxRotation: 0,
-                                autoSkip: true,
-                                maxTicksLimit: 8
-                            }
-                        },
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: '#f1f5f9' },
-                            ticks: {
-                                color: '#94a3b8',
-                                font: { family: 'Inter', size: 11 },
-                                precision: 0
-                            }
-                        }
+                        x: { grid: { display: false }, ticks: { color: muted, font: { family: 'Heebo', size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
+                        y: { beginAtZero: true, grid: { color: grid }, ticks: { color: muted, font: { family: 'Heebo', size: 11 }, precision: 0 } }
                     }
                 }
             });
         }
 
-        // 5. Render Milestone Timeline
+        // the colours come from the theme: draw again when the theme changes
+        document.addEventListener('themechange', () => {
+            if (lastData && !document.querySelector('.chart-box').hidden) renderImpactChart(lastData);
+        });
+
+        // ---- the milestones -----------------------------------------------------------------
         function renderMilestonesTimeline(milestones) {
             const container = document.getElementById('milestonesTimeline');
-            container.innerHTML = '';
-
             if (!milestones || milestones.length === 0) {
-                container.innerHTML = '<div class="text-muted small text-center py-3">לא נרשמו עדכוני גרסאות לכתבה זו.</div>';
+                container.innerHTML = '<div class="muted small center">לא נרשמו עדכוני גרסאות לכתבה זו.</div>';
                 return;
             }
-
-            milestones.forEach((m, idx) => {
-                const div = document.createElement('div');
-                div.className = 'timeline-item';
-                const isRev = m.type === 'REVISION_UPDATE';
-
-                const d = new Date(m.timestamp);
-                const dateStr = d.toLocaleDateString('he-IL');
-                const timeStr = d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
-
-                div.innerHTML = `
-                    <div class="timeline-dot ${isRev ? 'revision' : ''}"></div>
-                    <div class="d-flex justify-content-between align-items-baseline mb-1">
-                        <strong class="small ${isRev ? 'text-warning' : 'text-primary'}">${m.title}</strong>
-                        <span class="font-mono text-muted small" style="font-size: 0.75rem;">${dateStr} ${timeStr}</span>
-                    </div>
-                    <p class="small text-muted mb-0">${m.description} ${m.editorName ? `<span class="badge bg-light text-dark border">ע"י ${m.editorName}</span>` : ''}</p>
-                `;
-                container.appendChild(div);
-            });
+            container.innerHTML = milestones.map((m) => {
+                const isUpdate = m.type === 'REVISION_UPDATE';
+                return `
+                    <div class="timeline-item">
+                        <span class="timeline-dot ${isUpdate ? 'is-update' : ''}"></span>
+                        <div class="timeline-head">
+                            <strong class="small">${escapeHtml(m.title)}</strong>
+                            <time datetime="${escapeHtml(new Date(m.timestamp).toISOString())}">${escapeHtml(formatDateTime(m.timestamp))}</time>
+                        </div>
+                        <p class="small muted">${escapeHtml(m.description)} ${m.editorName ? `<span class="badge">ע"י ${escapeHtml(m.editorName)}</span>` : ''}</p>
+                    </div>`;
+            }).join('');
         }
 
-        // Dynamic Date Calculation
-        function updateDateDisplay() {
-            try {
-                const now = new Date();
-                const gregorianFormatter = new Intl.DateTimeFormat('he-IL', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric'
-                });
-                const gregStr = gregorianFormatter.format(now);
-                let hebrewStr = '';
-                try {
-                    const hebrewFormatter = new Intl.DateTimeFormat('he-IL-u-ca-hebrew', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                    });
-                    hebrewStr = hebrewFormatter.format(now);
-                } catch(e) {}
-                const el = document.getElementById('currentDateDisplay');
-                if (el) el.innerText = hebrewStr ? `${gregStr} | ${hebrewStr}` : gregStr;
-            } catch(e) {}
-        }
-        document.addEventListener('DOMContentLoaded', updateDateDisplay);
+        document.addEventListener('DOMContentLoaded', async () => {
+            const user = await requireAuth({ role: 'editor' }); // reporters are sent back to the portal
+            if (!user) return;
+            await initializeArticleDropdown();
+        });
     </script>
-
-    <!-- Unified Footer -->
-    <footer class="footer-newspaper">
-        <div class="container-fluid px-lg-5">
-            <div class="row g-4 pb-4 border-bottom border-secondary mb-4">
-                <div class="col-lg-4">
-                    <h4 class="font-editorial text-white fw-bold h4 mb-2">The Daily Web</h4>
-                    <p class="text-secondary small mb-3">
-                        עיתון החדשות והתוכן הדיגיטלי המוביל בישראל. דשבורד אנליטיקה ומדדי חשיפה עיתונאית בזמן אמת.
-                    </p>
-                    <div class="badge bg-dark border border-secondary text-light py-2 px-3 small font-num">
-                        <i class="bi bi-shield-check text-success me-1"></i> Impact Analytics Live
-                    </div>
-                </div>
-                <div class="col-6 col-lg-2">
-                    <h5 class="text-white fw-bold small text-uppercase mb-3">ניווט מהיר</h5>
-                    <ul class="list-unstyled small">
-                        <li class="mb-2"><a href="/" class="text-secondary text-decoration-none">שער העיתון</a></li>
-                        <li class="mb-2"><a href="/reporter.html" class="text-secondary text-decoration-none">סביבת כתבים</a></li>
-                        <li class="mb-2"><a href="/editor.html" class="text-secondary text-decoration-none">דסק עורכים</a></li>
-                        <li class="mb-2"><a href="/portal.html" class="text-secondary text-decoration-none">פורטל עובדים</a></li>
-                    </ul>
-                </div>
-                <div class="col-6 col-lg-2">
-                    <h5 class="text-white fw-bold small text-uppercase mb-3">דסקים ונושאים</h5>
-                    <ul class="list-unstyled small">
-                        <li class="mb-2"><a href="/?category=חדשות" class="text-secondary text-decoration-none">חדשות</a></li>
-                        <li class="mb-2"><a href="/?category=פוליטיקה" class="text-secondary text-decoration-none">פוליטיקה</a></li>
-                        <li class="mb-2"><a href="/?category=כלכלה" class="text-secondary text-decoration-none">כלכלה</a></li>
-                        <li class="mb-2"><a href="/?category=טכנולוגיה" class="text-secondary text-decoration-none">טכנולוגיה</a></li>
-                    </ul>
-                </div>
-                <div class="col-lg-4">
-                    <h5 class="text-white fw-bold small text-uppercase mb-3">כניסת צוות ומערכת</h5>
-                    <p class="text-secondary small mb-2">
-                        מעבר מהיר לפורטל העובדים וניהול המערכת:
-                    </p>
-                    <div class="d-flex gap-2">
-                        <a href="/portal.html" class="btn btn-warning text-dark fw-bold btn-sm px-3">
-                            <i class="bi bi-grid-3x3-gap-fill me-1"></i> פורטל עובדים
-                        </a>
-                        <a href="/login.html" class="btn btn-outline-light btn-sm px-3">
-                            <i class="bi bi-person-lock me-1"></i> כניסה לחשבון
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 text-secondary small">
-                <div>&copy; 2026 The Daily Web. כל הזכויות שמורות.</div>
-                <div class="font-num">Editorial Impact Analytics Suite</div>
-            </div>
-        </div>
-    </footer>
 </body>
 </html>
