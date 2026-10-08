@@ -129,8 +129,15 @@ test('Every API address a page uses exists on the server', async (t) => {
 
     const calls = new Map();
     const sources = [...PAGES.map((page) => path.join(PUBLIC_DIR, page)), path.join(__dirname, '..', 'src', 'views', 'article.ejs'), path.join(PUBLIC_DIR, 'js', 'comments.js'), path.join(PUBLIC_DIR, 'js', 'common.js')];
+    const toUrl = (raw) => raw
+        .replace(/\$\{articleId\}|\$\{[^}]*[iI]d[^}]*\}/g, article._id.toString())
+        .replace(/\$\{[^}]*\}/g, '1');
     for (const file of sources) {
         const code = read(file);
+        // pages that talk to the server through their own api('METHOD', '/api/...') helper (the management page)
+        for (const match of code.matchAll(/api\(\s*['"](GET|POST|PUT|DELETE)['"]\s*,\s*[`'"](\/api\/[^`'"]*)[`'"]/g)) {
+            calls.set(`${match[1]} ${toUrl(match[2])}`, path.basename(file));
+        }
         for (const match of code.matchAll(/fetch\(\s*[`'"](\/api\/[^`'"]*)[`'"]\s*(?:,\s*\{([\s\S]{0,700}?)\}\s*\))?/g)) {
             const method = ((match[2] || '').match(/method:\s*['"](\w+)['"]/) || [])[1] || 'GET';
             const url = match[1]
@@ -139,6 +146,7 @@ test('Every API address a page uses exists on the server', async (t) => {
             calls.set(`${method} ${url}`, path.basename(file));
         }
     }
+    assert.ok([...calls.values()].includes('admin.html'), 'the management page API calls should be found');
     assert.ok(calls.size >= 15, `expected to find the pages' API calls, found ${calls.size}`);
     for (const mustExist of ['GET /api/articles/editor/stats', 'GET /api/articles/my-stats', 'GET /api/weather', 'POST /api/auth/login']) {
         assert.ok([...calls.keys()].some((call) => call.startsWith(mustExist)), `the pages should call ${mustExist}`);
