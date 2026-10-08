@@ -1,18 +1,21 @@
 // Comment list helpers. A new comment is added to the top of the list that is already on screen,
-// the list is never fetched again. Needs common.js (escapeHtml).
+// the list is never fetched again. Needs common.js (escapeHtml, initialOf).
 
-const EMPTY_COMMENTS_HTML = '<div data-empty-comments class="text-center text-muted small py-3">אין עדיין תגובות לכתבה זו. היו הראשונים להגיב!</div>';
+const EMPTY_COMMENTS_HTML = '<div data-empty-comments class="comment-empty">אין עדיין תגובות לכתבה זו. היו הראשונים להגיב!</div>';
 
 function createCommentElement(comment) {
     const date = new Date(comment.createdAt || Date.now());
-    const item = document.createElement('div');
-    item.className = 'p-3 bg-white rounded border small';
+    const item = document.createElement('article');
+    item.className = 'comment';
     item.innerHTML = `
-        <div class="d-flex justify-content-between text-muted mb-2" style="font-size: 0.8rem;">
-            <strong class="text-primary">${escapeHtml(comment.authorName)}</strong>
-            <span>${date.toLocaleDateString('he-IL')} ${date.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' })}</span>
+        <span class="avatar avatar-sm" aria-hidden="true">${escapeHtml(initialOf(comment.authorName))}</span>
+        <div class="comment-main">
+            <div class="comment-meta">
+                <strong>${escapeHtml(comment.authorName)}</strong>
+                <time datetime="${escapeHtml(date.toISOString())}">${escapeHtml(formatDateTime(date))}</time>
+            </div>
+            <p class="comment-text">${escapeHtml(comment.content)}</p>
         </div>
-        <div class="text-dark">${escapeHtml(comment.content)}</div>
     `;
     return item;
 }

@@ -23,7 +23,7 @@ const buildHandler = () => {
 
     // Sessions are stored in MongoDB so a logged-in user stays logged in after a server restart.
     // The store reuses the mongoose connection, so it can only be built once that is open.
-    if (process.env.NODE_ENV !== 'test' && mongoose.connection.readyState === 1) {
+    if (mongoose.connection.readyState === 1) {
         options.store = MongoStore.create({
             client: mongoose.connection.getClient(),
             collectionName: 'sessions',
@@ -37,14 +37,11 @@ const buildHandler = () => {
 
 /**
  * Session middleware that creates the Mongo-backed store lazily (on the first
- * request after the DB connection is up). Tests fall back to the default store.
+ * request after the DB connection is up).
  */
 const sessionMiddleware = (req, res, next) => {
     if (!handler) {
         handler = buildHandler();
-        if (!handler && process.env.NODE_ENV === 'test') {
-            handler = session({ secret: 'test', resave: false, saveUninitialized: false });
-        }
     }
     if (!handler) {
         return next();

@@ -3,6 +3,13 @@ const { MongoMemoryServer } = require('mongodb-memory-server');
 const User = require('../../src/models/User');
 const { generateToken } = require('../../src/middleware/auth');
 
+// The test runner exchanges its results over stdout. Log lines from the app or the seeder landing in the
+// middle of those messages make it fail with "Unable to deserialize cloned data", so tests run quietly.
+process.env.NODE_ENV = 'test';
+console.log = () => {};
+console.info = () => {};
+console.warn = () => {};
+
 let mongod;
 
 /**
