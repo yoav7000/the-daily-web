@@ -7,7 +7,7 @@ const { logOperation } = require('../middleware/requestLogger');
 const { recordViewInternal } = require('./analyticsController');
 const { parsePagination, buildPagination, MAX_STAFF_LIMIT } = require('../utils/pagination');
 const { normalizeStatus } = require('../utils/statusFilter');
-const { cleanText } = require('../utils/text');
+const { cleanText, normalizeImageUrl } = require('../utils/text');
 const { buildSearchFilter } = require('../utils/search');
 const { sanitizeHtml } = require('../utils/sanitizeHtml');
 const { buildViewedCondition } = require('../utils/viewedFilter');
@@ -78,7 +78,7 @@ const createArticle = async (req, res, next) => {
             summary: cleanText(summary),
             content: sanitizeHtml(content),
             category,
-            mainImage: mainImage || DEFAULT_ARTICLE_IMAGE,
+            mainImage: normalizeImageUrl(mainImage),
             author: req.user._id,
             status: ARTICLE_STATUS.DRAFT
         });
@@ -137,7 +137,7 @@ const autoSaveArticle = async (req, res, next) => {
                 summary: cleanText(summary),
                 content: sanitizeHtml(content) || '<p></p>',
                 category: category && ARTICLE_CATEGORIES.includes(category) ? category : ARTICLE_CATEGORIES[0],
-                mainImage: mainImage || DEFAULT_ARTICLE_IMAGE,
+                mainImage: normalizeImageUrl(mainImage),
                 author: req.user._id,
                 status: ARTICLE_STATUS.DRAFT
             });
@@ -154,7 +154,7 @@ const autoSaveArticle = async (req, res, next) => {
                     summary: summary !== undefined ? cleanText(summary) : article.summary,
                     content: content !== undefined ? sanitizeHtml(content) : article.content,
                     category: category !== undefined && ARTICLE_CATEGORIES.includes(category) ? category : article.category,
-                    mainImage: mainImage !== undefined ? mainImage : article.mainImage,
+                    mainImage: mainImage !== undefined ? normalizeImageUrl(mainImage) : article.mainImage,
                     status: ARTICLE_STATUS.DRAFT,
                     updatedAt: now
                 };
@@ -163,7 +163,7 @@ const autoSaveArticle = async (req, res, next) => {
                 if (summary !== undefined) article.draftVersion.summary = cleanText(summary);
                 if (content !== undefined) article.draftVersion.content = sanitizeHtml(content);
                 if (category !== undefined && ARTICLE_CATEGORIES.includes(category)) article.draftVersion.category = category;
-                if (mainImage !== undefined) article.draftVersion.mainImage = mainImage;
+                if (mainImage !== undefined) article.draftVersion.mainImage = normalizeImageUrl(mainImage);
                 article.draftVersion.updatedAt = now;
             }
         } else {
@@ -172,7 +172,7 @@ const autoSaveArticle = async (req, res, next) => {
             if (summary !== undefined) article.summary = cleanText(summary);
             if (content !== undefined) article.content = sanitizeHtml(content) || '<p></p>';
             if (category !== undefined && ARTICLE_CATEGORIES.includes(category)) article.category = category;
-            if (mainImage !== undefined) article.mainImage = mainImage;
+            if (mainImage !== undefined) article.mainImage = normalizeImageUrl(mainImage);
             article.lastAutoSavedAt = now;
         }
 
@@ -662,7 +662,7 @@ const editorDirectEdit = async (req, res, next) => {
         if (summary !== undefined) article.summary = cleanText(summary);
         if (content !== undefined) article.content = sanitizeHtml(content);
         if (category !== undefined && ARTICLE_CATEGORIES.includes(category)) article.category = category;
-        if (mainImage !== undefined) article.mainImage = mainImage;
+        if (mainImage !== undefined) article.mainImage = normalizeImageUrl(mainImage);
 
         await article.save();
 
