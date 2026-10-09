@@ -101,3 +101,24 @@ test('editor editing an unpublished article changes it directly', async () => {
     assert.equal(saved.status, ARTICLE_STATUS.PENDING_APPROVAL);
     assert.equal(saved.revisionsHistory.length, 0);
 });
+
+test('editor edit with a category that does not exist is refused and changes nothing', async () => {
+    const article = await publishedArticle({ title: 'כתבה עם קטגוריה' });
+
+    const res = await api('PUT', `/api/articles/editor/${article._id}`, { token: editor.token, body: { title: 'כותרת חדשה', category: 'NOPE' } });
+
+    assert.equal(res.status, 400);
+    assert.match(res.body.message, /קטגוריה לא תקינה/);
+    const stored = await Article.findById(article._id);
+    assert.equal(stored.category, 'חדשות');
+    assert.equal(stored.title, 'כתבה עם קטגוריה', 'nothing is saved when the request is refused');
+});
+
+test('Impact Analytics data is for editors only', async () => {
+    const article = await publishedArticle();
+    const path = `/api/analytics/article/${article._id}`;
+
+    assert.equal((await api('GET', path)).status, 401, 'a guest is refused');
+    assert.equal((await api('GET', path, { token: reporter.token })).status, 403, 'a reporter is refused');
+    assert.equal((await api('GET', path, { token: editor.token })).status, 200, 'an editor gets the graph data');
+});

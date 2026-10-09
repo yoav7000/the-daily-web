@@ -216,7 +216,7 @@ test('No API response ever contains a password or a hash', async () => {
         publicArticles: (await api('GET', '/api/articles/public?limit=50')).text,
         editorArticles: (await api('GET', '/api/articles/editor/all?limit=100', { token })).text,
         article: article ? (await api('GET', `/api/articles/editor/${article._id}/review`, { token })).text : '',
-        analytics: article ? (await api('GET', `/api/analytics/article/${article._id}`)).text : '',
+        analytics: article ? (await api('GET', `/api/analytics/article/${article._id}`, { token })).text : '',
         comments: (await api('GET', '/api/comments', { token })).text
     };
 
