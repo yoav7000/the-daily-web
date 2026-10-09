@@ -62,15 +62,16 @@
             </div>
             <div class="stat">
                 <span class="stat-icon is-info"><svg class="icon"><use href="#i-history"></use></svg></span>
-                <span class="stat-value" id="beforeAvgDisplay">-</span>
-                <span class="stat-label">צפיות לשעה, לפני העדכון</span>
-                <span class="stat-note" id="beforeCountDisplay">ממוצע לשעה</span>
+                <span class="stat-value" id="beforeViewsDisplay">-</span>
+                <span class="stat-label">צפיות לפני העדכון</span>
+                <span class="stat-note" id="beforeAvgDisplay">ממוצע לשעה</span>
             </div>
             <div class="stat">
                 <span class="stat-icon is-ok"><svg class="icon"><use href="#i-trending-up"></use></svg></span>
-                <span class="stat-value" id="afterAvgDisplay">-</span>
-                <span class="stat-label">צפיות לשעה, אחרי העדכון</span>
-                <span id="impactPercentageContainer"><span class="impact" id="impactPercentageBadge">-</span></span>
+                <span class="stat-value" id="afterViewsDisplay">-</span>
+                <span class="stat-label">צפיות אחרי העדכון</span>
+                <span class="stat-note" id="afterAvgDisplay">ממוצע לשעה</span>
+                <span id="impactPercentageContainer" class="mt-1"><span class="impact" id="impactPercentageBadge">-</span></span>
             </div>
         </section>
 
@@ -83,10 +84,10 @@
                         <p class="muted small">שעות בלי צפיות מוצגות כ-0. בכתבות ותיקות הציר מתקבץ לימים או לשבועות.</p>
                     </div>
                     <div class="legend" aria-label="מקרא הגרף">
-                        <span><i style="background: var(--accent)"></i> צפיות</span>
-                        <span><i style="background: #16a34a"></i> פרסום ראשוני</span>
-                        <span><i style="background: #d97706"></i> אישור עדכון</span>
-                        <span><i class="band" style="background: rgb(217 119 6 / 0.2)"></i> אחרי העדכון האחרון</span>
+                        <span><i style="background: var(--accent)"></i> צפיות (לפני עדכון)</span>
+                        <span><i style="background: #d97706"></i> צפיות (אחרי עדכון)</span>
+                        <span><i style="background: #16a34a; border-radius: 50%;"></i> פרסום ראשוני</span>
+                        <span><i style="background: #d97706; transform: rotate(45deg); border-radius: 2px;"></i> אישור ופרסום עדכון עורך</span>
                     </div>
                 </div>
                 <div class="chart-box">
@@ -125,23 +126,58 @@
         // ---- the article picker -------------------------------------------------------------
         async function initializeArticleDropdown() {
             try {
-                const data = await api('GET', '/api/articles/public?limit=50');
-                if (data.articles.length === 0) {
+                // Fetch articles with updates first to showcase milestones & impact comparison
+                const [updatedRes, allRes] = await Promise.all([
+                    api('GET', '/api/articles/public?hasUpdates=true&limit=30').catch(() => ({ articles: [] })),
+                    api('GET', '/api/articles/public?limit=50').catch(() => ({ articles: [] }))
+                ]);
+
+                const seenIds = new Set();
+                const combinedOptions = [];
+
+                (updatedRes.articles || []).forEach((article) => {
+                    if (!seenIds.has(article._id)) {
+                        seenIds.add(article._id);
+                        combinedOptions.push({
+                            value: article._id,
+                            text: `★ [מעודכנת] [${article.category}] ${article.title}`,
+                            isUpdated: true
+                        });
+                    }
+                });
+
+                (allRes.articles || []).forEach((article) => {
+                    if (!seenIds.has(article._id)) {
+                        seenIds.add(article._id);
+                        combinedOptions.push({
+                            value: article._id,
+                            text: `[${article.category}] ${article.title}`,
+                            isUpdated: false
+                        });
+                    }
+                });
+
+                if (combinedOptions.length === 0) {
                     setOptions([{ value: '', text: 'אין כתבות מפורסמות כרגע במערכת' }]);
                     return;
                 }
-                setOptions(data.articles.map((article) => ({ value: article._id, text: optionLabel(article) })));
 
-                // /analytics.html?articleId=... opens that article, even when it is not among the 50 newest
+                setOptions(combinedOptions);
+
+                // /analytics.html?articleId=... opens that article, even when it is not among the initial list
                 const wanted = new URLSearchParams(window.location.search).get('articleId');
                 if (wanted) {
                     if (![...selectEl.options].some((option) => option.value === wanted)) {
                         try {
                             const { article } = await api('GET', `/api/articles/public/${wanted}`);
                             selectEl.insertAdjacentHTML('afterbegin', `<option value="${escapeHtml(article._id)}">${escapeHtml(optionLabel(article))}</option>`);
-                        } catch (err) { /* an unknown id: stay with the newest article */ }
+                        } catch (err) { /* an unknown id */ }
                     }
                     if ([...selectEl.options].some((option) => option.value === wanted)) selectEl.value = wanted;
+                } else if (combinedOptions.some((o) => o.isUpdated)) {
+                    // Default to the first updated showcase article so milestones and impact render immediately
+                    const firstUpdated = combinedOptions.find((o) => o.isUpdated);
+                    if (firstUpdated) selectEl.value = firstUpdated.value;
                 }
                 await loadAnalyticsForSelectedArticle();
             } catch (err) {
@@ -210,15 +246,17 @@
             const impact = data.impactAnalysis;
             const badge = document.getElementById('impactPercentageBadge');
             if (impact) {
-                set('beforeAvgDisplay', impact.avgHourlyBefore);
-                set('beforeCountDisplay', `בסך הכל ${impact.viewsBeforeUpdate.toLocaleString('he-IL')} צפיות לפני העדכון`);
-                set('afterAvgDisplay', impact.avgHourlyAfter);
+                set('beforeViewsDisplay', (impact.viewsBeforeUpdate || 0).toLocaleString('he-IL'));
+                set('beforeAvgDisplay', `ממוצע: ${impact.avgHourlyBefore} לשעה`);
+                set('afterViewsDisplay', (impact.viewsAfterUpdate || 0).toLocaleString('he-IL'));
+                set('afterAvgDisplay', `ממוצע: ${impact.avgHourlyAfter} לשעה`);
                 const sign = impact.percentageChange >= 0 ? '+' : '';
                 badge.className = `impact ${impact.isPositiveImpact ? 'is-up' : 'is-down'}`;
                 badge.innerHTML = `${icon(impact.isPositiveImpact ? 'trending-up' : 'trending-down')} ${sign}${impact.percentageChange}% שינוי בצפיות`;
             } else {
-                set('beforeAvgDisplay', '-');
-                set('beforeCountDisplay', 'עדיין לא פורסם עדכון תוכן');
+                set('beforeViewsDisplay', '-');
+                set('beforeAvgDisplay', 'טרם פורסם עדכון תוכן');
+                set('afterViewsDisplay', '-');
                 set('afterAvgDisplay', '-');
                 badge.className = 'impact';
                 badge.textContent = 'אין עדכון להשוואה';
@@ -234,18 +272,22 @@
                 const updates = (options.milestones || []).filter((m) => m.type === 'REVISION_UPDATE');
                 if (updates.length === 0) return;
                 const { ctx, chartArea, scales } = chart;
-                const x = scales.x.getPixelForValue(updates[updates.length - 1].pointIndex);
-                ctx.save();
-                ctx.fillStyle = 'rgba(217, 119, 6, 0.1)';
-                ctx.fillRect(x, chartArea.top, chartArea.right - x, chartArea.bottom - chartArea.top);
-                ctx.restore();
+                const lastIndex = updates[updates.length - 1].pointIndex;
+                const x = scales.x.getPixelForValue(lastIndex);
+                if (Number.isFinite(x)) {
+                    ctx.save();
+                    ctx.fillStyle = 'rgba(217, 119, 6, 0.1)';
+                    ctx.fillRect(x, chartArea.top, chartArea.right - x, chartArea.bottom - chartArea.top);
+                    ctx.restore();
+                }
             },
             afterDatasetsDraw(chart, args, options) {
                 const { ctx, chartArea, scales } = chart;
                 (options.milestones || []).forEach((m, i) => {
                     const x = scales.x.getPixelForValue(m.pointIndex);
+                    if (!Number.isFinite(x)) return;
                     const color = MILESTONE_COLORS[m.type] || '#64748b';
-                    const text = m.type === 'INITIAL_PUBLISH' ? 'פרסום' : m.title.replace('עדכון גרסה ', 'עדכון ');
+                    const text = m.type === 'INITIAL_PUBLISH' ? 'פרסום ראשוני' : m.title.replace('עדכון גרסה ', 'עדכון ');
 
                     ctx.save();
                     ctx.strokeStyle = color;
@@ -291,6 +333,25 @@
             const labels = data.timeline.labels.length > 0 ? data.timeline.labels : ['התחלה'];
             const viewValues = data.timeline.views.length > 0 ? data.timeline.views : [0];
             const milestones = data.milestones || [];
+            const updates = milestones.filter((m) => m.type === 'REVISION_UPDATE');
+            const lastUpdateIdx = updates.length > 0 ? updates[updates.length - 1].pointIndex : -1;
+
+            const pointRadiusArr = viewValues.map((_, i) => milestones.some((m) => m.pointIndex === i) ? 8 : 2.5);
+            const pointHoverRadiusArr = viewValues.map((_, i) => milestones.some((m) => m.pointIndex === i) ? 11 : 5);
+            const pointBgArr = viewValues.map((_, i) => {
+                const m = milestones.find((x) => x.pointIndex === i);
+                if (m) return m.type === 'INITIAL_PUBLISH' ? '#16a34a' : '#d97706';
+                return surface;
+            });
+            const pointBorderArr = viewValues.map((_, i) => {
+                const m = milestones.find((x) => x.pointIndex === i);
+                return m ? '#ffffff' : accent;
+            });
+            const pointStyleArr = viewValues.map((_, i) => {
+                const m = milestones.find((x) => x.pointIndex === i);
+                if (!m) return 'circle';
+                return m.type === 'INITIAL_PUBLISH' ? 'circle' : 'rectRot';
+            });
 
             const gradient = ctx.createLinearGradient(0, 0, 0, 340);
             gradient.addColorStop(0, `${accent}40`);
@@ -311,13 +372,22 @@
                         borderWidth: 2.5,
                         fill: true,
                         tension: 0.35,
-                        pointBackgroundColor: surface,
-                        pointBorderColor: accent,
+                        pointBackgroundColor: pointBgArr,
+                        pointBorderColor: pointBorderArr,
                         pointBorderWidth: 2,
-                        pointRadius: 3,
-                        pointHoverRadius: 6,
-                        pointHoverBackgroundColor: accent,
-                        pointHoverBorderColor: surface
+                        pointRadius: pointRadiusArr,
+                        pointHoverRadius: pointHoverRadiusArr,
+                        pointHoverBackgroundColor: pointBgArr,
+                        pointHoverBorderColor: pointBorderArr,
+                        pointStyle: pointStyleArr,
+                        segment: {
+                            borderColor: (segmentCtx) => {
+                                if (lastUpdateIdx >= 0 && segmentCtx.p0DataIndex >= lastUpdateIdx) {
+                                    return '#d97706';
+                                }
+                                return accent;
+                            }
+                        }
                     }]
                 },
                 options: {
@@ -335,10 +405,19 @@
                             cornerRadius: 10,
                             displayColors: false,
                             callbacks: {
+                                title: (items) => {
+                                    const idx = items[0].dataIndex;
+                                    const dateLabel = labels[idx] || '';
+                                    let period = '';
+                                    if (lastUpdateIdx >= 0) {
+                                        period = idx < lastUpdateIdx ? ' (לפני עדכון הכתבה)' : ' (אחרי עדכון הכתבה)';
+                                    }
+                                    return `${dateLabel}${period}`;
+                                },
                                 label: (item) => ` כמות צפיות: ${item.parsed.y.toLocaleString('he-IL')}`,
                                 afterBody: (items) => milestones
                                     .filter((m) => m.pointIndex === items[0].dataIndex)
-                                    .map((m) => `● ${m.title}${m.editorName ? ' (' + m.editorName + ')' : ''}`)
+                                    .map((m) => `● ${m.title}${m.editorName ? ' (אושר ע"י ' + m.editorName + ')' : ''}: ${m.description || ''}`)
                             }
                         }
                     },
