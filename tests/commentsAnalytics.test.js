@@ -8,7 +8,7 @@ const Comment = require('../src/models/Comment');
 const ViewStat = require('../src/models/ViewStat');
 const { connectTestDb, disconnectTestDb, createEditor, createReporter } = require('./helpers/testEnv');
 const { ARTICLE_STATUS, ARTICLE_CATEGORIES } = require('../src/constants/articleConstants');
-const { recordViewInternal, getTimeBucketKey } = require('../src/controllers/analyticsController');
+const { recordViewInternal, getTimeBucketKey, getViewBucket } = require('../src/controllers/analyticsController');
 
 let server;
 let baseUrl;
@@ -187,11 +187,12 @@ test('Comments & Anti-Spam Rate Limiter Test Suite', async (t) => {
 test('Scalable View Analytics & Impact Graph Test Suite', async (t) => {
 
     await t.test('1. High-throughput atomic view recording with time-bucket aggregation', async () => {
-        const bucketKey = getTimeBucketKey(new Date());
+        const now = new Date();
+        const bucketKey = getViewBucket(now).key;
 
         // רישום 5 צפיות רצופות
         for (let i = 0; i < 5; i++) {
-            await recordViewInternal(testArticleId);
+            await recordViewInternal(testArticleId, now);
         }
 
         const stat = await ViewStat.findOne({ article: testArticleId, timeBucket: bucketKey });
