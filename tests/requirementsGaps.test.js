@@ -97,7 +97,7 @@ test('Impact analytics: one publish milestone, marked positions, continuous time
     await api('POST', `/api/articles/${id}/approve`, { token: editor.token });
 
     await t.test('a normally published article has a single milestone and nothing to compare', async () => {
-        const res = await api('GET', `/api/analytics/article/${id}`);
+        const res = await api('GET', `/api/analytics/article/${id}`, { token: editor.token });
         assert.deepEqual(res.body.milestones.map((m) => m.type), ['INITIAL_PUBLISH']);
         assert.equal(res.body.impactAnalysis, null);
     });
@@ -118,7 +118,7 @@ test('Impact analytics: one publish milestone, marked positions, continuous time
             await ViewStat.create({ article: id, timeBucket: getTimeBucketKey(hoursAgo(h)), viewedAt: hoursAgo(h), viewCount: views });
         }
 
-        const res = await api('GET', `/api/analytics/article/${id}`);
+        const res = await api('GET', `/api/analytics/article/${id}`, { token: editor.token });
         const { milestones, timeline, impactAnalysis } = res.body;
 
         assert.deepEqual(milestones.map((m) => m.type), ['INITIAL_PUBLISH', 'REVISION_UPDATE']);

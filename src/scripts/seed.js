@@ -9,6 +9,7 @@ const Comment = require('../models/Comment');
 const ViewStat = require('../models/ViewStat');
 const { ARTICLE_STATUS, ARTICLE_CATEGORIES } = require('../constants/articleConstants');
 const { getTimeBucketKey } = require('../controllers/analyticsController');
+const { sanitizeHtml } = require('../utils/sanitizeHtml');
 
 const MONGO_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/the-daily-web';
 
@@ -194,29 +195,17 @@ const seedDatabase = async ({ connect = true } = {}) => {
 
             const title = `${baseTitle} (מהדורה #${i})`;
             const summary = `תקציר מקיף ומפורט עבור כתבה מספר ${i} בתחום ה-${category}. דיווח שוטף ועדכני מאת כתבי The Daily Web.`;
-            const content = `
-                <p class="lead fw-bold mb-4" style="font-size: 1.25rem; line-height: 1.7; color: #1e293b;">
-                    ${summary}
-                </p>
-                <p style="margin-bottom: 1.4rem; font-size: 1.15rem; line-height: 1.8;">
-                    דיווח מיוחד: בהתפתחות משמעותית בתחום ה-${category}, גורמים בכירים מוסרים כי נרשמת התעניינות רבה מצד גורמים בארץ ובעולם סביב <strong>${title}</strong>. המהלך מסמן נקודת מפנה ומציב רף חדש של פעילות בענף.
-                </p>
-                <h3 class="fw-bold my-4" style="color: #0f172a; font-size: 1.4rem; border-right: 4px solid #dc2626; padding-right: 12px;">
-                    רקע והשתלשלות האירועים
-                </h3>
-                <p style="margin-bottom: 1.4rem; font-size: 1.15rem; line-height: 1.8;">
-                    במהלך השבועות האחרונים התקיימו מגעים קדחתניים ופגישות עבודה אינטנסיביות במטרה לגבש את המתווה הנוכחי. מומחים ומובילי דעה מעריכים כי המגמה הנוכחית עשויה להשפיע על המערכת כולה לאורך זמן, כאשר ההשפעות כבר מורגשות היטב בשטח.
-                </p>
-                <blockquote class="p-3 my-4 bg-light rounded-2 border-end border-3 border-danger" style="font-style: italic; font-size: 1.15rem; color: #334155;">
-                    ״אנו עדים לשינוי תפיסתי עמוק שמחייב היערכות מחודשת מכלל הגורמים הפועלים בזירה״, הדגיש גורם מקצועי המעורה בפרטים.
-                </blockquote>
-                <h3 class="fw-bold my-4" style="color: #0f172a; font-size: 1.4rem; border-right: 4px solid #2563eb; padding-right: 12px;">
-                    משמעויות והשלכות לעתיד
-                </h3>
-                <p style="margin-bottom: 1.4rem; font-size: 1.15rem; line-height: 1.8;">
-                    במבט קדימה, הציפיות הן להמשך התרחבות והעמקת הפעילות בחודשים הקרובים. כתבי מערכת The Daily Web ימשיכו לעקוב מקרוב אחר ההתפתחויות ויביאו דיווחים שוטפים ככל שיידרש.
-                </p>
-            `;
+            // Plain article HTML, run through the same sanitizer as a reporter's text: no inline colors or sizes,
+            // so the site's own article styles (and its light / dark theme) decide how it looks
+            const content = sanitizeHtml(`
+                <p><strong>${summary}</strong></p>
+                <p>דיווח מיוחד: בהתפתחות משמעותית בתחום ה-${category}, גורמים בכירים מוסרים כי נרשמת התעניינות רבה מצד גורמים בארץ ובעולם סביב <strong>${title}</strong>. המהלך מסמן נקודת מפנה ומציב רף חדש של פעילות בענף.</p>
+                <h3>רקע והשתלשלות האירועים</h3>
+                <p>במהלך השבועות האחרונים התקיימו מגעים קדחתניים ופגישות עבודה אינטנסיביות במטרה לגבש את המתווה הנוכחי. מומחים ומובילי דעה מעריכים כי המגמה הנוכחית עשויה להשפיע על המערכת כולה לאורך זמן, כאשר ההשפעות כבר מורגשות היטב בשטח.</p>
+                <blockquote>״אנו עדים לשינוי תפיסתי עמוק שמחייב היערכות מחודשת מכלל הגורמים הפועלים בזירה״, הדגיש גורם מקצועי המעורה בפרטים.</blockquote>
+                <h3>משמעויות והשלכות לעתיד</h3>
+                <p>במבט קדימה, הציפיות הן להמשך התרחבות והעמקת הפעילות בחודשים הקרובים. כתבי מערכת The Daily Web ימשיכו לעקוב מקרוב אחר ההתפתחויות ויביאו דיווחים שוטפים ככל שיידרש.</p>
+            `.trim());
             const mainImage = dummyImages[i % dummyImages.length];
 
             let status = ARTICLE_STATUS.PUBLISHED;
@@ -244,14 +233,17 @@ const seedDatabase = async ({ connect = true } = {}) => {
             } else {
                 // כתבה שפורסמה
                 status = ARTICLE_STATUS.PUBLISHED;
-                // תאריך פרסום בין 1 ל-14 ימים אחורה
-                const daysAgo = (i % 14) + 1;
-                publishedAt = new Date(now - daysAgo * oneDayMs);
+                // תאריך פרסום בין 1 ל-30 ימים אחורה, בשעה ובדקה שונות לכל כתבה,
+                // כדי שמיון לפי תאריך פרסום יציג סדר אמיתי ולא קבוצות של כתבות עם אותו זמן בדיוק
+                const daysAgo = (i % 30) + 1;
+                const minutesIntoDay = (i * 137) % (24 * 60);
+                publishedAt = new Date(now - daysAgo * oneDayMs - minutesIntoDay * 60 * 1000);
 
                 // עבור 25 כתבות ראשונות שפורסמו - יצירת היסטוריית עדכונים מרובה עבור גרף Impact Analytics!
                 if (i >= 151 && i <= 175) {
                     const editorUser = editors[i % editors.length];
-                    const firstPublishDate = new Date(now - 7 * oneDayMs);
+                    // שעה שונה לכל כתבה (שעות שלמות, כדי שדליי הצפיות השעתיים של כתבת הדגל יישארו מיושרים)
+                    const firstPublishDate = new Date(now - 7 * oneDayMs - ((i * 7) % 24) * 60 * 60 * 1000);
                     publishedAt = firstPublishDate;
 
                     // עדכון גרסה 1: יומיים לאחר הפרסום
@@ -322,8 +314,8 @@ const seedDatabase = async ({ connect = true } = {}) => {
         const update1Time = new Date(showcaseArticle.revisionsHistory[0].approvedAt);
         const update2Time = new Date(showcaseArticle.revisionsHistory[1].approvedAt);
 
-        // יצירת דליים שעתיים על פני 7 ימים (168 שעות)
-        const hoursTotal = 7 * 24;
+        // יצירת דליים שעתיים מרגע הפרסום ועד עכשיו (כשבוע)
+        const hoursTotal = Math.ceil((now - startTime.getTime()) / (60 * 60 * 1000));
         for (let h = 0; h < hoursTotal; h++) {
             const currentBucketDate = new Date(startTime.getTime() + h * 60 * 60 * 1000);
             if (currentBucketDate.getTime() > now) break;

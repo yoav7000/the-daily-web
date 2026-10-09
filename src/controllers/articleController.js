@@ -662,6 +662,14 @@ const editorDirectEdit = async (req, res, next) => {
     try {
         const { title, summary, content, category, mainImage } = req.body;
 
+        // A category that does not exist is an error, not something to skip quietly while reporting success
+        if (category !== undefined && !ARTICLE_CATEGORIES.includes(category)) {
+            return res.status(400).json({
+                success: false,
+                message: `קטגוריה לא תקינה. קטגוריות מורשות: ${ARTICLE_CATEGORIES.join(', ')}`
+            });
+        }
+
         const article = await Article.findById(req.params.id);
         if (!article) {
             return res.status(404).json({ success: false, message: 'הכתבה לא נמצאה' });
@@ -675,7 +683,7 @@ const editorDirectEdit = async (req, res, next) => {
         if (title !== undefined) target.title = cleanText(title);
         if (summary !== undefined) target.summary = cleanText(summary);
         if (content !== undefined) target.content = sanitizeHtml(content);
-        if (category !== undefined && ARTICLE_CATEGORIES.includes(category)) target.category = category;
+        if (category !== undefined) target.category = category;
         if (mainImage !== undefined) target.mainImage = normalizeImageUrl(mainImage);
 
         if (editsPendingUpdate) {

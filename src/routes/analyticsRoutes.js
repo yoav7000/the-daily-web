@@ -10,8 +10,8 @@ const { authenticate, requireEditor } = require('../middleware/auth');
 // רישום צפייה בכתבה (נשלח אוטומטית בעת כניסת קורא)
 router.post('/view/:articleId', analyticsController.recordView);
 
-// שליפת נתוני גרף Impact Analytics עבור כתבה
-router.get('/article/:articleId', analyticsController.getArticleImpactAnalytics);
+// שליפת נתוני גרף Impact Analytics עבור כתבה - לעורכים בלבד, כמו עמוד ה-Analytics עצמו
+router.get('/article/:articleId', authenticate, requireEditor, analyticsController.getArticleImpactAnalytics);
 
 // דירוג הכתבות הנצפות ביותר
 router.get('/overview/top', analyticsController.getTopArticles);

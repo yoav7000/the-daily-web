@@ -24,7 +24,7 @@
     /* Text */
     --text: #14161b;
     --text-2: #444955;
-    --muted: #666b79;
+    --muted: #5f6472;
 
     /* Brand */
     --accent: #4f46e5;
@@ -36,7 +36,7 @@
     --grad: linear-gradient(135deg, #4f46e5 0%, #7c3aed 55%, #c026d3 100%);
 
     /* Meaning */
-    --ok: #15803d;
+    --ok: #166534;
     --warn: #96470a;
     --danger: #c0271d;
     --info: #0b66c3;
