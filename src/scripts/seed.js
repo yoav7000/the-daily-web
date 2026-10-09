@@ -244,14 +244,17 @@ const seedDatabase = async ({ connect = true } = {}) => {
             } else {
                 // כתבה שפורסמה
                 status = ARTICLE_STATUS.PUBLISHED;
-                // תאריך פרסום בין 1 ל-14 ימים אחורה
-                const daysAgo = (i % 14) + 1;
-                publishedAt = new Date(now - daysAgo * oneDayMs);
+                // תאריך פרסום בין 1 ל-30 ימים אחורה, בשעה ובדקה שונות לכל כתבה,
+                // כדי שמיון לפי תאריך פרסום יציג סדר אמיתי ולא קבוצות של כתבות עם אותו זמן בדיוק
+                const daysAgo = (i % 30) + 1;
+                const minutesIntoDay = (i * 137) % (24 * 60);
+                publishedAt = new Date(now - daysAgo * oneDayMs - minutesIntoDay * 60 * 1000);
 
                 // עבור 25 כתבות ראשונות שפורסמו - יצירת היסטוריית עדכונים מרובה עבור גרף Impact Analytics!
                 if (i >= 151 && i <= 175) {
                     const editorUser = editors[i % editors.length];
-                    const firstPublishDate = new Date(now - 7 * oneDayMs);
+                    // שעה שונה לכל כתבה (שעות שלמות, כדי שדליי הצפיות השעתיים של כתבת הדגל יישארו מיושרים)
+                    const firstPublishDate = new Date(now - 7 * oneDayMs - ((i * 7) % 24) * 60 * 60 * 1000);
                     publishedAt = firstPublishDate;
 
                     // עדכון גרסה 1: יומיים לאחר הפרסום
@@ -322,8 +325,8 @@ const seedDatabase = async ({ connect = true } = {}) => {
         const update1Time = new Date(showcaseArticle.revisionsHistory[0].approvedAt);
         const update2Time = new Date(showcaseArticle.revisionsHistory[1].approvedAt);
 
-        // יצירת דליים שעתיים על פני 7 ימים (168 שעות)
-        const hoursTotal = 7 * 24;
+        // יצירת דליים שעתיים מרגע הפרסום ועד עכשיו (כשבוע)
+        const hoursTotal = Math.ceil((now - startTime.getTime()) / (60 * 60 * 1000));
         for (let h = 0; h < hoursTotal; h++) {
             const currentBucketDate = new Date(startTime.getTime() + h * 60 * 60 * 1000);
             if (currentBucketDate.getTime() > now) break;
