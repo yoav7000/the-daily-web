@@ -165,14 +165,13 @@
                 setOptions(combinedOptions);
 
                 // /analytics.html?articleId=... opens that article, even when it is not among the initial list
-                const params = new URLSearchParams(window.location.search);
-                const wanted = params.get('articleId') || sessionStorage.getItem('the_daily_web_analytics_article');
+                const wanted = new URLSearchParams(window.location.search).get('articleId');
                 if (wanted) {
                     if (![...selectEl.options].some((option) => option.value === wanted)) {
                         try {
                             const { article } = await api('GET', `/api/articles/public/${wanted}`);
                             selectEl.insertAdjacentHTML('afterbegin', `<option value="${escapeHtml(article._id)}">${escapeHtml(optionLabel(article))}</option>`);
-                        } catch (err) { /* an unknown id — ignore */ }
+                        } catch (err) { /* an unknown id */ }
                     }
                     if ([...selectEl.options].some((option) => option.value === wanted)) selectEl.value = wanted;
                 } else if (combinedOptions.some((o) => o.isUpdated)) {
@@ -223,12 +222,6 @@
             const articleId = selectEl.value;
             if (!articleId) return;
             const request = ++activeRequest;
-
-            // Keep the selected article in the URL and sessionStorage so a refresh lands here
-            const url = new URL(window.location.href);
-            url.searchParams.set('articleId', articleId);
-            history.replaceState(null, '', url.toString());
-            sessionStorage.setItem('the_daily_web_analytics_article', articleId);
 
             try {
                 // the graph's hours and days follow this browser's clock, like the times in the milestones list
