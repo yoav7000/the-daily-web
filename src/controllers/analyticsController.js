@@ -35,15 +35,25 @@ const getTimeBucketKey = (date = new Date()) => {
     return `${yyyy}-${mm}-${dd}-${hh}`;
 };
 
+// Live views are counted in 5-minute buckets: an hour is too coarse to tell views before an update from views after it
+const VIEW_BUCKET_MINUTES = 5;
+
+/**
+ * The 5-minute bucket of a view: its start and its key, YYYY-MM-DD-HH-mm (for example 2026-09-30-11-05)
+ */
+const getViewBucket = (date = new Date()) => {
+    const start = new Date(date);
+    start.setMinutes(start.getMinutes() - (start.getMinutes() % VIEW_BUCKET_MINUTES), 0, 0);
+    return { start, key: `${getTimeBucketKey(start)}-${String(start.getMinutes()).padStart(2, '0')}` };
+};
+
 /**
  * רישום צפייה בכתבה (איסוף מותאם לעומס כבד)
  * מבצע Upsert אטומי עם $inc כדי לחסוך נעילות ומשאבי I/O
  */
 const recordViewInternal = async (articleId, viewDate = new Date()) => {
     try {
-        const timeBucket = getTimeBucketKey(viewDate);
-        const bucketStart = new Date(viewDate);
-        bucketStart.setMinutes(0, 0, 0);
+        const { start: bucketStart, key: timeBucket } = getViewBucket(viewDate);
 
         await ViewStat.updateOne(
             { article: articleId, timeBucket },
@@ -52,7 +62,7 @@ const recordViewInternal = async (articleId, viewDate = new Date()) => {
                 $setOnInsert: {
                     viewedAt: bucketStart,
                     article: articleId,
-                    notes: `צפיות עבור שעה ${timeBucket}`
+                    notes: `צפיות עבור ${timeBucket}`
                 }
             },
             { upsert: true }
@@ -91,38 +101,74 @@ const recordView = async (req, res, next) => {
     }
 };
 
-const HOUR_MS = 60 * 60 * 1000;
+const MINUTE_MS = 60 * 1000;
+const HOUR_MS = 60 * MINUTE_MS;
 const DAY_MS = 24 * HOUR_MS;
+const WEEK_MS = 7 * DAY_MS;
 const MAX_GRAPH_POINTS = 400;
+const GRAPH_STEPS = [
+    { ms: VIEW_BUCKET_MINUTES * MINUTE_MS, name: 'minute' },
+    { ms: 15 * MINUTE_MS, name: 'minute' },
+    { ms: HOUR_MS, name: 'hour' },
+    { ms: DAY_MS, name: 'day' },
+    { ms: WEEK_MS, name: 'week' }
+];
 
 const pad2 = (n) => String(n).padStart(2, '0');
 
 /**
- * סדרת זמן רציפה לגרף: שעות ללא צפיות מופיעות כ-0, כדי שציר הזמן ישקף את המציאות.
- * הרזולוציה גדלה (שעה / יום / שבוע) כשהתקופה ארוכה, כדי שלא יישלחו אלפי נקודות לדפדפן.
+ * The viewer's time zone, as Date#getTimezoneOffset gives it (minutes behind UTC; Israel is -180 / -120).
+ * The graph's hours and days are the viewer's, not the server's (a server in a container usually runs in UTC).
  */
-const buildTimeline = (stats, startMs, endMs) => {
-    const step = [HOUR_MS, DAY_MS, 7 * DAY_MS].find((ms) => (endMs - startMs) / ms < MAX_GRAPH_POINTS) || 7 * DAY_MS;
-    const origin = new Date(startMs).setMinutes(0, 0, 0);
-    const indexOf = (ms) => Math.max(0, Math.floor((ms - origin) / step));
+const parseTzOffset = (value) => {
+    const offset = Number(value);
+    return value !== undefined && value !== '' && Number.isInteger(offset) && Math.abs(offset) <= 14 * 60
+        ? offset
+        : new Date().getTimezoneOffset();
+};
 
-    const points = Array.from({ length: indexOf(endMs) + 1 }, (_, i) => ({ t: origin + i * step, views: 0 }));
+/**
+ * How long one stored record covers: a live view record covers 5 minutes, a manual or demo record a whole hour
+ * ("YYYY-MM-DD-HH"). The graph is never finer than its coarsest record, or an hour of views would look like one spike.
+ */
+const statSpanMs = (stat) => (/^\d{4}-\d{2}-\d{2}-\d{2}$/.test(stat.timeBucket || '') ? HOUR_MS : VIEW_BUCKET_MINUTES * MINUTE_MS);
+
+/**
+ * סדרת זמן רציפה לגרף: פרקי זמן ללא צפיות מופיעים כ-0, כדי שציר הזמן ישקף את המציאות.
+ * הרזולוציה (5 דקות / רבע שעה / שעה / יום / שבוע) גדלה כשהתקופה ארוכה, כדי שלא יישלחו אלפי נקודות לדפדפן.
+ * הנקודות מיושרות לשעון של הצופה (tzOffset), כך שיום מתחיל בחצות שלו.
+ */
+const buildTimeline = (stats, startMs, endMs, tzOffset) => {
+    const coarsestRecord = stats.reduce((max, stat) => Math.max(max, statSpanMs(stat)), 0);
+    const step = GRAPH_STEPS.find((s) => s.ms >= coarsestRecord && (endMs - startMs) / s.ms < MAX_GRAPH_POINTS)
+        || GRAPH_STEPS[GRAPH_STEPS.length - 1];
+    // local time = UTC - tzOffset; weeks start on Sunday (1/1/1970 was a Thursday)
+    const shift = -tzOffset * MINUTE_MS + (step.ms === WEEK_MS ? 4 * DAY_MS : 0);
+    const floorToStep = (ms) => ms - ((((ms + shift) % step.ms) + step.ms) % step.ms);
+    const toLocal = (ms) => new Date(ms - tzOffset * MINUTE_MS); // read the viewer's clock through the UTC fields
+
+    const origin = floorToStep(startMs);
+    const positionOf = (ms) => Math.max(0, (ms - origin) / step.ms);
+    const indexOf = (ms) => Math.floor(positionOf(ms));
+
+    const points = Array.from({ length: indexOf(endMs) + 1 }, (_, i) => ({ t: origin + i * step.ms, views: 0 }));
     stats.forEach((stat) => {
         const point = points[Math.min(indexOf(new Date(stat.viewedAt).getTime()), points.length - 1)];
         point.views += stat.viewCount;
     });
 
     const labels = points.map(({ t }) => {
-        const d = new Date(t);
-        const date = `${pad2(d.getDate())}/${pad2(d.getMonth() + 1)}`;
-        return step === HOUR_MS ? `${date} ${pad2(d.getHours())}:00` : date;
+        const d = toLocal(t);
+        const date = `${pad2(d.getUTCDate())}/${pad2(d.getUTCMonth() + 1)}`;
+        return step.ms < DAY_MS ? `${date} ${pad2(d.getUTCHours())}:${pad2(d.getUTCMinutes())}` : date;
     });
 
-    return { points, labels, views: points.map((p) => p.views), indexOf, granularity: step === HOUR_MS ? 'hour' : (step === DAY_MS ? 'day' : 'week') };
+    return { points, labels, views: points.map((p) => p.views), stepMs: step.ms, indexOf, positionOf, granularity: step.name };
 };
 
 /**
  * נקודות הציון של הכתבה: הפרסום הראשוני ואישורי העדכונים של העורך.
+ * רק אישור של עורך נרשם ב-revisionsHistory: עריכה של הכתב שעוד לא אושרה אינה נקודת ציון.
  * בפרסום ראשוני נרשמת גם רשומה ב-revisionsHistory (באותו רגע כמו publishedAt),
  * לכן היא נחשבת לפרסום ולא לעדכון, כדי שלא תופיע נקודה כפולה.
  */
@@ -141,10 +187,14 @@ const buildMilestones = (article) => {
         });
     }
 
+    let initialPublishEntryFound = false;
     (article.revisionsHistory || []).forEach((rev) => {
-        // approving the first publication stores publishedAt and this entry at the same moment (allow clock rounding)
-        const isInitialPublishEntry = publishedMs !== null && Math.abs(new Date(rev.approvedAt).getTime() - publishedMs) < 1000;
+        // approving the first publication stores publishedAt and this entry at the same moment (allow clock rounding).
+        // Only one entry is the publication: an update approved right after it is still an update.
+        const isInitialPublishEntry = !initialPublishEntryFound && publishedMs !== null
+            && Math.abs(new Date(rev.approvedAt).getTime() - publishedMs) < 1000;
         if (isInitialPublishEntry) {
+            initialPublishEntryFound = true;
             milestones[0].editorName = rev.approvedBy ? rev.approvedBy.fullName : 'עורך';
             return;
         }
@@ -164,6 +214,7 @@ const buildMilestones = (article) => {
 
 /**
  * השוואת קצב הצפיות (צפיות לשעה) לפני ואחרי העדכון האחרון.
+ * רשומת צפיות שהתחילה לפני רגע האישור נספרת "לפני"; הגרף צובע לפי אותו כלל (firstPointAfterUpdate).
  * הממוצע מחושב על כל השעות שחלפו, כולל שעות בלי צפיות.
  */
 const buildImpactAnalysis = (stats, lastUpdate, startMs, endMs) => {
@@ -203,13 +254,14 @@ const buildImpactAnalysis = (stats, lastUpdate, startMs, endMs) => {
 
 /**
  * שליפת נתוני גרף Impact Analytics עבור עורך
- * GET /api/analytics/article/:articleId
- * מחזיר ציר זמן רציף של צפיות, נקודות פרסום ועדכון (עם המיקום שלהן על הגרף),
- * והשוואת קצב הצפיות לפני ואחרי העדכון האחרון
+ * GET /api/analytics/article/:articleId?tzOffset=-180
+ * מחזיר ציר זמן רציף של צפיות, נקודות פרסום ועדכון (עם המיקום המדויק שלהן על הגרף),
+ * השוואת קצב הצפיות לפני ואחרי העדכון האחרון, ועדכון של הכתב שממתין לאישור (אם יש) - שאינו מסומן בגרף
  */
 const getArticleImpactAnalytics = async (req, res, next) => {
     try {
         const { articleId } = req.params;
+        const tzOffset = parseTzOffset(req.query.tzOffset);
 
         const article = await Article.findById(articleId)
             .populate('author', 'fullName username')
@@ -238,17 +290,31 @@ const getArticleImpactAnalytics = async (req, res, next) => {
         const startMs = times.length > 0 ? Math.min(...times) : nowMs;
         const endMs = Math.max(nowMs, ...times);
 
-        const timeline = buildTimeline(stats, startMs, endMs);
+        const timeline = buildTimeline(stats, startMs, endMs, tzOffset);
         milestones.forEach((m) => {
-            m.pointIndex = timeline.indexOf(new Date(m.timestamp).getTime());
+            const ms = new Date(m.timestamp).getTime();
+            m.pointIndex = timeline.indexOf(ms);                        // the point whose period contains the milestone
+            m.position = Number(timeline.positionOf(ms).toFixed(4));    // the exact moment, between the points
         });
 
         const totalViews = stats.reduce((sum, s) => sum + s.viewCount, 0);
 
-        // יש מה להשוות רק כשהיה לפחות עדכון אחד אחרי הפרסום הראשוני
+        // יש מה להשוות רק כשהיה לפחות עדכון אחד שעורך אישר אחרי הפרסום הראשוני
         const updates = milestones.filter((m) => m.type === 'REVISION_UPDATE');
-        const impactAnalysis = updates.length > 0
-            ? buildImpactAnalysis(stats, updates[updates.length - 1], article.publishedAt ? new Date(article.publishedAt).getTime() : startMs, endMs)
+        const lastUpdate = updates[updates.length - 1];
+        const impactAnalysis = lastUpdate
+            ? buildImpactAnalysis(stats, lastUpdate, article.publishedAt ? new Date(article.publishedAt).getTime() : startMs, endMs)
+            : null;
+        if (impactAnalysis) {
+            // the first point counted entirely "after" the update (the point holding the update itself is counted "before")
+            const updateMs = new Date(lastUpdate.timestamp).getTime();
+            const firstAfter = timeline.points.findIndex((p) => p.t >= updateMs);
+            impactAnalysis.firstPointAfterUpdate = firstAfter === -1 ? timeline.points.length : firstAfter;
+        }
+
+        // a reporter's change to the published article that no editor approved yet: not live, so not a milestone
+        const pendingUpdate = article.status === ARTICLE_STATUS.PUBLISHED && article.draftVersion
+            ? { status: article.draftVersion.status, updatedAt: article.draftVersion.updatedAt || null }
             : null;
 
         return res.status(200).json({
@@ -263,6 +329,8 @@ const getArticleImpactAnalytics = async (req, res, next) => {
             totalViews,
             timeline: {
                 granularity: timeline.granularity,
+                stepMinutes: timeline.stepMs / MINUTE_MS,
+                tzOffset,
                 labels: timeline.labels,
                 views: timeline.views,
                 timestamps: timeline.points.map((p) => p.t),
@@ -273,7 +341,8 @@ const getArticleImpactAnalytics = async (req, res, next) => {
                 }))
             },
             milestones,
-            impactAnalysis
+            impactAnalysis,
+            pendingUpdate
         });
     } catch (error) {
         next(error);
@@ -507,5 +576,6 @@ module.exports = {
     updateViewStat,
     deleteViewStat,
     getTopArticles,
-    getTimeBucketKey
+    getTimeBucketKey,
+    getViewBucket
 };

@@ -81,13 +81,13 @@
                 <div class="flex justify-between wrap gap-4 mb-4">
                     <div>
                         <h2 class="h3">צפיות לאורך זמן</h2>
-                        <p class="muted small">שעות בלי צפיות מוצגות כ-0. בכתבות ותיקות הציר מתקבץ לימים או לשבועות.</p>
+                        <p class="muted small">פרקי זמן בלי צפיות מוצגים כ-0. כתבה חדשה מוצגת ברזולוציה של דקות; בכתבות ותיקות הציר מתקבץ לשעות, ימים או שבועות. הקווים המקווקווים מסמנים את רגע האישור המדויק.</p>
                     </div>
                     <div class="legend" aria-label="מקרא הגרף">
                         <span><i style="background: var(--accent)"></i> צפיות (לפני עדכון)</span>
                         <span><i style="background: #d97706"></i> צפיות (אחרי עדכון)</span>
-                        <span><i style="background: #16a34a; border-radius: 50%;"></i> פרסום ראשוני</span>
-                        <span><i style="background: #d97706; transform: rotate(45deg); border-radius: 2px;"></i> אישור ופרסום עדכון עורך</span>
+                        <span><i style="width: 0; height: 12px; border-inline-start: 2px dashed #16a34a; border-radius: 0;"></i> פרסום ראשוני</span>
+                        <span><i style="width: 0; height: 12px; border-inline-start: 2px dashed #d97706; border-radius: 0;"></i> עדכון שעורך אישר ופרסם</span>
                     </div>
                 </div>
                 <div class="chart-box">
@@ -224,13 +224,14 @@
             const request = ++activeRequest;
 
             try {
-                const data = await api('GET', `/api/analytics/article/${articleId}`);
+                // the graph's hours and days follow this browser's clock, like the times in the milestones list
+                const data = await api('GET', `/api/analytics/article/${articleId}?tzOffset=${new Date().getTimezoneOffset()}`);
                 if (request !== activeRequest) return;
                 lastData = data;
                 hideChartMessage();
                 renderKpis(data);
                 renderImpactChart(data);
-                renderMilestonesTimeline(data.milestones);
+                renderMilestonesTimeline(data.milestones, data.pendingUpdate);
             } catch (err) {
                 if (request !== activeRequest) return;
                 showChartMessage('triangle-alert', 'לא הצלחנו לטעון את נתוני הכתבה', err.message);
@@ -240,7 +241,7 @@
         function renderKpis(data) {
             const set = (id, value) => { document.getElementById(id).textContent = value; };
             set('totalViewsDisplay', (data.totalViews || 0).toLocaleString('he-IL'));
-            set('revisionsCountDisplay', data.milestones ? Math.max(0, data.milestones.length - 1) : 0);
+            set('revisionsCountDisplay', approvedUpdates(data.milestones).length);
             set('articleCategoryDisplay', `מדור: ${data.article.category || 'כללי'}`);
 
             const impact = data.impactAnalysis;
@@ -264,16 +265,21 @@
         }
 
         // ---- the graph ----------------------------------------------------------------------
+        const approvedUpdates = (milestones) => (milestones || []).filter((m) => m.type === 'REVISION_UPDATE');
+        // Each point stands for a period (5 minutes, an hour, a day...) and is drawn in its middle (the x axis has offset),
+        // so the period of point i spans i - 0.5 .. i + 0.5. A milestone is drawn at its exact moment inside that span:
+        // views of the same period that came after a publication are drawn after its line, not before it.
+        const milestoneX = (m) => (Number.isFinite(m.position) ? m.position - 0.5 : m.pointIndex);
+
         // Marks the publication and every editor-approved update on the graph itself:
-        // a dashed vertical line at each point in time, and a tinted area after the last update
+        // a dashed vertical line at the exact moment of each, and a tinted area after the last update
         const milestoneMarkersPlugin = {
             id: 'milestoneMarkers',
             beforeDatasetsDraw(chart, args, options) {
-                const updates = (options.milestones || []).filter((m) => m.type === 'REVISION_UPDATE');
+                const updates = approvedUpdates(options.milestones);
                 if (updates.length === 0) return;
                 const { ctx, chartArea, scales } = chart;
-                const lastIndex = updates[updates.length - 1].pointIndex;
-                const x = scales.x.getPixelForValue(lastIndex);
+                const x = scales.x.getPixelForValue(milestoneX(updates[updates.length - 1]));
                 if (Number.isFinite(x)) {
                     ctx.save();
                     ctx.fillStyle = 'rgba(217, 119, 6, 0.1)';
@@ -284,7 +290,7 @@
             afterDatasetsDraw(chart, args, options) {
                 const { ctx, chartArea, scales } = chart;
                 (options.milestones || []).forEach((m, i) => {
-                    const x = scales.x.getPixelForValue(m.pointIndex);
+                    const x = scales.x.getPixelForValue(milestoneX(m));
                     if (!Number.isFinite(x)) return;
                     const color = MILESTONE_COLORS[m.type] || '#64748b';
                     const text = m.type === 'INITIAL_PUBLISH' ? 'פרסום ראשוני' : m.title.replace('עדכון גרסה ', 'עדכון ');
@@ -333,31 +339,31 @@
             const labels = data.timeline.labels.length > 0 ? data.timeline.labels : ['התחלה'];
             const viewValues = data.timeline.views.length > 0 ? data.timeline.views : [0];
             const milestones = data.milestones || [];
-            const updates = milestones.filter((m) => m.type === 'REVISION_UPDATE');
-            const lastUpdateIdx = updates.length > 0 ? updates[updates.length - 1].pointIndex : -1;
-
-            const pointRadiusArr = viewValues.map((_, i) => milestones.some((m) => m.pointIndex === i) ? 8 : 2.5);
-            const pointHoverRadiusArr = viewValues.map((_, i) => milestones.some((m) => m.pointIndex === i) ? 11 : 5);
-            const pointBgArr = viewValues.map((_, i) => {
-                const m = milestones.find((x) => x.pointIndex === i);
-                if (m) return m.type === 'INITIAL_PUBLISH' ? '#16a34a' : '#d97706';
-                return surface;
-            });
-            const pointBorderArr = viewValues.map((_, i) => {
-                const m = milestones.find((x) => x.pointIndex === i);
-                return m ? '#ffffff' : accent;
-            });
-            const pointStyleArr = viewValues.map((_, i) => {
-                const m = milestones.find((x) => x.pointIndex === i);
-                if (!m) return 'circle';
-                return m.type === 'INITIAL_PUBLISH' ? 'circle' : 'rectRot';
-            });
+            const updates = approvedUpdates(milestones);
+            // Each point counts the views of a period (5 minutes, an hour, a day...). The point whose period holds the
+            // last approved update is counted "before" it, like the before / after numbers; from firstAfter on it is "after".
+            const updateIdx = updates.length > 0 ? updates[updates.length - 1].pointIndex : -1;
+            const firstAfter = updateIdx < 0 ? Infinity
+                : (data.impactAnalysis && Number.isInteger(data.impactAnalysis.firstPointAfterUpdate) ? data.impactAnalysis.firstPointAfterUpdate : updateIdx + 1);
+            const periodOf = (idx) => {
+                if (updateIdx < 0) return '';
+                if (idx >= firstAfter) return ' (אחרי העדכון)';
+                return idx === updateIdx ? ' (העדכון אושר בפרק זמן זה)' : ' (לפני העדכון)';
+            };
+            const timeOnly = (value) => new Date(value).toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+            // "09/10 18:55–19:00": the whole period a point counts, when it is shorter than a day
+            const stepMs = (data.timeline.stepMinutes || 0) * 60 * 1000;
+            const periodLabel = (idx) => {
+                const start = (data.timeline.timestamps || [])[idx];
+                if (!stepMs || stepMs >= 24 * 60 * 60 * 1000 || start === undefined) return labels[idx] || '';
+                return `${labels[idx]}–${timeOnly(start + stepMs)}`;
+            };
 
             const gradient = ctx.createLinearGradient(0, 0, 0, 340);
             gradient.addColorStop(0, `${accent}40`);
             gradient.addColorStop(1, `${accent}00`);
 
-            canvas.setAttribute('aria-label', `גרף צפיות לאורך זמן. ${(data.totalViews || 0).toLocaleString('he-IL')} צפיות בסך הכל, ${Math.max(0, milestones.length - 1)} עדכונים שאושרו.`);
+            canvas.setAttribute('aria-label', `גרף צפיות לאורך זמן. ${(data.totalViews || 0).toLocaleString('he-IL')} צפיות בסך הכל, ${updates.length} עדכונים שאושרו.`);
 
             currentChart = new Chart(ctx, {
                 type: 'line',
@@ -372,21 +378,16 @@
                         borderWidth: 2.5,
                         fill: true,
                         tension: 0.35,
-                        pointBackgroundColor: pointBgArr,
-                        pointBorderColor: pointBorderArr,
+                        // the points are plain: the milestones are the dashed lines at their exact moment, so a
+                        // period's views are never drawn as if they were the approval itself
+                        pointBackgroundColor: surface,
+                        pointBorderColor: viewValues.map((_, i) => (i >= firstAfter ? '#d97706' : accent)),
                         pointBorderWidth: 2,
-                        pointRadius: pointRadiusArr,
-                        pointHoverRadius: pointHoverRadiusArr,
-                        pointHoverBackgroundColor: pointBgArr,
-                        pointHoverBorderColor: pointBorderArr,
-                        pointStyle: pointStyleArr,
+                        pointRadius: viewValues.length > 60 ? 0 : 2.5,
+                        pointHoverRadius: 5,
                         segment: {
-                            borderColor: (segmentCtx) => {
-                                if (lastUpdateIdx >= 0 && segmentCtx.p0DataIndex >= lastUpdateIdx) {
-                                    return '#d97706';
-                                }
-                                return accent;
-                            }
+                            // the line turns orange where it reaches the first period after the update
+                            borderColor: (segmentCtx) => (segmentCtx.p1DataIndex >= firstAfter ? '#d97706' : accent)
                         }
                     }]
                 },
@@ -405,24 +406,16 @@
                             cornerRadius: 10,
                             displayColors: false,
                             callbacks: {
-                                title: (items) => {
-                                    const idx = items[0].dataIndex;
-                                    const dateLabel = labels[idx] || '';
-                                    let period = '';
-                                    if (lastUpdateIdx >= 0) {
-                                        period = idx < lastUpdateIdx ? ' (לפני עדכון הכתבה)' : ' (אחרי עדכון הכתבה)';
-                                    }
-                                    return `${dateLabel}${period}`;
-                                },
+                                title: (items) => `${periodLabel(items[0].dataIndex)}${periodOf(items[0].dataIndex)}`,
                                 label: (item) => ` כמות צפיות: ${item.parsed.y.toLocaleString('he-IL')}`,
                                 afterBody: (items) => milestones
                                     .filter((m) => m.pointIndex === items[0].dataIndex)
-                                    .map((m) => `● ${m.title}${m.editorName ? ' (אושר ע"י ' + m.editorName + ')' : ''}: ${m.description || ''}`)
+                                    .map((m) => `● ${m.title} בשעה ${timeOnly(m.timestamp)}${m.editorName ? ' (אושר ע"י ' + m.editorName + ')' : ''}`)
                             }
                         }
                     },
                     scales: {
-                        x: { grid: { display: false }, ticks: { color: muted, font: { family: 'Heebo', size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
+                        x: { offset: true, grid: { display: false }, ticks: { color: muted, font: { family: 'Heebo', size: 11 }, maxRotation: 0, autoSkip: true, maxTicksLimit: 8 } },
                         y: { beginAtZero: true, grid: { color: grid }, ticks: { color: muted, font: { family: 'Heebo', size: 11 }, precision: 0 } }
                     }
                 }
@@ -435,7 +428,30 @@
         });
 
         // ---- the milestones -----------------------------------------------------------------
-        function renderMilestonesTimeline(milestones) {
+        const PENDING_TEXT = {
+            draft: 'הכתב עורך עדכון לכתבה',
+            pending_approval: 'עדכון של הכתב ממתין לאישור עורך',
+            revision_requested: 'עדכון של הכתב הוחזר לתיקונים'
+        };
+
+        // A reporter's change that no editor approved is not live: it is listed apart, never as a milestone on the graph
+        function pendingUpdateItem(pending) {
+            if (!pending) return '';
+            const when = pending.updatedAt
+                ? `<time datetime="${escapeHtml(new Date(pending.updatedAt).toISOString())}">${escapeHtml(formatDateTime(pending.updatedAt))}</time>`
+                : '';
+            return `
+                <div class="timeline-item is-pending" id="pendingUpdateNote">
+                    <span class="timeline-dot is-pending"></span>
+                    <div class="timeline-head">
+                        <strong class="small">${escapeHtml(PENDING_TEXT[pending.status] || PENDING_TEXT.draft)}</strong>
+                        ${when}
+                    </div>
+                    <p class="small muted">טרם אושר ולא פורסם, ולכן אינו מסומן בגרף. הקוראים רואים את הגרסה המאושרת האחרונה.</p>
+                </div>`;
+        }
+
+        function renderMilestonesTimeline(milestones, pendingUpdate) {
             const container = document.getElementById('milestonesTimeline');
             if (!milestones || milestones.length === 0) {
                 container.innerHTML = '<div class="muted small center">לא נרשמו עדכוני גרסאות לכתבה זו.</div>';
@@ -452,7 +468,7 @@
                         </div>
                         <p class="small muted">${escapeHtml(m.description)} ${m.editorName ? `<span class="badge">ע"י ${escapeHtml(m.editorName)}</span>` : ''}</p>
                     </div>`;
-            }).join('');
+            }).join('') + pendingUpdateItem(pendingUpdate);
         }
 
         document.addEventListener('DOMContentLoaded', async () => {

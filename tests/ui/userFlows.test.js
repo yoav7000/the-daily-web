@@ -570,6 +570,124 @@ flow('Impact Analytics: the graph, the update markers and the before / after com
     } finally { await close(); }
 });
 
+flow('Impact Analytics: a reporter\'s edit of a published article is not shown as approved, and every marker is at its real time', async () => {
+    const title = `בדיקת אבני דרך ${Date.now()}`;
+    const reporter = await openStaffPage('dan_reporter', '/reporter.html');
+    const editor = await openStaffPage('sarah_editor', '/editor.html');
+    const rp = reporter.page;
+    const ep = editor.page;
+    const reporterHeaders = await authHeaders('dan_reporter');
+    const editorHeaders = await authHeaders('sarah_editor');
+    const findMine = async () => (await (await fetch(`${site.base}/api/articles/my-articles?limit=300`, { headers: reporterHeaders })).json())
+        .articles.find((a) => a.title === title);
+
+    // what the analytics page shows, read from the screen and from the drawn graph
+    const readAnalytics = (page) => page.run(() => {
+        const chart = typeof Chart !== 'undefined' && Chart.getChart(document.getElementById('impactChart'));
+        const milestones = chart ? chart.config.options.plugins.milestoneMarkers.milestones : [];
+        return {
+            approvedCount: document.getElementById('revisionsCountDisplay').textContent.trim(),
+            beforeViews: document.getElementById('beforeViewsDisplay').textContent.trim(),
+            updateDots: document.querySelectorAll('#milestonesTimeline .timeline-dot.is-update').length,
+            pendingNote: (document.getElementById('pendingUpdateNote') || {}).textContent || '',
+            listedTimes: [...document.querySelectorAll('#milestonesTimeline .timeline-item:not(.is-pending) time')].map((t) => t.getAttribute('datetime')),
+            chartLoaded: Boolean(chart),
+            markers: milestones.map((m) => ({ type: m.type, position: m.position, pointIndex: m.pointIndex, timestamp: m.timestamp })),
+            labels: chart ? chart.data.labels : []
+        };
+    });
+    const openAnalytics = async (id) => {
+        await ep.goto(`${site.base}/analytics.html?articleId=${id}`);
+        await until(ep, () => document.querySelectorAll('#milestonesTimeline .timeline-item').length >= 1 && /מדור:/.test(document.getElementById('articleCategoryDisplay').textContent));
+        await ep.settle(300);
+        return readAnalytics(ep);
+    };
+    // "HH:MM" of a moment in this browser's clock, rounded down to the graph's step
+    const localLabelTime = (page, iso, stepMinutes) => page.run((value, step) => {
+        const d = new Date(value);
+        const minutes = Math.floor((d.getHours() * 60 + d.getMinutes()) / step) * step;
+        return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`;
+    }, iso, stepMinutes);
+
+    try {
+        // 1. the reporter writes an article and submits it, the editor approves it: it is published
+        await until(rp, () => document.querySelectorAll('.work-card').length > 0);
+        await rp.click('[data-action="new-article"]');
+        await until(rp, () => !document.getElementById('articleEditModal').hidden);
+        await rp.fill('#editTitle', title);
+        await rp.fill('#editContent', '<p>הגרסה שפורסמה.</p>');
+        await waitSaved(rp);
+        await rp.click('#submitApprovalBtn');
+        await confirmYes(rp);
+        await until(rp, () => document.getElementById('articleEditModal').hidden);
+        const { _id: id } = await findMine();
+        assert.equal((await fetch(`${site.base}/api/articles/${id}/approve`, { method: 'POST', headers: editorHeaders, body: '{}' })).status, 200);
+        for (let i = 0; i < 4; i++) await fetch(`${site.base}/api/analytics/view/${id}`, { method: 'POST' });
+
+        // 2. the reporter edits the published article and submits the change: nobody approved it
+        await rp.goto(`${site.base}/reporter.html`);
+        await rp.fill('#searchInput', title);
+        await until(rp, () => document.querySelectorAll('.work-card').length === 1);
+        await rp.click('.work-card [data-action="edit-article"]');
+        await until(rp, () => !document.getElementById('articleEditModal').hidden);
+        await rp.fill('#editTitle', `${title} - עריכה שלא אושרה`);
+        await waitSaved(rp);
+        await rp.click('#submitApprovalBtn');
+        await confirmYes(rp);
+        await until(rp, () => document.getElementById('articleEditModal').hidden);
+        for (let i = 0; i < 3; i++) await fetch(`${site.base}/api/analytics/view/${id}`, { method: 'POST' });
+
+        // 3. the analytics page: only the publication is a milestone, the edit is listed apart as waiting for approval
+        let seen = await openAnalytics(id);
+        assert.equal(seen.approvedCount, '0', 'no approved update is counted');
+        assert.equal(seen.updateDots, 0, 'no update milestone in the list');
+        assert.equal(seen.beforeViews, '-', 'nothing to compare before an approved update');
+        assert.match(seen.pendingNote, /ממתין לאישור עורך/);
+        assert.match(seen.pendingNote, /אינו מסומן בגרף/);
+        const publishedAt = seen.listedTimes[0];
+        if (seen.chartLoaded) {
+            assert.deepEqual(seen.markers.map((m) => m.type), ['INITIAL_PUBLISH'], 'the graph marks only the publication');
+            // a new article is shown in minutes, not squeezed into a single hourly point
+            assert.ok(seen.labels.length >= 1);
+            const step = (await (await fetch(`${site.base}/api/analytics/article/${id}`)).json()).timeline.stepMinutes;
+            assert.equal(step, 5);
+            const label = seen.labels[seen.markers[0].pointIndex];
+            assert.ok(label.endsWith(await localLabelTime(ep, publishedAt, step)), `publication label ${label} matches the publication time ${publishedAt} in this browser's clock`);
+            assert.ok(!Number.isInteger(seen.markers[0].position) || new Date(publishedAt).getMinutes() % step === 0, 'the marker is between points, at its exact moment');
+        }
+
+        // 4. the editor approves the update through the editor desk
+        await ep.goto(`${site.base}/editor.html`);
+        await until(ep, () => document.querySelectorAll('#articlesTableBody tr').length > 1);
+        await ep.fill('#searchInput', title);
+        await until(ep, () => document.querySelectorAll('#articlesTableBody tr').length === 1 && document.querySelector('#articlesTableBody .badge-warn'));
+        await ep.click('#articlesTableBody [data-action="review"]');
+        await until(ep, () => !document.getElementById('reviewDiffModal').hidden);
+        const approvedFrom = Date.now();
+        await ep.click('#reviewApproveBtn');
+        await confirmYes(ep);
+        await until(ep, () => document.getElementById('reviewDiffModal').hidden);
+
+        // 5. now, and only now, the update is a milestone, at the moment of the approval
+        seen = await openAnalytics(id);
+        assert.equal(seen.approvedCount, '1');
+        assert.equal(seen.updateDots, 1);
+        assert.equal(seen.pendingNote, '', 'nothing waits for approval any more');
+        const approvedAt = new Date(seen.listedTimes[1]).getTime();
+        assert.ok(approvedAt >= approvedFrom - 2000 && approvedAt <= Date.now(), 'the listed time is the approval time');
+        if (seen.chartLoaded) {
+            assert.deepEqual(seen.markers.map((m) => m.type), ['INITIAL_PUBLISH', 'REVISION_UPDATE']);
+            assert.ok(seen.markers[1].position > seen.markers[0].position, 'the update is drawn after the publication');
+        }
+
+        noPageProblems(rp);
+        noPageProblems(ep);
+    } finally {
+        await reporter.close();
+        await editor.close();
+    }
+});
+
 flow('Data management: create, find, edit and delete users, comments and view statistics', async () => {
     const { page, close } = await openStaffPage('sarah_editor', '/admin.html');
     const username = `ui_user_${Date.now()}`;
