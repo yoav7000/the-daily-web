@@ -59,6 +59,8 @@ async function logout() {
  */
 async function api(method, url, body, options) {
     const keepSession = Boolean(options && options.keepSession);
+    // keepalive: the request is completed even if the page is closed or refreshed meanwhile
+    const keepalive = Boolean(options && options.keepalive);
     const token = getAuthToken();
     const headers = {};
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -67,7 +69,7 @@ async function api(method, url, body, options) {
 
     let res;
     try {
-        res = await fetch(url, { method, headers, body: hasBody ? JSON.stringify(body) : undefined });
+        res = await fetch(url, { method, headers, body: hasBody ? JSON.stringify(body) : undefined, keepalive });
     } catch (networkError) {
         const err = new Error('אין תקשורת עם השרת. בדקו את החיבור ונסו שוב.');
         err.network = true;
