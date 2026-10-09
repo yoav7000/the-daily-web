@@ -502,18 +502,22 @@
             return currentSave;
         }
 
-        // One save request. Returns false when it failed.
-        async function saveFormToServer() {
-            const changesAtStart = changeCounter;
-            const articleId = field('editArticleId').value;
+        function readFormPayload() {
             const catVal = field('editCategory') ? field('editCategory').value.trim() : 'חדשות';
-            const payload = {
+            return {
                 title: field('editTitle').value.trim(),
                 category: catVal || 'חדשות',
                 mainImage: field('editMainImage').value.trim(),
                 summary: field('editSummary').value.trim(),
                 content: field('editContent').value
             };
+        }
+
+        // One save request. Returns false when it failed.
+        async function saveFormToServer() {
+            const changesAtStart = changeCounter;
+            const articleId = field('editArticleId').value;
+            const payload = readFormPayload();
 
             if (!articleId && !payload.title && !payload.content) {
                 hasUnsavedChanges = false; // nothing written yet, nothing to save
@@ -522,9 +526,11 @@
 
             updateAutoSaveIndicator('saving', 'שומרים ברקע...');
             try {
+                // keepalive lets the save finish even if the page is closed meanwhile (browsers allow it up to 64 KB)
+                const options = { keepalive: JSON.stringify(payload).length < 60000 };
                 const data = articleId
-                    ? await api('PUT', `/api/articles/${articleId}/autosave`, payload)
-                    : await api('POST', '/api/articles/autosave', payload);
+                    ? await api('PUT', `/api/articles/${articleId}/autosave`, payload, options)
+                    : await api('POST', '/api/articles/autosave', payload, options);
 
                 // only "saved" if nothing was typed while the request was running
                 hasUnsavedChanges = changeCounter !== changesAtStart;
@@ -543,7 +549,37 @@
             }
         }
 
-        const AUTOSAVE_ICONS = { saved: 'circle-check', saving: null, dirty: 'pen-line', error: 'triangle-alert' };
+        // Leaving the page (refresh, closing the tab or the browser) before the 1.2 second timer fired must not lose
+        // the last words: hand the save to the browser with keepalive, so it is sent even after the page is gone.
+        function saveBeforeLeaving() {
+            // a save that is already running carries the text (it was started when the page was hidden)
+            if (!hasUnsavedChanges || currentSave) return;
+            clearTimeout(autoSaveTimer);
+            const articleId = field('editArticleId').value;
+            const payload = readFormPayload();
+            if (!articleId && !payload.title && !payload.content) return;
+
+            const headers = { 'Content-Type': 'application/json' };
+            const token = getAuthToken();
+            if (token) headers.Authorization = `Bearer ${token}`;
+            fetch(articleId ? `/api/articles/${articleId}/autosave` : '/api/articles/autosave', {
+                method: articleId ? 'PUT' : 'POST',
+                headers,
+                body: JSON.stringify(payload),
+                keepalive: true
+            }).catch(() => {});
+            hasUnsavedChanges = false;
+        }
+        window.addEventListener('pagehide', saveBeforeLeaving);
+        // Switching to another tab or app: save right away (the page may be closed from there without notice)
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden' && hasUnsavedChanges) {
+                clearTimeout(autoSaveTimer);
+                executeAutoSave();
+            }
+        });
+
+        const AUTOSAVE_ICONS ={ saved: 'circle-check', saving: null, dirty: 'pen-line', error: 'triangle-alert' };
 
         function updateAutoSaveIndicator(state, message) {
             const indicator = field('autosaveIndicator');
