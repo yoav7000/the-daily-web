@@ -132,12 +132,16 @@ function requireAuth(options) {
     });
 }
 
-// Hides links that only editors can use. This only keeps the menu honest: every permission is checked again
+// Hides links that only editors or reporters can use. This only keeps the menu honest: every permission is checked again
 // by the server on each request, hiding a link is never the protection itself.
 function applyRoleVisibility(user) {
     const isEditor = Boolean(user) && user.role === 'editor';
+    const isReporter = Boolean(user) && user.role === 'reporter';
     document.querySelectorAll('[data-editor-only]').forEach((el) => {
         el.hidden = !isEditor;
+    });
+    document.querySelectorAll('[data-reporter-only]').forEach((el) => {
+        el.hidden = !isReporter;
     });
 }
 

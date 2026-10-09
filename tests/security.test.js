@@ -134,3 +134,16 @@ test('Top articles only lists published articles', async () => {
     const { topArticles } = await res.json();
     assert.deepEqual(topArticles.map((a) => a._id), [articleId]);
 });
+
+test('Role segregation: an editor cannot create articles or access the reporter desk API', async () => {
+    const resCreate = await api('POST', '/api/articles', {
+        token: editorToken,
+        body: { title: 'כתבה מעורך', content: '<p>תוכן</p>', category: 'טכנולוגיה' }
+    });
+    assert.equal(resCreate.status, 403);
+
+    const resMine = await api('GET', '/api/articles/my-articles', {
+        token: editorToken
+    });
+    assert.equal(resMine.status, 403);
+});
