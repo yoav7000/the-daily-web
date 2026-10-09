@@ -28,7 +28,7 @@ Docker uses the secrets from your shell environment (`JWT_SECRET`, `SESSION_SECR
 3. `cp .env.example .env` and fill in the values (see [Environment variables](#environment-variables)).
 4. `npm run dev` (or `npm start`)
 
-No MongoDB at all? Set `USE_MEMORY_DB=true` in `.env`. The server then starts a temporary in-memory database filled with the demo data. Everything is lost when the server stops, and it is refused in production.
+No MongoDB at all? Set `USE_MEMORY_DB=true` in `.env`. The server then starts its own MongoDB and fills it with the demo data on the first run. Its files are kept in `data/local-db` (not committed), so articles, drafts and logins survive a server restart. Delete that folder to start again from fresh demo data, or set `MEMORY_DB_PERSIST=false` for a throwaway database. It is refused in production.
 
 ### Demo data
 
@@ -36,7 +36,7 @@ No MongoDB at all? Set `USE_MEMORY_DB=true` in `.env`. The server then starts a 
 npm run seed
 ```
 
-Wipes the database and creates 520 articles in every status, 6 users, comments, and a historical view curve for the Impact Analytics graph. It refuses to run when `NODE_ENV=production`.
+Wipes the database and creates 520 articles in every status (including published articles whose update waits for the editor or was sent back for fixes), 6 users, comments, and a historical view curve for the Impact Analytics graph. It refuses to run when `NODE_ENV=production`.
 
 Demo users (password `password123`): `sarah_editor`, `yossi_editor`, `dan_reporter`, `michal_reporter`, `ron_reporter`, `noa_reporter`.
 
@@ -78,7 +78,8 @@ Every test file starts its own temporary in-memory MongoDB, so tests never touch
 | `OPENWEATHER_API_KEY` | OpenWeatherMap key for the weather widget (new free keys can take up to 2 hours to activate). Without a working key the widget shows sample data and says so |
 | `TRUST_PROXY` | Number of reverse proxies in front of the server (e.g. `1`). Needed behind nginx or a load balancer so the comment limit sees the real visitor IP. Leave unset otherwise |
 | `WEATHER_CITY` | City for the weather widget (default `Tel Aviv,IL`) |
-| `USE_MEMORY_DB` | `true` = temporary in-memory database with demo data (development only) |
+| `USE_MEMORY_DB` | `true` = the server starts its own MongoDB with demo data, kept in `data/local-db` (development only) |
+| `MEMORY_DB_PERSIST` | `false` = with `USE_MEMORY_DB`, keep nothing on disk (everything is lost when the server stops) |
 
 ---
 
@@ -112,7 +113,7 @@ the-daily-web/
 │   ├── app.js                   # Express setup, middleware, routes
 │   ├── server.js                # Entry point
 │   ├── config/
-│   │   ├── db.js                # MongoDB connection (optional in-memory dev mode)
+│   │   ├── db.js                # MongoDB connection (optional built-in dev database)
 │   │   ├── session.js           # express-session + connect-mongo (login survives restarts)
 │   │   └── secrets.js           # Reads JWT/session secrets, required in production
 │   ├── constants/               # Article statuses, categories, default image

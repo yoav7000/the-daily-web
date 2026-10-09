@@ -667,17 +667,34 @@ const editorDirectEdit = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'הכתבה לא נמצאה' });
         }
 
-        if (title !== undefined) article.title = cleanText(title);
-        if (summary !== undefined) article.summary = cleanText(summary);
-        if (content !== undefined) article.content = sanitizeHtml(content);
-        if (category !== undefined && ARTICLE_CATEGORIES.includes(category)) article.category = category;
-        if (mainImage !== undefined) article.mainImage = normalizeImageUrl(mainImage);
+        // A published article with an update in progress: the editor edits that update (the version they see
+        // in the review), and readers keep the approved version until the editor approves it
+        const editsPendingUpdate = article.status === ARTICLE_STATUS.PUBLISHED && Boolean(article.draftVersion);
+        const target = editsPendingUpdate ? article.draftVersion : article;
+
+        if (title !== undefined) target.title = cleanText(title);
+        if (summary !== undefined) target.summary = cleanText(summary);
+        if (content !== undefined) target.content = sanitizeHtml(content);
+        if (category !== undefined && ARTICLE_CATEGORIES.includes(category)) target.category = category;
+        if (mainImage !== undefined) target.mainImage = normalizeImageUrl(mainImage);
+
+        if (editsPendingUpdate) {
+            article.draftVersion.updatedAt = new Date();
+        } else if (article.status === ARTICLE_STATUS.PUBLISHED) {
+            // The editor changed the live article: that is a published update, so it gets a marker on the Impact Analytics graph
+            article.revisionsHistory.push({
+                approvedAt: new Date(),
+                approvedBy: req.user._id,
+                changesSummary: 'עדכון ישיר של עורך'
+            });
+        }
 
         await article.save();
 
         logOperation('EDITOR_DIRECT_EDIT', {
             articleId: article._id,
-            editorId: req.user._id
+            editorId: req.user._id,
+            editedPendingUpdate: editsPendingUpdate
         });
 
         return res.status(200).json({

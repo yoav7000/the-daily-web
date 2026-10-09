@@ -223,6 +223,7 @@ const seedDatabase = async ({ connect = true } = {}) => {
             let publishedAt = null;
             let editorFeedback = null;
             let revisionsHistory = [];
+            let draftVersion = null;
 
             if (i <= 60) {
                 // טיוטה בהכנה
@@ -269,6 +270,22 @@ const seedDatabase = async ({ connect = true } = {}) => {
                         changesSummary: 'הוספת תיעוד מצולם וראיון בלעדי עם מומחה בכיר'
                     });
                 }
+
+                // כתבות שפורסמו ונמצא עבורן עדכון בתהליך: הקוראים רואים את הגרסה המאושרת,
+                // והעורך יכול להשוות בין הגרסה המפורסמת לגרסה החדשה (ממתינה לאישור / הוחזרה לתיקונים)
+                if (i >= 176 && i <= 187) {
+                    const isPendingUpdate = i <= 183;
+                    draftVersion = {
+                        title: `${title} - עדכון`,
+                        summary: `${summary} העדכון כולל נתונים חדשים מהשטח.`,
+                        content: `${content}<p>עדכון: התקבלו פרטים נוספים, והכתבה הורחבה בהתאם.</p>`,
+                        category,
+                        mainImage,
+                        status: isPendingUpdate ? ARTICLE_STATUS.PENDING_APPROVAL : ARTICLE_STATUS.REVISION_REQUESTED,
+                        editorFeedback: isPendingUpdate ? null : 'נא לציין את מקור הנתונים החדשים בעדכון',
+                        updatedAt: new Date(now - (i % 5) * 60 * 60 * 1000)
+                    };
+                }
             }
 
             articlesToInsert.push({
@@ -282,6 +299,7 @@ const seedDatabase = async ({ connect = true } = {}) => {
                 editorFeedback,
                 publishedAt,
                 revisionsHistory,
+                draftVersion,
                 createdAt: publishedAt || new Date(now - (i % 10) * oneDayMs),
                 updatedAt: new Date()
             });
@@ -411,6 +429,7 @@ const seedDatabase = async ({ connect = true } = {}) => {
     console.log(`  * ממתינות לאישור (Pending): ${insertedArticles.filter(a => a.status === ARTICLE_STATUS.PENDING_APPROVAL).length}`);
     console.log(`  * הוחזרו לתיקונים (Revision): ${insertedArticles.filter(a => a.status === ARTICLE_STATUS.REVISION_REQUESTED).length}`);
     console.log(`  * כתבות עם היסטוריית עדכונים: 25 כתבות`);
+    console.log(`  * כתבות שפורסמו ועדכון שלהן בתהליך: ${insertedArticles.filter(a => a.draftVersion).length}`);
     console.log(`- רשומות סטטיסטיקה (ViewStat): ${viewStatsToInsert.length}`);
     console.log(`- תגובות קוראים (Comments): ${commentsToInsert.length}`);
     if (showcaseArticle) {
