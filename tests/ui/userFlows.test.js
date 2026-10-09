@@ -649,7 +649,8 @@ flow('Impact Analytics: a reporter\'s edit of a published article is not shown a
             assert.deepEqual(seen.markers.map((m) => m.type), ['INITIAL_PUBLISH'], 'the graph marks only the publication');
             // a new article is shown in minutes, not squeezed into a single hourly point
             assert.ok(seen.labels.length >= 1);
-            const step = (await (await fetch(`${site.base}/api/analytics/article/${id}`)).json()).timeline.stepMinutes;
+            // asked from the editor's page, so the request carries the editor's login
+            const step = await ep.evaluate(`api('GET', '/api/analytics/article/${id}').then((d) => d.timeline.stepMinutes)`);
             assert.equal(step, 5);
             const label = seen.labels[seen.markers[0].pointIndex];
             assert.ok(label.endsWith(await localLabelTime(ep, publishedAt, step)), `publication label ${label} matches the publication time ${publishedAt} in this browser's clock`);

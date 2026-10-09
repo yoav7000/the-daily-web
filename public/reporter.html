@@ -502,6 +502,10 @@
             return currentSave;
         }
 
+        function bodyBytes(payload) {
+            return new TextEncoder().encode(JSON.stringify(payload)).length;
+        }
+
         function readFormPayload() {
             const catVal = field('editCategory') ? field('editCategory').value.trim() : 'חדשות';
             return {
@@ -526,8 +530,9 @@
 
             updateAutoSaveIndicator('saving', 'שומרים ברקע...');
             try {
-                // keepalive lets the save finish even if the page is closed meanwhile (browsers allow it up to 64 KB)
-                const options = { keepalive: JSON.stringify(payload).length < 60000 };
+                // keepalive lets the save finish even if the page is closed meanwhile (browsers allow it up to 64 KB).
+                // The limit is in bytes, and a Hebrew letter takes 2 bytes, so measure the encoded body, not its length.
+                const options = { keepalive: bodyBytes(payload) < 60000 };
                 const data = articleId
                     ? await api('PUT', `/api/articles/${articleId}/autosave`, payload, options)
                     : await api('POST', '/api/articles/autosave', payload, options);
@@ -558,6 +563,8 @@
             const articleId = field('editArticleId').value;
             const payload = readFormPayload();
             if (!articleId && !payload.title && !payload.content) return;
+            // too big for a keepalive request: the browser would refuse it, so leave the changes to the regular save
+            if (bodyBytes(payload) >= 60000) return;
 
             const headers = { 'Content-Type': 'application/json' };
             const token = getAuthToken();
