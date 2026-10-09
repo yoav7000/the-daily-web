@@ -24,7 +24,7 @@ const api = async (method, path, { body, token } = {}) => {
     return { status: res.status, body: await res.json().catch(() => ({})) };
 };
 
-const analytics = async (id, tzOffset = ISRAEL_SUMMER) => (await api('GET', `/api/analytics/article/${id}?tzOffset=${tzOffset}`)).body;
+const analytics = async (id, tzOffset = ISRAEL_SUMMER) => (await api('GET', `/api/analytics/article/${id}?tzOffset=${tzOffset}`, { token: editor.token })).body;
 
 // The reporter writes and submits, the editor approves: the article is live
 const publishNewArticle = async (title) => {
@@ -167,7 +167,7 @@ test('long periods are grouped into days that start at the viewer\'s midnight', 
 
 test('a bad time zone value falls back to the server clock instead of failing', async () => {
     const id = await publishNewArticle('כתבה עם אזור זמן שגוי');
-    const res = await api('GET', `/api/analytics/article/${id}?tzOffset=banana`);
+    const res = await api('GET', `/api/analytics/article/${id}?tzOffset=banana`, { token: editor.token });
     assert.equal(res.status, 200);
     assert.equal(res.body.timeline.tzOffset, new Date().getTimezoneOffset());
 });
