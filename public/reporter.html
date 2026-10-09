@@ -163,6 +163,7 @@
                             <div class="card">
                                 <h3><label for="editMainImage">תמונה ראשית (כתובת URL)</label></h3>
                                 <input type="url" class="input input-sm" id="editMainImage" placeholder="https://..." dir="ltr">
+                                <div id="imagePreviewHint" class="alert alert-warn mt-2 small" hidden></div>
                                 <div class="mt-3">
                                     <span class="hint">תמונות לדוגמה:</span>
                                     <div class="chips mt-2">
@@ -598,16 +599,52 @@
 
         // ---- image and formatting helpers ----------------------------------------------------
         function updateImagePreview() {
-            const url = field('editMainImage').value.trim();
+            let url = field('editMainImage').value.trim();
             const box = field('imagePreviewContainer');
             const img = field('imagePreview');
+            const hint = field('imagePreviewHint');
+
+            // Auto-extract real destination image if user pasted a Google Images URL containing imgurl
+            try {
+                if (url.includes('google.') && url.includes('imgurl=')) {
+                    const parsed = new URL(url);
+                    const realImg = parsed.searchParams.get('imgurl');
+                    if (realImg) {
+                        url = decodeURIComponent(realImg);
+                        field('editMainImage').value = url;
+                    }
+                }
+            } catch (e) {}
+
             if (!url) {
                 box.hidden = true;
+                if (hint) hint.hidden = true;
                 return;
             }
-            img.dataset.fallbackApplied = '1'; // a broken address hides the preview instead of showing the placeholder
-            img.onerror = () => { box.hidden = true; };
-            img.onload = () => { box.hidden = false; };
+
+            // Check if user pasted a search results webpage rather than a direct image file
+            const isSearchPage = url.includes('google.') && url.includes('/search') && !url.includes('imgurl=');
+            if (isSearchPage) {
+                box.hidden = true;
+                if (hint) {
+                    hint.textContent = 'שימו לב: זוהי כתובת של דף חיפוש בגוגל ולא קובץ תמונה. בגוגל תמונות יש ללחוץ מקש ימני על התמונה ולבחור "העתק כתובת תמונה" (Copy image address).';
+                    hint.hidden = false;
+                }
+                return;
+            }
+
+            img.dataset.fallbackApplied = '1';
+            img.onerror = () => {
+                box.hidden = true;
+                if (hint) {
+                    hint.textContent = 'לא הצלחנו לטעון את התמונה. ודאו שהקישור מוביל ישירות לקובץ תמונה (JPG, PNG וכד\').';
+                    hint.hidden = false;
+                }
+            };
+            img.onload = () => {
+                box.hidden = false;
+                if (hint) hint.hidden = true;
+            };
             img.src = url;
         }
 

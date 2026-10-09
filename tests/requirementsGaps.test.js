@@ -278,3 +278,15 @@ test('Staff dashboards can load hundreds of articles at once, public lists stay 
     const publicList = await api('GET', '/api/articles/public?limit=300');
     assert.equal(publicList.body.articles.length, 100, 'public lists are capped at 100 per request');
 });
+
+test('Image URL normalization extracts direct destination images and protects against broken search URLs', async () => {
+    const googleImgUrl = 'https://www.google.com/imgres?imgurl=https%3A%2F%2Fexample.com%2Fphoto.jpg&imgrefurl=https%3A%2F%2Fexample.com';
+    const id = await newArticle({ mainImage: googleImgUrl });
+    const stored = await Article.findById(id);
+    assert.equal(stored.mainImage, 'https://example.com/photo.jpg', 'Google imgres URL should be unwrapped to real image');
+
+    const searchUrl = 'https://www.google.com/search?q=test&udm=imgs';
+    const id2 = await newArticle({ mainImage: searchUrl });
+    const stored2 = await Article.findById(id2);
+    assert.equal(stored2.mainImage, '/images/default-article.svg', 'Google search page URL should fall back to default image');
+});
