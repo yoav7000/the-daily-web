@@ -30,7 +30,8 @@
             </div>
             <div class="actions">
                 <a class="btn btn-secondary" href="/"><svg class="icon"><use href="#i-newspaper"></use></svg> צפייה באתר</a>
-                <a class="btn btn-primary" href="/reporter.html?new=1"><svg class="icon"><use href="#i-plus"></use></svg> כתבה חדשה</a>
+                <a class="btn btn-primary" href="/reporter.html?new=1" data-reporter-only hidden><svg class="icon"><use href="#i-plus"></use></svg> כתבה חדשה</a>
+                <a class="btn btn-primary" href="/editor.html" data-editor-only hidden><svg class="icon"><use href="#i-shield-check"></use></svg> לדסק עורכים</a>
             </div>
         </header>
 
@@ -46,7 +47,7 @@
         <section aria-labelledby="desksTitle">
             <div class="section-title"><h2 id="desksTitle">הדסקים שלכם</h2></div>
             <div class="desk-grid">
-                <a class="card card-hover desk-card" id="cardReporterDesk" href="/reporter.html">
+                <a class="card card-hover desk-card" id="cardReporterDesk" href="/reporter.html" data-reporter-only hidden>
                     <span class="desk-icon"><svg class="icon"><use href="#i-square-pen"></use></svg></span>
                     <h3>דסק כתבים</h3>
                     <p>כותבים ועורכים כתבות עם שמירה אוטומטית, מגישים לאישור עורך, ורואים הערות לתיקון.</p>
@@ -147,10 +148,14 @@
             applyRoleVisibility(user);
             document.getElementById('lockedDesks').hidden = user.role === 'editor';
 
-            // a reporter who followed a link to an editor-only page was sent here: say why
+            // staff who followed a link to an unauthorized page were sent here: say why
             const params = new URLSearchParams(window.location.search);
             if (params.has('denied')) {
-                UI.toast('העמוד שביקשתם זמין לעורכים בלבד.', 'info');
+                const deniedRole = params.get('denied');
+                const message = deniedRole === 'reporter'
+                    ? 'העמוד שביקשתם זמין לכתבים בלבד.'
+                    : (deniedRole === 'editor' ? 'העמוד שביקשתם זמין לעורכים בלבד.' : 'אין לך הרשאה לגשת לעמוד המבוקש.');
+                UI.toast(message, 'info');
                 window.history.replaceState(null, '', window.location.pathname);
             }
 
