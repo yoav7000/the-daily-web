@@ -310,10 +310,12 @@ html[dir='rtl'] .side-link[aria-current='page']::before { border-radius: 4px 0 0
         box-shadow: var(--shadow-3);
         transform: translateX(105%);
         visibility: hidden;
+        /* while it slides away it no longer takes taps meant for the page under it */
+        pointer-events: none;
         transition: transform 0.28s var(--ease), visibility 0s linear 0.28s;
     }
     html:not([dir='rtl']) .sidebar { transform: translateX(-105%); }
-    body.nav-open .sidebar { transform: none; visibility: visible; transition: transform 0.28s var(--ease); }
+    body.nav-open .sidebar { transform: none; visibility: visible; pointer-events: auto; transition: transform 0.28s var(--ease); }
     .side-link[aria-current='page']::before { inset-inline-start: -14px; }
 
     .sidebar-backdrop {

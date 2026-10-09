@@ -146,6 +146,11 @@ async function clickEveryLink(page, note, job, viewport) {
                     return box.left >= -1 && box.right <= innerWidth + 1;
                 });
                 found = await page.run(audit.markLink, href);
+                if (!found) {
+                    // the link is not in the drawer either (hidden for this role): close it again, or it covers the next link
+                    await page.run(() => document.querySelector('.sidebar [data-action="close-nav"]').click());
+                    await page.waitFor(() => getComputedStyle(document.querySelector('.sidebar')).visibility === 'hidden');
+                }
             }
         }
         if (!found) continue;

@@ -127,7 +127,8 @@ function requireAuth(options) {
     }
     return authCheck.then((user) => {
         if (user && options && options.role && user.role !== options.role) {
-            window.location.replace('/portal.html?denied=1');
+            // the portal tells them which role the page is for
+            window.location.replace(`/portal.html?denied=${encodeURIComponent(options.role)}`);
             return null;
         }
         return user;
