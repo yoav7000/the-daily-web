@@ -9,6 +9,7 @@ const Comment = require('../models/Comment');
 const ViewStat = require('../models/ViewStat');
 const { ARTICLE_STATUS, ARTICLE_CATEGORIES } = require('../constants/articleConstants');
 const { getTimeBucketKey } = require('../controllers/analyticsController');
+const { sanitizeHtml } = require('../utils/sanitizeHtml');
 
 const MONGO_URI = process.env.MONGODB_URI || 'mongodb://127.0.0.1:27017/the-daily-web';
 
@@ -194,29 +195,17 @@ const seedDatabase = async ({ connect = true } = {}) => {
 
             const title = `${baseTitle} (מהדורה #${i})`;
             const summary = `תקציר מקיף ומפורט עבור כתבה מספר ${i} בתחום ה-${category}. דיווח שוטף ועדכני מאת כתבי The Daily Web.`;
-            const content = `
-                <p class="lead fw-bold mb-4" style="font-size: 1.25rem; line-height: 1.7; color: #1e293b;">
-                    ${summary}
-                </p>
-                <p style="margin-bottom: 1.4rem; font-size: 1.15rem; line-height: 1.8;">
-                    דיווח מיוחד: בהתפתחות משמעותית בתחום ה-${category}, גורמים בכירים מוסרים כי נרשמת התעניינות רבה מצד גורמים בארץ ובעולם סביב <strong>${title}</strong>. המהלך מסמן נקודת מפנה ומציב רף חדש של פעילות בענף.
-                </p>
-                <h3 class="fw-bold my-4" style="color: #0f172a; font-size: 1.4rem; border-right: 4px solid #dc2626; padding-right: 12px;">
-                    רקע והשתלשלות האירועים
-                </h3>
-                <p style="margin-bottom: 1.4rem; font-size: 1.15rem; line-height: 1.8;">
-                    במהלך השבועות האחרונים התקיימו מגעים קדחתניים ופגישות עבודה אינטנסיביות במטרה לגבש את המתווה הנוכחי. מומחים ומובילי דעה מעריכים כי המגמה הנוכחית עשויה להשפיע על המערכת כולה לאורך זמן, כאשר ההשפעות כבר מורגשות היטב בשטח.
-                </p>
-                <blockquote class="p-3 my-4 bg-light rounded-2 border-end border-3 border-danger" style="font-style: italic; font-size: 1.15rem; color: #334155;">
-                    ״אנו עדים לשינוי תפיסתי עמוק שמחייב היערכות מחודשת מכלל הגורמים הפועלים בזירה״, הדגיש גורם מקצועי המעורה בפרטים.
-                </blockquote>
-                <h3 class="fw-bold my-4" style="color: #0f172a; font-size: 1.4rem; border-right: 4px solid #2563eb; padding-right: 12px;">
-                    משמעויות והשלכות לעתיד
-                </h3>
-                <p style="margin-bottom: 1.4rem; font-size: 1.15rem; line-height: 1.8;">
-                    במבט קדימה, הציפיות הן להמשך התרחבות והעמקת הפעילות בחודשים הקרובים. כתבי מערכת The Daily Web ימשיכו לעקוב מקרוב אחר ההתפתחויות ויביאו דיווחים שוטפים ככל שיידרש.
-                </p>
-            `;
+            // Plain article HTML, run through the same sanitizer as a reporter's text: no inline colors or sizes,
+            // so the site's own article styles (and its light / dark theme) decide how it looks
+            const content = sanitizeHtml(`
+                <p><strong>${summary}</strong></p>
+                <p>דיווח מיוחד: בהתפתחות משמעותית בתחום ה-${category}, גורמים בכירים מוסרים כי נרשמת התעניינות רבה מצד גורמים בארץ ובעולם סביב <strong>${title}</strong>. המהלך מסמן נקודת מפנה ומציב רף חדש של פעילות בענף.</p>
+                <h3>רקע והשתלשלות האירועים</h3>
+                <p>במהלך השבועות האחרונים התקיימו מגעים קדחתניים ופגישות עבודה אינטנסיביות במטרה לגבש את המתווה הנוכחי. מומחים ומובילי דעה מעריכים כי המגמה הנוכחית עשויה להשפיע על המערכת כולה לאורך זמן, כאשר ההשפעות כבר מורגשות היטב בשטח.</p>
+                <blockquote>״אנו עדים לשינוי תפיסתי עמוק שמחייב היערכות מחודשת מכלל הגורמים הפועלים בזירה״, הדגיש גורם מקצועי המעורה בפרטים.</blockquote>
+                <h3>משמעויות והשלכות לעתיד</h3>
+                <p>במבט קדימה, הציפיות הן להמשך התרחבות והעמקת הפעילות בחודשים הקרובים. כתבי מערכת The Daily Web ימשיכו לעקוב מקרוב אחר ההתפתחויות ויביאו דיווחים שוטפים ככל שיידרש.</p>
+            `.trim());
             const mainImage = dummyImages[i % dummyImages.length];
 
             let status = ARTICLE_STATUS.PUBLISHED;
