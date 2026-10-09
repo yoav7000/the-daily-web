@@ -132,10 +132,10 @@
                         <span id="reviewNoticeText">מוצגת הגרסה הנוכחית מול הגרסה החדשה שממתינה לאישור.</span>
                     </div>
 
-                    <div class="field" style="max-width: 460px">
-                        <label class="label" for="compareTargetSelect">השוואה מול</label>
-                        <select class="select select-sm" id="compareTargetSelect">
-                            <option value="original">הגרסה המפורסמת</option>
+                    <div class="field" id="diffVersionInfoContainer" style="max-width: 520px">
+                        <label class="label" for="compareVersionSelect">השוואת גרסאות של הכתבה</label>
+                        <select class="select select-sm" id="compareVersionSelect" aria-label="בחירת גרסה להשוואה">
+                            <option value="original">הגרסה המפורסמת כרגע באתר מול העדכון המוצע</option>
                         </select>
                     </div>
 
@@ -458,24 +458,34 @@
             badge.textContent = isUpdate ? 'עדכון לכתבה שפורסמה' : meta.label;
             el('reviewDiffModalLabel').textContent = `בדיקת כתבה: ${article.pendingVersion.title || 'טיוטה'}`;
 
-            populateCompareTargets(articleId, isUpdate);
-            renderDiffComparison('original');
+            populateVersionComparison(article, isUpdate);
+            renderDiffComparison();
             UI.openModal(reviewModal);
         });
 
-        // the comparison can be against the published version, or against any other article of the loaded page
-        function populateCompareTargets(currentId, isUpdate) {
-            const options = [`<option value="original" selected>${isUpdate ? 'הגרסה המפורסמת כרגע באתר' : 'ללא השוואה (הכתבה שהוגשה)'}</option>`];
-            allArticles.forEach((article) => {
-                if (article._id !== currentId) {
-                    options.push(`<option value="${escapeHtml(article._id)}">מול: ${escapeHtml((article.title || '').substring(0, 40))} (${escapeHtml(article.category || '')})</option>`);
-                }
-            });
-            el('compareTargetSelect').innerHTML = options.join('');
+        // Version comparison is strictly between versions of the same article (live published vs proposed pending update)
+        function populateVersionComparison(article, isUpdate) {
+            const container = el('diffVersionInfoContainer');
+            const select = el('compareVersionSelect');
+            if (!isUpdate) {
+                container.hidden = true;
+                return;
+            }
+            container.hidden = false;
+            const revCount = (article.revisionsHistory || []).length;
+            const options = [`<option value="original" selected>הגרסה המפורסמת כרגע באתר מול העדכון המוצע</option>`];
+            if (revCount > 0) {
+                article.revisionsHistory.forEach((rev, idx) => {
+                    const editor = rev.approvedBy ? (rev.approvedBy.fullName || rev.approvedBy.username) : 'עורך';
+                    const date = new Date(rev.approvedAt).toLocaleDateString('he-IL');
+                    options.push(`<option value="rev_${idx}" disabled>גרסה מאושרת #${idx + 1} (${date} ע"י ${escapeHtml(editor)})</option>`);
+                });
+            }
+            select.innerHTML = options.join('');
         }
-        el('compareTargetSelect').addEventListener('change', (event) => renderDiffComparison(event.target.value));
+        el('compareVersionSelect').addEventListener('change', () => renderDiffComparison());
 
-        function renderDiffComparison(targetValue) {
+        function renderDiffComparison() {
             if (!currentReviewArticleData) return;
             const article = currentReviewArticleData;
             const next = article.pendingVersion;
@@ -496,49 +506,32 @@
                 el('diffContentPane').innerHTML = diffHtml;
             };
 
-            if (targetValue === 'original') {
-                if (article.isPublishedUpdate && article.currentPublished) {
-                    // against the version the public sees now
-                    const published = article.currentPublished;
-                    showLeft({
-                        heading: `${icon('globe')} הגרסה שמוצגת לציבור כרגע`,
-                        contentHeader: `${icon('file-text')} התוכן באתר (לפני העדכון)`,
-                        notice: 'מוצגת הגרסה שהקוראים רואים כרגע מול העדכון שהכתב הציע. אישור יחליף אותה.',
-                        title: published.title || '',
-                        category: published.category || '',
-                        summary: published.summary || 'אין תקציר',
-                        contentHtml: published.content || '',
-                        diffHtml: computeWordDiffHtml(stripHtmlTags(published.content || ''), newText)
-                    });
-                } else {
-                    // a first submission: nothing to compare with, show what was submitted
-                    showLeft({
-                        heading: `${icon('file-text')} פרטי ההגשה`,
-                        contentHeader: `${icon('file-text')} תקציר ופרטי הכתב`,
-                        notice: 'כתבה שהוגשה לראשונה לאישור פרסום. אפשר גם לבחור כתבה אחרת להשוואה.',
-                        title: next.title || '',
-                        category: next.category || '',
-                        summary: `כתב/ת: ${(article.author && (article.author.fullName || article.author.username)) || 'כתב מערכת'}\nתאריך: ${new Date().toLocaleDateString('he-IL')}`,
-                        contentHtml: `<p><strong>תקציר:</strong></p><p>${escapeHtml(next.summary || 'ללא תקציר')}</p><p><strong>קטגוריה:</strong> ${escapeHtml(next.category || '')}</p>`,
-                        diffHtml: `<div class="prose">${next.content || 'ללא תוכן'}</div>`
-                    });
-                }
-                return;
+            if (article.isPublishedUpdate && article.currentPublished) {
+                // against the version the public sees now
+                const published = article.currentPublished;
+                showLeft({
+                    heading: `${icon('globe')} הגרסה שמוצגת לציבור כרגע`,
+                    contentHeader: `${icon('file-text')} התוכן באתר (לפני העדכון המוצע)`,
+                    notice: 'מוצגת הגרסה שהקוראים רואים כרגע מול העדכון שהכתב הציע. אישור יחליף אותה.',
+                    title: published.title || '',
+                    category: published.category || '',
+                    summary: published.summary || 'אין תקציר',
+                    contentHtml: published.content || '',
+                    diffHtml: computeWordDiffHtml(stripHtmlTags(published.content || ''), newText)
+                });
+            } else {
+                // a first submission: nothing to compare with, show what was submitted
+                showLeft({
+                    heading: `${icon('file-text')} פרטי ההגשה`,
+                    contentHeader: `${icon('file-text')} תקציר ופרטי הכתב`,
+                    notice: 'כתבה שהוגשה לראשונה לאישור פרסום.',
+                    title: next.title || '',
+                    category: next.category || '',
+                    summary: `כתב/ת: ${(article.author && (article.author.fullName || article.author.username)) || 'כתב מערכת'}\nתאריך: ${new Date().toLocaleDateString('he-IL')}`,
+                    contentHtml: `<p><strong>תקציר:</strong></p><p>${escapeHtml(next.summary || 'ללא תקציר')}</p><p><strong>קטגוריה:</strong> ${escapeHtml(next.category || '')}</p>`,
+                    diffHtml: `<div class="prose">${next.content || 'ללא תוכן'}</div>`
+                });
             }
-
-            // against another article of the list
-            const other = allArticles.find((item) => item._id === targetValue);
-            if (!other) return;
-            showLeft({
-                heading: `${icon('files')} השוואה מול: ${escapeHtml((other.title || '').substring(0, 40))}`,
-                contentHeader: `${icon('file-text')} תוכן הכתבה שנבחרה להשוואה`,
-                notice: `השוואה בין הכתבה הנבדקת לבין "${other.title}".`,
-                title: other.title || '',
-                category: other.category || '',
-                summary: other.summary || 'אין תקציר',
-                contentHtml: other.content || '',
-                diffHtml: computeWordDiffHtml(stripHtmlTags(other.content || ''), newText)
-            });
         }
 
         // ---- approve / return / edit / delete -----------------------------------------------

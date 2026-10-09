@@ -473,11 +473,15 @@
         }
 
         ['editTitle', 'editSummary', 'editContent', 'editCategory', 'editMainImage'].forEach((id) => {
-            field(id).addEventListener(id === 'editCategory' ? 'change' : 'input', () => {
+            const inputEl = field(id);
+            if (!inputEl) return;
+            const onFieldChange = () => {
                 if (id === 'editMainImage') updateImagePreview();
                 if (id === 'editContent') updateWordStats();
                 triggerAutoSave();
-            });
+            };
+            inputEl.addEventListener('input', onFieldChange);
+            inputEl.addEventListener('change', onFieldChange);
         });
         field('articleForm').addEventListener('submit', (event) => event.preventDefault());
 
@@ -502,9 +506,10 @@
         async function saveFormToServer() {
             const changesAtStart = changeCounter;
             const articleId = field('editArticleId').value;
+            const catVal = field('editCategory') ? field('editCategory').value.trim() : 'חדשות';
             const payload = {
                 title: field('editTitle').value.trim(),
-                category: field('editCategory').value,
+                category: catVal || 'חדשות',
                 mainImage: field('editMainImage').value.trim(),
                 summary: field('editSummary').value.trim(),
                 content: field('editContent').value
@@ -649,6 +654,11 @@
         }
 
         UI.on('sample-image', (button) => {
+            const catName = button.textContent.trim();
+            const selectEl = field('editCategory');
+            if (catName && selectEl && [...selectEl.options].some((opt) => opt.value === catName)) {
+                selectEl.value = catName;
+            }
             field('editMainImage').value = button.dataset.url;
             updateImagePreview();
             triggerAutoSave();
