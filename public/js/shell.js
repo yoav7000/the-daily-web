@@ -104,8 +104,7 @@
         }
         const name = personName(user);
         const deskLinks = user.role === 'editor'
-            ? `<a class="menu-item" role="menuitem" href="/editor.html">${icon('shield-check')} דסק עורכים</a>
-               <a class="menu-item" role="menuitem" href="/reporter.html">${icon('square-pen')} דסק כתבים</a>`
+            ? `<a class="menu-item" role="menuitem" href="/editor.html">${icon('shield-check')} דסק עורכים</a>`
             : `<a class="menu-item" role="menuitem" href="/reporter.html">${icon('square-pen')} דסק כתבים</a>`;
         return `
             <button type="button" class="user-chip" data-action="toggle-menu" data-menu="userMenu" aria-haspopup="menu" aria-expanded="false" aria-label="תפריט המשתמש">
@@ -162,7 +161,7 @@
     const STAFF_NAV = [
         { id: 'portal', href: '/portal.html', label: 'סקירה כללית', icon: 'layout-grid' },
         { group: 'עבודה' },
-        { id: 'reporter', href: '/reporter.html', label: 'דסק כתבים', icon: 'square-pen', badge: 'reporter' },
+        { id: 'reporter', href: '/reporter.html', label: 'דסק כתבים', icon: 'square-pen', reporterOnly: true, badge: 'reporter' },
         { id: 'editor', href: '/editor.html', label: 'דסק עורכים', icon: 'shield-check', editorOnly: true, badge: 'editor' },
         { group: 'תובנות וניהול', editorOnly: true },
         { id: 'analytics', href: '/analytics.html', label: 'Impact Analytics', icon: 'chart-column', editorOnly: true },
@@ -172,10 +171,12 @@
     function sideNavHtml() {
         return STAFF_NAV.map((item) => {
             const editorOnly = item.editorOnly ? ' data-editor-only hidden' : '';
-            if (item.group) return `<div class="side-group"${editorOnly}>${escapeHtml(item.group)}</div>`;
+            const reporterOnly = item.reporterOnly ? ' data-reporter-only hidden' : '';
+            const roleAttrs = editorOnly || reporterOnly;
+            if (item.group) return `<div class="side-group"${roleAttrs}>${escapeHtml(item.group)}</div>`;
             const current = item.id === PAGE ? ' aria-current="page"' : '';
             const badge = item.badge ? `<span class="badge badge-accent" data-badge="${item.badge}" hidden></span>` : '';
-            return `<a class="side-link" href="${item.href}"${current}${editorOnly}>${icon(item.icon)}<span>${escapeHtml(item.label)}</span>${badge}</a>`;
+            return `<a class="side-link" href="${item.href}"${current}${roleAttrs}>${icon(item.icon)}<span>${escapeHtml(item.label)}</span>${badge}</a>`;
         }).join('');
     }
 
@@ -234,10 +235,12 @@
             badge.textContent = count;
             badge.hidden = !count;
         };
-        try {
-            const mine = await api('GET', '/api/articles/my-stats');
-            setBadge('reporter', (mine.stats.revision_requested || 0) + (mine.stats.revisionUpdates || 0));
-        } catch (err) { /* the badge is a nicety */ }
+        if (user.role === 'reporter') {
+            try {
+                const mine = await api('GET', '/api/articles/my-stats');
+                setBadge('reporter', (mine.stats.revision_requested || 0) + (mine.stats.revisionUpdates || 0));
+            } catch (err) { /* the badge is a nicety */ }
+        }
         if (user.role === 'editor') {
             try {
                 const all = await api('GET', '/api/articles/editor/stats');
