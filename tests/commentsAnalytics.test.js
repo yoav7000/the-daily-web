@@ -220,7 +220,9 @@ test('Scalable View Analytics & Impact Graph Test Suite', async (t) => {
             viewCount: 150
         });
 
-        const res = await fetch(`${baseUrl}/api/analytics/article/${testArticleId}`);
+        const res = await fetch(`${baseUrl}/api/analytics/article/${testArticleId}`, {
+            headers: { 'Authorization': `Bearer ${editorToken}` }
+        });
         assert.equal(res.status, 200);
         const data = await res.json();
 
