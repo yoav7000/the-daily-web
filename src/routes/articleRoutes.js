@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const articleController = require('../controllers/articleController');
-const { authenticate, requireReporter, requireEditor } = require('../middleware/auth');
+const { authenticate, requireReporter, requireEditor, requireRole } = require('../middleware/auth');
 
 // ==========================================
 // PUBLIC ROUTES (No login required)
@@ -10,21 +10,21 @@ router.get('/public', articleController.getPublicArticles);
 router.get('/public/:id', articleController.getPublicArticleById);
 
 // ==========================================
-// REPORTER ROUTES (Authenticated reporters)
+// REPORTER & SHARED EDIT ROUTES (Authenticated)
 // ==========================================
 router.use(authenticate); // Require authentication for all routes below
 
-// Create new article
+// Create new article (reporters only)
 router.post('/', requireReporter, articleController.createArticle);
 
-// Auto-save endpoint (new draft or existing draft)
+// Auto-save endpoint (reporters only)
 router.post('/autosave', requireReporter, articleController.autoSaveArticle);
 router.put('/:id/autosave', requireReporter, articleController.autoSaveArticle);
 
 // Reporter's article management
 router.get('/my-articles', requireReporter, articleController.getMyArticles);
 router.get('/my-stats', requireReporter, articleController.getMyStats);
-router.get('/:id/edit', requireReporter, articleController.getArticleForEdit);
+router.get('/:id/edit', requireRole('reporter', 'editor'), articleController.getArticleForEdit);
 router.post('/:id/submit', requireReporter, articleController.submitForApproval);
 
 // ==========================================
