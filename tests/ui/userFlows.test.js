@@ -700,8 +700,8 @@ flow('Small screens: the workspace menu is a drawer that opens, closes with Esca
         await sleep(450);
         await page.click('[data-action="open-nav"]');
         await sleep(400);
-        await page.click('.sidebar .side-link[href="/reporter.html"]');
-        await page.waitForUrl(/\/reporter\.html/);
+        await page.click('.sidebar .side-link[href="/editor.html"]');
+        await page.waitForUrl(/\/editor\.html/);
         noPageProblems(page);
     } finally { await close(); }
 });
