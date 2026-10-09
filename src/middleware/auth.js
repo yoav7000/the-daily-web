@@ -118,10 +118,10 @@ const requireRole = (...roles) => (req, res, next) => {
 };
 
 /**
- * Middleware: Verify user has Reporter or Editor permissions
+ * Middleware: Verify user has Reporter permissions
  */
 const requireReporter = (req, res, next) => {
-    if (!req.user || (req.user.role !== 'reporter' && req.user.role !== 'editor')) {
+    if (!req.user || req.user.role !== 'reporter') {
         return res.status(403).json({
             success: false,
             message: 'אין לך הרשאת כתב לביצוע פעולה זו'

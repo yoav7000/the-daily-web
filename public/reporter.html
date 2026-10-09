@@ -633,7 +633,7 @@
 
         // ---- start ---------------------------------------------------------------------------
         document.addEventListener('DOMContentLoaded', async () => {
-            const user = await requireAuth();
+            const user = await requireAuth({ role: 'reporter' });
             if (!user) return;
             applyRoleVisibility(user);
 
