@@ -114,6 +114,9 @@ const autoSaveArticle = async (req, res, next) => {
 
         let article;
 
+        const cleanCat = category !== undefined ? cleanText(category) : undefined;
+        const validCat = cleanCat && ARTICLE_CATEGORIES.includes(cleanCat) ? cleanCat : undefined;
+
         if (articleId) {
             article = await Article.findById(articleId);
             if (!article) {
@@ -136,7 +139,7 @@ const autoSaveArticle = async (req, res, next) => {
                 title: cleanText(title) || 'טיוטה ללא כותרת',
                 summary: cleanText(summary),
                 content: sanitizeHtml(content) || '<p></p>',
-                category: category && ARTICLE_CATEGORIES.includes(category) ? category : ARTICLE_CATEGORIES[0],
+                category: validCat || ARTICLE_CATEGORIES[0],
                 mainImage: normalizeImageUrl(mainImage),
                 author: req.user._id,
                 status: ARTICLE_STATUS.DRAFT
@@ -153,7 +156,7 @@ const autoSaveArticle = async (req, res, next) => {
                     title: title !== undefined ? cleanText(title) : article.title,
                     summary: summary !== undefined ? cleanText(summary) : article.summary,
                     content: content !== undefined ? sanitizeHtml(content) : article.content,
-                    category: category !== undefined && ARTICLE_CATEGORIES.includes(category) ? category : article.category,
+                    category: validCat || article.category,
                     mainImage: mainImage !== undefined ? normalizeImageUrl(mainImage) : article.mainImage,
                     status: ARTICLE_STATUS.DRAFT,
                     updatedAt: now
@@ -162,7 +165,7 @@ const autoSaveArticle = async (req, res, next) => {
                 if (title !== undefined) article.draftVersion.title = cleanText(title);
                 if (summary !== undefined) article.draftVersion.summary = cleanText(summary);
                 if (content !== undefined) article.draftVersion.content = sanitizeHtml(content);
-                if (category !== undefined && ARTICLE_CATEGORIES.includes(category)) article.draftVersion.category = category;
+                if (validCat) article.draftVersion.category = validCat;
                 if (mainImage !== undefined) article.draftVersion.mainImage = normalizeImageUrl(mainImage);
                 article.draftVersion.updatedAt = now;
             }
@@ -171,7 +174,7 @@ const autoSaveArticle = async (req, res, next) => {
             if (title !== undefined) article.title = cleanText(title);
             if (summary !== undefined) article.summary = cleanText(summary);
             if (content !== undefined) article.content = sanitizeHtml(content) || '<p></p>';
-            if (category !== undefined && ARTICLE_CATEGORIES.includes(category)) article.category = category;
+            if (validCat) article.category = validCat;
             if (mainImage !== undefined) article.mainImage = normalizeImageUrl(mainImage);
             article.lastAutoSavedAt = now;
         }
@@ -379,6 +382,10 @@ const getAllArticlesForEditor = async (req, res, next) => {
             query.author = cleanText(author);
         }
 
+        if (req.query.hasUpdates === 'true') {
+            query['revisionsHistory.1'] = { $exists: true };
+        }
+
         Object.assign(query, buildSearchFilter(search, ['title', 'summary']));
 
         const { page, limit, skip } = parsePagination(req.query, 20, MAX_STAFF_LIMIT);
@@ -438,7 +445,8 @@ const getPendingArticlesForEditor = async (req, res, next) => {
 const getArticleReviewDetails = async (req, res, next) => {
     try {
         const article = await Article.findById(req.params.id)
-            .populate('author', 'fullName username');
+            .populate('author', 'fullName username')
+            .populate('revisionsHistory.approvedBy', 'fullName username');
 
         if (!article) {
             return res.status(404).json({ success: false, message: 'הכתבה לא נמצאה' });
@@ -469,7 +477,8 @@ const getArticleReviewDetails = async (req, res, next) => {
                     mainImage: article.mainImage,
                     status: article.status,
                     editorFeedback: article.editorFeedback
-                }
+                },
+                revisionsHistory: article.revisionsHistory || []
             }
         });
     } catch (error) {
@@ -732,6 +741,10 @@ const getPublicArticles = async (req, res, next) => {
 
         if (category) {
             query.category = cleanText(category);
+        }
+
+        if (req.query.hasUpdates === 'true') {
+            query['revisionsHistory.1'] = { $exists: true };
         }
 
         Object.assign(query, buildSearchFilter(search, ['title', 'summary']));
