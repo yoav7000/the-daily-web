@@ -27,10 +27,12 @@ const viewStatSchema = new mongoose.Schema({
     viewCount: {
         type: Number,
         default: 1,
-        min: 0
+        min: [0, 'כמות צפיות חייבת להיות מספר שלם שאינו שלילי'],
+        validate: { validator: Number.isInteger, message: 'כמות צפיות חייבת להיות מספר שלם שאינו שלילי' }
     },
     notes: {
         type: String,
+        cast: false,
         default: '',
         trim: true
     }

@@ -14,12 +14,14 @@ const commentSchema = new mongoose.Schema({
     },
     authorName: {
         type: String,
+        cast: false,
         required: [true, 'שם המגיב הוא שדה חובה'],
         trim: true,
         maxlength: [100, 'שם המגיב לא יכול לעלות על 100 תווים']
     },
     content: {
         type: String,
+        cast: false,
         required: [true, 'תוכן התגובה הוא שדה חובה'],
         trim: true,
         maxlength: [1000, 'תוכן התגובה לא יכול לעלות על 1000 תווים']

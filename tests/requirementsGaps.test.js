@@ -7,7 +7,7 @@ const User = require('../src/models/User');
 const ViewStat = require('../src/models/ViewStat');
 const { ARTICLE_STATUS } = require('../src/constants/articleConstants');
 const { getTimeBucketKey } = require('../src/controllers/analyticsController');
-const { connectTestDb, disconnectTestDb, createEditor, createReporter } = require('./helpers/testEnv');
+const { connectTestDb, disconnectTestDb, createEditor, createReporter, loginCookie } = require('./helpers/testEnv');
 
 let server;
 let baseUrl;
@@ -232,18 +232,10 @@ test('Users: full CRUD and search for editors', async (t) => {
         assert.equal(invalid.status, 400);
     });
 
-    await t.test('a deactivated user can no longer log in', async () => {
-        await api('PUT', `/api/users/${userId}`, { cookie: editor.cookie, body: { isActive: false } });
-        const login = await api('POST', '/api/auth/login', { body: { username: 'dana_levi', password: 'newsecret456' } });
-        assert.equal(login.status, 401);
-    });
-
-    await t.test('the last active editor cannot be removed, demoted or deactivated', async () => {
+    await t.test('the last editor cannot be removed or demoted', async () => {
         await api('PUT', `/api/users/${userId}`, { cookie: editor.cookie, body: { role: 'reporter' } }); // dana is no longer an editor
         const demote = await api('PUT', `/api/users/${editor.user.id}`, { cookie: editor.cookie, body: { role: 'reporter' } });
         assert.equal(demote.status, 400);
-        const deactivate = await api('PUT', `/api/users/${editor.user.id}`, { cookie: editor.cookie, body: { isActive: false } });
-        assert.equal(deactivate.status, 400);
         const deleteSelf = await api('DELETE', `/api/users/${editor.user.id}`, { cookie: editor.cookie });
         assert.equal(deleteSelf.status, 400);
     });
@@ -252,9 +244,13 @@ test('Users: full CRUD and search for editors', async (t) => {
         const withArticles = await api('DELETE', `/api/users/${reporterId}`, { cookie: editor.cookie });
         assert.equal(withArticles.status, 409);
 
+        const danaCookie = await loginCookie('dana_levi', 'newsecret456');
         const res = await api('DELETE', `/api/users/${userId}`, { cookie: editor.cookie });
         assert.equal(res.status, 200);
         assert.equal((await api('GET', `/api/users/${userId}`, { cookie: editor.cookie })).status, 404);
+
+        // the deleted user's open session stops working at once: the server looks the user up on every request
+        assert.equal((await api('GET', '/api/articles/my-articles', { cookie: danaCookie })).status, 401);
     });
 });
 
@@ -289,4 +285,67 @@ test('Image URL normalization extracts direct destination images and protects ag
     const id2 = await newArticle({ mainImage: searchUrl });
     const stored2 = await Article.findById(id2);
     assert.equal(stored2.mainImage, '/images/default-article.svg', 'Google search page URL should fall back to default image');
+});
+
+test('A draft may be incomplete, but nothing incomplete reaches the editor', async (t) => {
+    await t.test('autosave keeps the text even while the title is empty (no lost work)', async () => {
+        const id = await newArticle();
+        const res = await api('PUT', `/api/articles/${id}/autosave`, { cookie: reporterCookie, body: { title: '', content: '<p>טקסט חדש שנכתב</p>' } });
+        assert.equal(res.status, 200);
+        const saved = await Article.findById(id);
+        assert.equal(saved.content, '<p>טקסט חדש שנכתב</p>');
+
+        const submit = await api('POST', `/api/articles/${id}/submit`, { cookie: reporterCookie });
+        assert.equal(submit.status, 400);
+        assert.match(submit.body.message, /כותרת הכתבה היא שדה חובה/);
+        assert.equal((await Article.findById(id)).status, ARTICLE_STATUS.DRAFT);
+    });
+
+    await t.test('an empty update to a published article cannot be submitted, so the editor never gets one they cannot approve', async () => {
+        const id = await newArticle();
+        await api('POST', `/api/articles/${id}/submit`, { cookie: reporterCookie });
+        await api('POST', `/api/articles/${id}/approve`, { cookie: editor.cookie });
+
+        await api('PUT', `/api/articles/${id}/autosave`, { cookie: reporterCookie, body: { title: '', content: '' } });
+        const submit = await api('POST', `/api/articles/${id}/submit`, { cookie: reporterCookie });
+        assert.equal(submit.status, 400);
+        assert.equal((await Article.findById(id)).draftVersion.status, ARTICLE_STATUS.DRAFT);
+    });
+
+    await t.test('the update of a published article follows the same length rules as the article', async () => {
+        const id = await newArticle();
+        await api('POST', `/api/articles/${id}/submit`, { cookie: reporterCookie });
+        await api('POST', `/api/articles/${id}/approve`, { cookie: editor.cookie });
+        const res = await api('PUT', `/api/articles/${id}/autosave`, { cookie: reporterCookie, body: { title: 'א'.repeat(301) } });
+        assert.equal(res.status, 400);
+    });
+});
+
+test('Passwords: the bcrypt limit is counted in bytes, so a long Hebrew password is refused, not silently cut', async () => {
+    const make = (password) => api('POST', '/api/users', {
+        cookie: editor.cookie,
+        body: { username: `heb_${Math.random().toString(36).slice(2, 8)}`, password, fullName: 'בדיקה' }
+    });
+    assert.equal((await make('א'.repeat(36))).status, 201); // 72 bytes
+    assert.equal((await make('א'.repeat(37))).status, 400); // 74 bytes
+});
+
+test('Approving or returning something that is not waiting for the editor explains why', async () => {
+    const id = await newArticle();
+    const approve = () => api('POST', `/api/articles/${id}/approve`, { cookie: editor.cookie });
+    const reject = () => api('POST', `/api/articles/${id}/reject`, { cookie: editor.cookie, body: { feedback: 'תקנו' } });
+
+    assert.match((await approve()).body.message, /עדיין בהכנה אצל הכתב/);
+
+    await api('POST', `/api/articles/${id}/submit`, { cookie: reporterCookie });
+    await approve();
+    // published, nothing new
+    const nothingNew = await reject();
+    assert.equal(nothingNew.status, 400);
+    assert.match(nothingNew.body.message, /כבר פורסמה ואין בה שינויים חדשים/);
+
+    // the reporter is editing the published article but has not submitted the update
+    await api('PUT', `/api/articles/${id}/autosave`, { cookie: reporterCookie, body: { title: 'עדכון בעבודה' } });
+    assert.match((await approve()).body.message, /עדיין עובד על עדכון/);
+    assert.equal((await Article.findById(id)).title, 'כתבת בדיקה', 'readers still see the approved version');
 });

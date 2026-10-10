@@ -6,8 +6,6 @@ const { parsePagination, buildPagination } = require('../utils/pagination');
 const { cleanText } = require('../utils/text');
 const { buildSearchFilter } = require('../utils/search');
 
-const isValidViewCount = (value) => Number.isInteger(value) && value >= 0;
-
 /**
  * "2026-10-07-14" -> the start of that hour. Returns null when the text is not a real date and hour.
  */
@@ -361,10 +359,6 @@ const createViewStat = async (req, res, next) => {
             return res.status(400).json({ success: false, message: 'מזהה כתבה נדרש' });
         }
 
-        if (!isValidViewCount(Number(viewCount))) {
-            return res.status(400).json({ success: false, message: 'כמות צפיות חייבת להיות מספר שלם שאינו שלילי' });
-        }
-
         const bucket = cleanText(timeBucket) || getTimeBucketKey(new Date());
         const bucketStart = parseTimeBucket(bucket);
         if (!bucketStart) {
@@ -380,8 +374,8 @@ const createViewStat = async (req, res, next) => {
             article: articleId,
             timeBucket: bucket,
             viewedAt: bucketStart, // the graph plots the record at its own hour, not at the moment it was typed in
-            viewCount: Number(viewCount),
-            notes: cleanText(notes) || `רשומה ידנית עבור דלי ${bucket}`
+            viewCount, // the ViewStat model checks it is a whole number of at least 0
+            notes: notes || `רשומה ידנית עבור דלי ${bucket}`
         });
 
         await stat.save();
@@ -469,16 +463,9 @@ const updateViewStat = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'רשומת הסטטיסטיקה לא נמצאה' });
         }
 
-        if (viewCount !== undefined) {
-            if (!isValidViewCount(Number(viewCount))) {
-                return res.status(400).json({ success: false, message: 'כמות צפיות חייבת להיות מספר שלם שאינו שלילי' });
-            }
-            stat.viewCount = Number(viewCount);
-        }
-
-        if (notes !== undefined) {
-            stat.notes = cleanText(notes);
-        }
+        // the ViewStat model validates the new values
+        if (viewCount !== undefined) stat.viewCount = viewCount;
+        if (notes !== undefined) stat.notes = notes;
 
         await stat.save();
 

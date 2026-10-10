@@ -3,26 +3,21 @@ const Article = require('../models/Article');
 const { logOperation } = require('../middleware/requestLogger');
 const { parsePagination, buildPagination } = require('../utils/pagination');
 const { buildSearchFilter } = require('../utils/search');
-const { cleanText } = require('../utils/text');
-
-const ASSIGNABLE_ROLES = ['reporter', 'editor'];
 
 const toUserResponse = (user) => ({
     id: user._id,
     username: user.username,
     fullName: user.fullName,
-    role: user.role,
-    isActive: user.isActive
+    role: user.role
 });
 
 /**
  * The system must always keep at least one active editor, otherwise nobody can approve articles
  * or manage accounts any more.
  */
-const isLastActiveEditor = async (user) => (
+const isLastEditor = async (user) => (
     user.role === 'editor'
-    && user.isActive
-    && (await User.countDocuments({ role: 'editor', isActive: true })) <= 1
+    && (await User.countDocuments({ role: 'editor' })) <= 1
 );
 
 /**
@@ -31,18 +26,9 @@ const isLastActiveEditor = async (user) => (
  */
 const createUser = async (req, res, next) => {
     try {
-        const username = cleanText(req.body.username).toLowerCase();
-        const fullName = cleanText(req.body.fullName);
-        const password = typeof req.body.password === 'string' ? req.body.password : '';
+        const { username, password, fullName, role } = req.body;
 
-        if (!username || !password || !fullName) {
-            return res.status(400).json({ success: false, message: 'שם משתמש, סיסמה ושם מלא הם שדות חובה' });
-        }
-        if (await User.exists({ username })) {
-            return res.status(400).json({ success: false, message: 'שם המשתמש כבר קיים במערכת' });
-        }
-
-        const role = ASSIGNABLE_ROLES.includes(req.body.role) ? req.body.role : 'reporter';
+        // The User model validates every field; a taken username is refused by its unique index
         const user = await User.create({ username, password, fullName, role });
 
         logOperation('USER_CREATED_BY_EDITOR', {
@@ -114,37 +100,16 @@ const updateUser = async (req, res, next) => {
             return res.status(404).json({ success: false, message: 'המשתמש לא נמצא' });
         }
 
-        const { fullName, role, isActive, password } = req.body;
+        const { fullName, role, password } = req.body;
 
-        const losesEditorAccess = (role !== undefined && role !== 'editor') || isActive === false;
-        if (losesEditorAccess && await isLastActiveEditor(user)) {
-            return res.status(400).json({ success: false, message: 'לא ניתן להסיר או להשבית את העורך הפעיל האחרון במערכת' });
+        if (role !== undefined && role !== 'editor' && await isLastEditor(user)) {
+            return res.status(400).json({ success: false, message: 'לא ניתן להוריד את העורך האחרון במערכת לתפקיד כתב' });
         }
 
-        if (fullName !== undefined) {
-            if (!cleanText(fullName)) {
-                return res.status(400).json({ success: false, message: 'שם מלא אינו יכול להיות ריק' });
-            }
-            user.fullName = cleanText(fullName);
-        }
-        if (role !== undefined) {
-            if (!ASSIGNABLE_ROLES.includes(role)) {
-                return res.status(400).json({ success: false, message: 'תפקיד לא תקין' });
-            }
-            user.role = role;
-        }
-        if (isActive !== undefined) {
-            if (typeof isActive !== 'boolean') {
-                return res.status(400).json({ success: false, message: 'הערך isActive חייב להיות true או false' });
-            }
-            user.isActive = isActive;
-        }
-        if (password !== undefined) {
-            if (typeof password !== 'string') {
-                return res.status(400).json({ success: false, message: 'סיסמה לא תקינה' });
-            }
-            user.password = password; // hashed by the model before saving
-        }
+        // The User model validates the new values; the password is hashed by the model before saving
+        if (fullName !== undefined) user.fullName = fullName;
+        if (role !== undefined) user.role = role;
+        if (password !== undefined) user.password = password;
 
         await user.save();
 
@@ -171,13 +136,13 @@ const deleteUser = async (req, res, next) => {
         if (user._id.equals(req.user._id)) {
             return res.status(400).json({ success: false, message: 'לא ניתן למחוק את המשתמש שאיתו התחברת' });
         }
-        if (await isLastActiveEditor(user)) {
-            return res.status(400).json({ success: false, message: 'לא ניתן למחוק את העורך הפעיל האחרון במערכת' });
+        if (await isLastEditor(user)) {
+            return res.status(400).json({ success: false, message: 'לא ניתן למחוק את העורך האחרון במערכת' });
         }
         if (await Article.exists({ author: user._id })) {
             return res.status(409).json({
                 success: false,
-                message: 'לכתב זה יש כתבות במערכת ולכן לא ניתן למחוק אותו. ניתן להשבית את החשבון במקום.'
+                message: 'לכתב זה יש כתבות במערכת, ולכן לא ניתן למחוק אותו: הכתבות היו נשארות ללא כתב.'
             });
         }
 
