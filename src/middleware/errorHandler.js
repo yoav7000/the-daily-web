@@ -50,15 +50,15 @@ const sendError = (req, res, status, message, extra = {}) => {
 const errorHandler = (err, req, res, next) => {
     logError(err, req);
 
-    // Mongoose validation error
+    // Mongoose validation error: the model's own (Hebrew) messages explain what is wrong
     if (err.name === 'ValidationError') {
         const errors = Object.values(err.errors).map(el => el.message);
-        return sendError(req, res, 400, 'שגיאת תקינות נתונים', { errors });
+        return sendError(req, res, 400, errors.join(', '), { errors });
     }
 
     // Mongoose duplicate key error (code 11000)
     if (err.code === 11000) {
-        const field = Object.keys(err.keyValue)[0];
+        const field = Object.keys(err.keyValue || {})[0] || '';
         return sendError(req, res, 400, `ערך זה כבר קיים במערכת (${field})`);
     }
 

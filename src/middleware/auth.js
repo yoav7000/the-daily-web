@@ -3,15 +3,14 @@ const User = require('../models/User');
 /**
  * Resolve the logged-in user from the server session (stored in MongoDB, so it survives a server restart).
  * The browser only holds a signed, httpOnly cookie with the session id: nothing it can edit decides who the user is.
- * The user is read from the database on every request, so a role change or deactivation applies immediately.
+ * The user is read from the database on every request, so a role change or a deleted account applies immediately.
  * Returns null for a guest.
  */
 const resolveUser = async (req) => {
     if (!req.session || !req.session.userId) {
         return null;
     }
-    const user = await User.findById(req.session.userId).select('-password');
-    return user && user.isActive ? user : null;
+    return User.findById(req.session.userId).select('-password');
 };
 
 /**

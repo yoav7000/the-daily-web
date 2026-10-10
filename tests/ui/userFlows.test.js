@@ -700,10 +700,10 @@ flow('Data management: create, find, edit and delete users, comments and view st
         await until(page, () => !document.getElementById('userModal').hidden);
         await page.fill('#userFullName', 'משתמש בדיקה');
         await page.fill('#userUsername', username);
-        await page.fill('#userPassword', '123');                                  // too short: the server explains
+        await page.fill('#userPassword', '123');                                  // too short: the browser stops it first
         await page.click('#userForm button[type="submit"]');
-        await until(page, () => !document.getElementById('userError').hidden);
-        assert.ok((await visibleText(page, '#userError')).length > 5, 'the server\'s explanation is shown');
+        assert.equal(await page.run(() => document.getElementById('userPassword').validity.tooShort), true);
+        assert.equal(await page.run(() => document.getElementById('userModal').hidden), false, 'nothing was sent, the form stays open');
         await page.fill('#userPassword', 'secret-pass-1');
         await page.click('#userForm button[type="submit"]');
         await until(page, () => document.getElementById('userModal').hidden);

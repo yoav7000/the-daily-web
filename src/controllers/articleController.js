@@ -2,7 +2,7 @@ const mongoose = require('mongoose');
 const Article = require('../models/Article');
 const ViewStat = require('../models/ViewStat');
 const Comment = require('../models/Comment');
-const { ARTICLE_STATUS, ARTICLE_CATEGORIES, DEFAULT_ARTICLE_IMAGE } = require('../constants/articleConstants');
+const { ARTICLE_STATUS, ARTICLE_CATEGORIES } = require('../constants/articleConstants');
 const { logOperation } = require('../middleware/requestLogger');
 const { recordViewInternal } = require('./analyticsController');
 const { parsePagination, buildPagination, MAX_STAFF_LIMIT } = require('../utils/pagination');
@@ -12,10 +12,6 @@ const { buildSearchFilter } = require('../utils/search');
 const { sanitizeHtml } = require('../utils/sanitizeHtml');
 const { buildViewedCondition } = require('../utils/viewedFilter');
 
-/**
- * Helper to check if user has permission to modify an article
- * Author can modify their own article. Editor can modify any article.
- */
 /**
  * Fields of a published article that are safe to show to the public (never includes draftVersion)
  */
@@ -43,6 +39,30 @@ const isLockedForEditing = (article) => {
         && article.draftVersion.status === ARTICLE_STATUS.PENDING_APPROVAL;
 };
 
+/**
+ * Author can modify their own article. Editor can modify any article.
+ */
+/**
+ * Explains, in the editor's words, why there is nothing to approve or return right now.
+ * Only a new article waiting for the editor, or an update to a published article that the reporter submitted, can be reviewed.
+ */
+const whyNothingToReview = (article) => {
+    if (article.status === ARTICLE_STATUS.PUBLISHED) {
+        const update = article.draftVersion && article.draftVersion.status;
+        if (update === ARTICLE_STATUS.DRAFT) {
+            return 'הכתב עדיין עובד על עדכון לכתבה ועוד לא הגיש אותו לאישור. הגרסה שפורסמה ממשיכה להיות מוצגת לקוראים.';
+        }
+        if (update === ARTICLE_STATUS.REVISION_REQUESTED) {
+            return 'העדכון לכתבה כבר הוחזר לכתב לתיקונים. אפשר יהיה לבדוק אותו שוב אחרי שהכתב יגיש אותו מחדש.';
+        }
+        return 'הכתבה כבר פורסמה ואין בה שינויים חדשים שממתינים לאישור. אפשר לאשר או להחזיר רק עדכון שהכתב הגיש.';
+    }
+    if (article.status === ARTICLE_STATUS.REVISION_REQUESTED) {
+        return 'הכתבה כבר הוחזרה לכתב לתיקונים. אפשר יהיה לבדוק אותה שוב אחרי שהכתב יגיש אותה מחדש.';
+    }
+    return 'הכתבה עדיין בהכנה אצל הכתב ולא הוגשה לאישור.';
+};
+
 const canModifyArticle = (article, user) => {
     if (user.role === 'editor') return true;
     return article.author.toString() === user._id.toString();
@@ -60,22 +80,10 @@ const createArticle = async (req, res, next) => {
     try {
         const { title, summary, content, category, mainImage } = req.body;
 
-        if (!cleanText(title)) {
-            return res.status(400).json({ success: false, message: 'כותרת הכתבה היא שדה חובה' });
-        }
-        if (!cleanText(content)) {
-            return res.status(400).json({ success: false, message: 'תוכן הכתבה הוא שדה חובה' });
-        }
-        if (!category || !ARTICLE_CATEGORIES.includes(category)) {
-            return res.status(400).json({
-                success: false,
-                message: `קטגוריה לא תקינה. קטגוריות מורשות: ${ARTICLE_CATEGORIES.join(', ')}`
-            });
-        }
-
+        // the Article model validates the fields (type, length, category); a new article is a draft
         const article = new Article({
-            title: cleanText(title),
-            summary: cleanText(summary),
+            title,
+            summary,
             content: sanitizeHtml(content),
             category,
             mainImage: normalizeImageUrl(mainImage),
@@ -114,9 +122,6 @@ const autoSaveArticle = async (req, res, next) => {
 
         let article;
 
-        const cleanCat = category !== undefined ? cleanText(category) : undefined;
-        const validCat = cleanCat && ARTICLE_CATEGORIES.includes(cleanCat) ? cleanCat : undefined;
-
         if (articleId) {
             article = await Article.findById(articleId);
             if (!article) {
@@ -136,10 +141,10 @@ const autoSaveArticle = async (req, res, next) => {
         } else {
             // If no ID provided, initialize a new draft article
             article = new Article({
-                title: cleanText(title) || 'טיוטה ללא כותרת',
-                summary: cleanText(summary),
-                content: sanitizeHtml(content) || '<p></p>',
-                category: validCat || ARTICLE_CATEGORIES[0],
+                title,
+                summary,
+                content: sanitizeHtml(content),
+                category: category || ARTICLE_CATEGORIES[0],
                 mainImage: normalizeImageUrl(mainImage),
                 author: req.user._id,
                 status: ARTICLE_STATUS.DRAFT
@@ -153,28 +158,28 @@ const autoSaveArticle = async (req, res, next) => {
             if (!article.draftVersion) {
                 // Initialize draftVersion from current published fields merged with new edits
                 article.draftVersion = {
-                    title: title !== undefined ? cleanText(title) : article.title,
-                    summary: summary !== undefined ? cleanText(summary) : article.summary,
+                    title: title !== undefined ? title : article.title,
+                    summary: summary !== undefined ? summary : article.summary,
                     content: content !== undefined ? sanitizeHtml(content) : article.content,
-                    category: validCat || article.category,
+                    category: category !== undefined ? category : article.category,
                     mainImage: mainImage !== undefined ? normalizeImageUrl(mainImage) : article.mainImage,
                     status: ARTICLE_STATUS.DRAFT,
                     updatedAt: now
                 };
             } else {
-                if (title !== undefined) article.draftVersion.title = cleanText(title);
-                if (summary !== undefined) article.draftVersion.summary = cleanText(summary);
+                if (title !== undefined) article.draftVersion.title = title;
+                if (summary !== undefined) article.draftVersion.summary = summary;
                 if (content !== undefined) article.draftVersion.content = sanitizeHtml(content);
-                if (validCat) article.draftVersion.category = validCat;
+                if (category !== undefined) article.draftVersion.category = category;
                 if (mainImage !== undefined) article.draftVersion.mainImage = normalizeImageUrl(mainImage);
                 article.draftVersion.updatedAt = now;
             }
         } else {
             // For unpublished articles, directly update the draft fields
-            if (title !== undefined) article.title = cleanText(title);
-            if (summary !== undefined) article.summary = cleanText(summary);
-            if (content !== undefined) article.content = sanitizeHtml(content) || '<p></p>';
-            if (validCat) article.category = validCat;
+            if (title !== undefined) article.title = title;
+            if (summary !== undefined) article.summary = summary;
+            if (content !== undefined) article.content = sanitizeHtml(content);
+            if (category !== undefined) article.category = category;
             if (mainImage !== undefined) article.mainImage = normalizeImageUrl(mainImage);
             article.lastAutoSavedAt = now;
         }
@@ -289,10 +294,11 @@ const submitForApproval = async (req, res, next) => {
             if (currentDraftStatus !== ARTICLE_STATUS.DRAFT && currentDraftStatus !== ARTICLE_STATUS.REVISION_REQUESTED) {
                 return res.status(400).json({
                     success: false,
-                    message: `מעבר לא מורשה. הטיוטה כבר נמצאת במצב "${currentDraftStatus}"`
+                    message: 'העדכון כבר הוגש וממתין לאישור העורך. אין צורך להגיש אותו שוב.'
                 });
             }
 
+            // the same rule as a new article: the update needs a title and content before the editor sees it
             article.draftVersion.status = ARTICLE_STATUS.PENDING_APPROVAL;
             article.draftVersion.updatedAt = new Date();
             await article.save();
@@ -314,18 +320,11 @@ const submitForApproval = async (req, res, next) => {
         if (article.status !== ARTICLE_STATUS.DRAFT && article.status !== ARTICLE_STATUS.REVISION_REQUESTED) {
             return res.status(400).json({
                 success: false,
-                message: `מעבר לא מורשה. לא ניתן להגיש לאישור כתבה שנמצאת במצב "${article.status}"`
+                message: 'הכתבה כבר הוגשה וממתינה לאישור העורך. אין צורך להגיש אותה שוב.'
             });
         }
 
-        // Validate mandatory fields before submitting for review
-        if (!cleanText(article.title)) {
-            return res.status(400).json({ success: false, message: 'כותרת הכתבה היא שדה חובה לפני הגשה לאישור' });
-        }
-        if (!cleanText(article.content)) {
-            return res.status(400).json({ success: false, message: 'תוכן הכתבה הוא שדה חובה לפני הגשה לאישור' });
-        }
-
+        // From here the model requires a title and content: an incomplete article is refused with a 400
         article.status = ARTICLE_STATUS.PENDING_APPROVAL;
         await article.save();
 
@@ -503,10 +502,7 @@ const approveArticle = async (req, res, next) => {
         // Case 1: Approving update to already published article
         if (article.status === ARTICLE_STATUS.PUBLISHED) {
             if (!article.draftVersion || article.draftVersion.status !== ARTICLE_STATUS.PENDING_APPROVAL) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'אין גרסת טיוטה הממתינה לאישור עבור כתבה זו'
-                });
+                return res.status(400).json({ success: false, message: `לא ניתן לאשר כרגע: ${whyNothingToReview(article)}` });
             }
 
             // Promote draft version to published content
@@ -543,10 +539,7 @@ const approveArticle = async (req, res, next) => {
 
         // Case 2: Approving initial publication
         if (article.status !== ARTICLE_STATUS.PENDING_APPROVAL) {
-            return res.status(400).json({
-                success: false,
-                message: `מעבר לא מורשה. לא ניתן לאשר כתבה שנמצאת במצב "${article.status}"`
-            });
+            return res.status(400).json({ success: false, message: `לא ניתן לאשר כרגע: ${whyNothingToReview(article)}` });
         }
 
         article.status = ARTICLE_STATUS.PUBLISHED;
@@ -602,10 +595,7 @@ const returnForRevisions = async (req, res, next) => {
         // Case 1: Published article with draft update
         if (article.status === ARTICLE_STATUS.PUBLISHED) {
             if (!article.draftVersion || article.draftVersion.status !== ARTICLE_STATUS.PENDING_APPROVAL) {
-                return res.status(400).json({
-                    success: false,
-                    message: 'אין עדכון הממתין לאישור עבור כתבה זו'
-                });
+                return res.status(400).json({ success: false, message: `לא ניתן להחזיר לתיקונים כרגע: ${whyNothingToReview(article)}` });
             }
 
             article.draftVersion.status = ARTICLE_STATUS.REVISION_REQUESTED;
@@ -628,10 +618,7 @@ const returnForRevisions = async (req, res, next) => {
 
         // Case 2: Unpublished article
         if (article.status !== ARTICLE_STATUS.PENDING_APPROVAL) {
-            return res.status(400).json({
-                success: false,
-                message: `מעבר לא מורשה. לא ניתן להחזיר לתיקונים כתבה שאינה ממתינה לאישור (מצב נוכחי: "${article.status}")`
-            });
+            return res.status(400).json({ success: false, message: `לא ניתן להחזיר לתיקונים כרגע: ${whyNothingToReview(article)}` });
         }
 
         article.status = ARTICLE_STATUS.REVISION_REQUESTED;
@@ -662,14 +649,6 @@ const editorDirectEdit = async (req, res, next) => {
     try {
         const { title, summary, content, category, mainImage } = req.body;
 
-        // A category that does not exist is an error, not something to skip quietly while reporting success
-        if (category !== undefined && !ARTICLE_CATEGORIES.includes(category)) {
-            return res.status(400).json({
-                success: false,
-                message: `קטגוריה לא תקינה. קטגוריות מורשות: ${ARTICLE_CATEGORIES.join(', ')}`
-            });
-        }
-
         const article = await Article.findById(req.params.id);
         if (!article) {
             return res.status(404).json({ success: false, message: 'הכתבה לא נמצאה' });
@@ -680,8 +659,8 @@ const editorDirectEdit = async (req, res, next) => {
         const editsPendingUpdate = article.status === ARTICLE_STATUS.PUBLISHED && Boolean(article.draftVersion);
         const target = editsPendingUpdate ? article.draftVersion : article;
 
-        if (title !== undefined) target.title = cleanText(title);
-        if (summary !== undefined) target.summary = cleanText(summary);
+        if (title !== undefined) target.title = title;
+        if (summary !== undefined) target.summary = summary;
         if (content !== undefined) target.content = sanitizeHtml(content);
         if (category !== undefined) target.category = category;
         if (mainImage !== undefined) target.mainImage = normalizeImageUrl(mainImage);

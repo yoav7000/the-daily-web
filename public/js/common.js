@@ -75,8 +75,7 @@ async function api(method, url, body, options) {
     }
 
     if (!res.ok || data.success === false) {
-        const details = Array.isArray(data.errors) && data.errors.length ? ` (${data.errors.join(', ')})` : '';
-        const err = new Error((data.message || 'הפעולה נכשלה. נסו שוב.') + details);
+        const err = new Error(data.message || 'הפעולה נכשלה. נסו שוב.');
         err.status = res.status;
         err.data = data;
         throw err;

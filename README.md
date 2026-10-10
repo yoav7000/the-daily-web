@@ -161,7 +161,7 @@ One design system for every page: the same colours, type, spacing, buttons, dial
 - No public sign-up: only an editor can create accounts. The login page only follows `?redirect=` to paths on this site.
 - **Login throttling:** after 10 wrong passwords for the same username from the same address (or 50 from one address) logins are refused for 15 minutes with a `429`. Tune it with `LOGIN_MAX_ATTEMPTS` and `LOGIN_WINDOW_MINUTES`.
 - The server does not advertise its framework and sends basic protective headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`).
-- **User management (editors only, also in `/admin.html`):** `GET /api/users?search=&role=` (list and search by part of the name), `GET /api/users/:id`, `POST /api/users`, `PUT /api/users/:id` (name, role, active flag, password), `DELETE /api/users/:id` (also reachable under `/api/auth/users`). The last active editor cannot be removed, and a user who wrote articles is deactivated instead of deleted.
+- **User management (editors only, also in `/admin.html`):** `GET /api/users?search=&role=` (list and search by part of the name), `GET /api/users/:id`, `POST /api/users`, `PUT /api/users/:id` (name, role, password), `DELETE /api/users/:id` (also reachable under `/api/auth/users`). The last editor cannot be removed or demoted, and a reporter who wrote articles cannot be deleted (the articles would lose their author).
 - Article HTML is sanitized on save (small allowlist of tags, safe links only), and the dashboards escape all text they render.
 - Centralized error handling, with errors in `logs/error.log`, HTTP requests in `logs/access.log`, and operational events in `logs/operations.log`.
 

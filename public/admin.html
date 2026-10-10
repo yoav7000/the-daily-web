@@ -53,8 +53,8 @@
                 </div>
                 <div class="table-wrap">
                     <table class="table table-cards">
-                        <thead><tr><th scope="col">שם מלא</th><th scope="col">שם משתמש</th><th scope="col">תפקיד</th><th scope="col">מצב</th><th scope="col">נוצר</th><th scope="col" class="col-actions">פעולות</th></tr></thead>
-                        <tbody id="usersBody"><tr><td class="cell-state" colspan="6"><div class="state"><span class="spinner"></span><p>טוענים...</p></div></td></tr></tbody>
+                        <thead><tr><th scope="col">שם מלא</th><th scope="col">שם משתמש</th><th scope="col">תפקיד</th><th scope="col">נוצר</th><th scope="col" class="col-actions">פעולות</th></tr></thead>
+                        <tbody id="usersBody"><tr><td class="cell-state" colspan="5"><div class="state"><span class="spinner"></span><p>טוענים...</p></div></td></tr></tbody>
                     </table>
                 </div>
                 <div class="pager" id="usersPager"></div>
@@ -114,12 +114,12 @@
                 </div>
                 <div class="field">
                     <label class="label" for="userUsername">שם משתמש <span class="req">*</span></label>
-                    <input type="text" class="input" id="userUsername" autocomplete="off" dir="ltr" required>
+                    <input type="text" class="input" id="userUsername" autocomplete="off" dir="ltr" minlength="3" required>
                     <span class="hint" id="userUsernameHelp">שם ההתחברות של המשתמש. אי אפשר לשנות אותו אחרי היצירה.</span>
                 </div>
                 <div class="field">
                     <label class="label" for="userPassword" id="userPasswordLabel">סיסמה <span class="req">*</span></label>
-                    <input type="password" class="input" id="userPassword" autocomplete="new-password" dir="ltr">
+                    <input type="password" class="input" id="userPassword" autocomplete="new-password" dir="ltr" minlength="6">
                     <span class="hint">הסיסמה נבדקת ומוצפנת בשרת. אין דרך לשחזר אותה.</span>
                 </div>
                 <div class="field">
@@ -128,9 +128,6 @@
                         <option value="reporter">כתב</option>
                         <option value="editor">עורך</option>
                     </select>
-                </div>
-                <div class="switch-row" id="userActiveRow">
-                    <label class="switch"><input type="checkbox" id="userActive" checked><span class="switch-ui"></span> חשבון פעיל (יכול להתחבר)</label>
                 </div>
             </div>
             <div class="modal-foot">
@@ -251,12 +248,11 @@
             try {
                 const data = await api('GET', `/api/users?${params}`);
                 usersCache = data.users;
-                byId('usersBody').innerHTML = data.users.length === 0 ? emptyRow(6, 'לא נמצאו משתמשים', 'נסו חיפוש אחר.') : data.users.map((user) => `
+                byId('usersBody').innerHTML = data.users.length === 0 ? emptyRow(5, 'לא נמצאו משתמשים', 'נסו חיפוש אחר.') : data.users.map((user) => `
                     <tr>
                         <td class="strong">${escapeHtml(user.fullName)}</td>
                         <td data-label="שם משתמש" dir="ltr" class="num">${escapeHtml(user.username)}</td>
                         <td data-label="תפקיד"><span class="badge ${user.role === 'editor' ? 'badge-accent' : ''}">${user.role === 'editor' ? 'עורך' : 'כתב'}</span></td>
-                        <td data-label="מצב"><span class="badge ${user.isActive ? 'badge-ok' : 'badge-danger'}">${user.isActive ? 'פעיל' : 'מושבת'}</span></td>
                         <td data-label="נוצר" class="muted small">${escapeHtml(formatDateTime(user.createdAt))}</td>
                         <td class="col-actions">${actionButtons('edit-user', 'delete-user', escapeHtml(user._id), `המשתמש ${escapeHtml(user.fullName)}`)}</td>
                     </tr>`).join('');
@@ -277,17 +273,19 @@
             byId('userUsername').disabled = Boolean(user); // the username is the login name, it does not change
             byId('userUsernameHelp').hidden = Boolean(user);
             byId('userPassword').value = '';
+            byId('userPassword').required = !user; // a new account needs a password, an edit may keep the old one
             byId('userPasswordLabel').innerHTML = user ? 'סיסמה חדשה <span class="muted">(אפשר להשאיר ריק)</span>' : 'סיסמה <span class="req">*</span>';
             byId('userRole').value = user ? user.role : 'reporter';
-            byId('userActive').checked = user ? user.isActive : true;
-            byId('userActiveRow').hidden = !user;
             UI.openModal('userModal');
         }
         UI.on('new-user', () => openUserModal());
         UI.on('edit-user', (button) => openUserModal(button.dataset.id));
 
+        // The fields' own attributes (required, minlength, maxlength, min) are the client-side check: the browser
+        // shows what is missing before anything is sent. The server checks everything again with the same limits.
         byId('userForm').addEventListener('submit', async (event) => {
             event.preventDefault();
+            if (!event.target.reportValidity()) return;
             const id = byId('userId').value;
             const password = byId('userPassword').value;
             const fields = { fullName: byId('userFullName').value, role: byId('userRole').value };
@@ -297,7 +295,6 @@
             try {
                 if (id) {
                     if (password) fields.password = password;
-                    fields.isActive = byId('userActive').checked;
                     await api('PUT', `/api/users/${id}`, fields);
                 } else {
                     await api('POST', '/api/users', { ...fields, username: byId('userUsername').value, password });
@@ -316,7 +313,7 @@
             const user = usersCache.find((item) => item._id === button.dataset.id);
             const confirmed = await UI.confirm({
                 title: 'מחיקת משתמש',
-                message: `למחוק את המשתמש "${user ? user.fullName : ''}"?\nמשתמש שכתב כתבות לא נמחק אלא מושבת.`,
+                message: `למחוק את המשתמש "${user ? user.fullName : ''}"?\nלא ניתן למחוק כתב שכתב כתבות.`,
                 confirmText: 'מחיקה',
                 danger: true
             });
@@ -368,6 +365,7 @@
 
         byId('commentForm').addEventListener('submit', async (event) => {
             event.preventDefault();
+            if (!event.target.reportValidity()) return;
             const saveButton = event.submitter;
             const commentId = byId('commentId').value;
             UI.busy(saveButton, true);
@@ -457,6 +455,7 @@
 
         byId('statForm').addEventListener('submit', async (event) => {
             event.preventDefault();
+            if (!event.target.reportValidity()) return;
             const id = byId('statId').value;
             const viewCount = Number(byId('statViews').value);
             const notes = byId('statNotes').value;

@@ -171,7 +171,7 @@
 
             <div class="modal-foot">
                 <button type="button" class="btn btn-secondary spacer" data-action="direct-edit-from-review"><svg class="icon"><use href="#i-pencil"></use></svg> עריכה ישירה</button>
-                <button type="button" class="btn btn-danger-soft" data-action="open-return"><svg class="icon"><use href="#i-undo-2"></use></svg> החזרה לתיקונים</button>
+                <button type="button" class="btn btn-danger-soft" id="reviewReturnBtn" data-action="open-return"><svg class="icon"><use href="#i-undo-2"></use></svg> החזרה לתיקונים</button>
                 <button type="button" class="btn btn-ok" id="reviewApproveBtn" data-action="approve"><svg class="icon"><use href="#i-circle-check"></use></svg> אישור ופרסום</button>
             </div>
         </div>
@@ -216,7 +216,7 @@
                 <input type="hidden" id="directEditArticleId" value="">
                 <div class="field">
                     <label class="label" for="directTitle">כותרת <span class="req">*</span></label>
-                    <input type="text" class="input" id="directTitle" maxlength="200" required>
+                    <input type="text" class="input" id="directTitle" maxlength="300" required>
                 </div>
                 <div class="field-row">
                     <div class="field">
@@ -239,7 +239,7 @@
                 </div>
                 <div class="field">
                     <label class="label" for="directSummary">תקציר</label>
-                    <textarea class="textarea" id="directSummary" rows="2"></textarea>
+                    <textarea class="textarea" id="directSummary" rows="2" maxlength="600"></textarea>
                 </div>
                 <div class="field">
                     <label class="label" for="directContent">תוכן מלא <span class="req">*</span></label>
@@ -457,6 +457,12 @@
             badge.className = `status ${isUpdate ? 'status-published' : meta.css}`;
             badge.textContent = isUpdate ? 'עדכון לכתבה שפורסמה' : meta.label;
             el('reviewDiffModalLabel').textContent = `בדיקת כתבה: ${article.pendingVersion.title || 'טיוטה'}`;
+
+            // Approving or returning only makes sense when the reporter submitted something; otherwise this is a read-only view
+            const waitsForEditor = article.status === 'pending_approval'
+                || (article.isPublishedUpdate && article.pendingVersion.status === 'pending_approval');
+            el('reviewApproveBtn').hidden = !waitsForEditor;
+            el('reviewReturnBtn').hidden = !waitsForEditor;
 
             populateVersionComparison(article, isUpdate);
             renderDiffComparison();

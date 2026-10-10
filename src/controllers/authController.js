@@ -58,13 +58,6 @@ const login = async (req, res, next) => {
             });
         }
 
-        if (!user.isActive) {
-            return res.status(401).json({
-                success: false,
-                message: 'המשתמש אינו פעיל'
-            });
-        }
-
         await startSession(req, user);
 
         logOperation('USER_LOGGED_IN', {

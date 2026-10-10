@@ -3,7 +3,6 @@ const Article = require('../models/Article');
 const { ARTICLE_STATUS } = require('../constants/articleConstants');
 const { logOperation } = require('../middleware/requestLogger');
 const { parsePagination, buildPagination } = require('../utils/pagination');
-const { cleanText } = require('../utils/text');
 const { buildSearchFilter } = require('../utils/search');
 
 // clientIp is only used for spam protection and must never be sent to the browser
@@ -18,38 +17,6 @@ const addComment = async (req, res, next) => {
     try {
         const { articleId } = req.params;
         const { authorName, content } = req.body;
-
-        const name = cleanText(authorName);
-        const text = cleanText(content);
-
-        // בדיקת שדות חובה
-        if (!name) {
-            return res.status(400).json({
-                success: false,
-                message: 'נא להזין שם מגיב'
-            });
-        }
-
-        if (!text) {
-            return res.status(400).json({
-                success: false,
-                message: 'נא להזין תוכן לתגובה'
-            });
-        }
-
-        if (name.length > 100) {
-            return res.status(400).json({
-                success: false,
-                message: 'שם המגיב לא יכול לעלות על 100 תווים'
-            });
-        }
-
-        if (text.length > 1000) {
-            return res.status(400).json({
-                success: false,
-                message: 'תוכן התגובה לא יכול לעלות על 1000 תווים'
-            });
-        }
 
         // בדיקה שהכתבה קיימת ופורסמה לציבור
         const article = await Article.findById(articleId);
@@ -67,11 +34,11 @@ const addComment = async (req, res, next) => {
             });
         }
 
-        // שמירת התגובה עם מזהה ה-IP/מכשיר שנבדק במגבלת הקצב
+        // שמירת התגובה עם מזהה ה-IP/מכשיר שנבדק במגבלת הקצב. מודל התגובה בודק את השדות (חובה, אורך, סוג)
         const comment = new Comment({
             article: articleId,
-            authorName: name,
-            content: text,
+            authorName,
+            content,
             clientIp: req.clientIdentifier || req.ip || '127.0.0.1'
         });
 
@@ -176,19 +143,9 @@ const updateComment = async (req, res, next) => {
             });
         }
 
-        if (content !== undefined) {
-            if (!cleanText(content)) {
-                return res.status(400).json({ success: false, message: 'תוכן התגובה אינו יכול להיות ריק' });
-            }
-            comment.content = cleanText(content);
-        }
-
-        if (authorName !== undefined) {
-            if (!cleanText(authorName)) {
-                return res.status(400).json({ success: false, message: 'שם המגיב אינו יכול להיות ריק' });
-            }
-            comment.authorName = cleanText(authorName);
-        }
+        // the Comment model validates the new values (an empty name or text is refused)
+        if (content !== undefined) comment.content = content;
+        if (authorName !== undefined) comment.authorName = authorName;
 
         await comment.save();
 
