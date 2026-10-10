@@ -11,12 +11,12 @@ let baseUrl;
 let editor;
 let reporter;
 
-const api = async (method, path, { body, token } = {}) => {
+const api = async (method, path, { body, cookie } = {}) => {
     const res = await fetch(`${baseUrl}${path}`, {
         method,
         headers: {
             'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
+            ...(cookie ? { Cookie: cookie } : {})
         },
         body: body ? JSON.stringify(body) : undefined
     });
@@ -56,11 +56,11 @@ test.after(async () => {
 test('editor editing a pending update changes the update, not what readers see', async () => {
     const article = await publishedArticle();
 
-    await api('PUT', `/api/articles/${article._id}/autosave`, { token: reporter.token, body: { title: 'עדכון של הכתב' } });
-    await api('POST', `/api/articles/${article._id}/submit`, { token: reporter.token });
+    await api('PUT', `/api/articles/${article._id}/autosave`, { cookie: reporter.cookie, body: { title: 'עדכון של הכתב' } });
+    await api('POST', `/api/articles/${article._id}/submit`, { cookie: reporter.cookie });
 
     const res = await api('PUT', `/api/articles/editor/${article._id}`, {
-        token: editor.token,
+        cookie: editor.cookie,
         body: { title: 'עדכון של הכתב, בעריכת העורך', content: '<p>תוכן מתוקן</p>' }
     });
     assert.equal(res.status, 200);
@@ -74,7 +74,7 @@ test('editor editing a pending update changes the update, not what readers see',
     assert.equal(saved.draftVersion.status, ARTICLE_STATUS.PENDING_APPROVAL, 'still waits for approval');
 
     // approving makes the editor's version public
-    await api('POST', `/api/articles/${article._id}/approve`, { token: editor.token });
+    await api('POST', `/api/articles/${article._id}/approve`, { cookie: editor.cookie });
     const afterApprove = await api('GET', `/api/articles/public/${article._id}`);
     assert.equal(afterApprove.body.article.title, 'עדכון של הכתב, בעריכת העורך');
 });
@@ -82,7 +82,7 @@ test('editor editing a pending update changes the update, not what readers see',
 test('editor editing a live article without a pending update records an update marker', async () => {
     const article = await publishedArticle();
 
-    const res = await api('PUT', `/api/articles/editor/${article._id}`, { token: editor.token, body: { title: 'תיקון של העורך' } });
+    const res = await api('PUT', `/api/articles/editor/${article._id}`, { cookie: editor.cookie, body: { title: 'תיקון של העורך' } });
     assert.equal(res.status, 200);
 
     const saved = await Article.findById(article._id);
@@ -94,7 +94,7 @@ test('editor editing a live article without a pending update records an update m
 test('editor editing an unpublished article changes it directly', async () => {
     const article = await publishedArticle({ status: ARTICLE_STATUS.PENDING_APPROVAL, publishedAt: null });
 
-    await api('PUT', `/api/articles/editor/${article._id}`, { token: editor.token, body: { title: 'כותרת מתוקנת' } });
+    await api('PUT', `/api/articles/editor/${article._id}`, { cookie: editor.cookie, body: { title: 'כותרת מתוקנת' } });
 
     const saved = await Article.findById(article._id);
     assert.equal(saved.title, 'כותרת מתוקנת');
@@ -105,7 +105,7 @@ test('editor editing an unpublished article changes it directly', async () => {
 test('editor edit with a category that does not exist is refused and changes nothing', async () => {
     const article = await publishedArticle({ title: 'כתבה עם קטגוריה' });
 
-    const res = await api('PUT', `/api/articles/editor/${article._id}`, { token: editor.token, body: { title: 'כותרת חדשה', category: 'NOPE' } });
+    const res = await api('PUT', `/api/articles/editor/${article._id}`, { cookie: editor.cookie, body: { title: 'כותרת חדשה', category: 'NOPE' } });
 
     assert.equal(res.status, 400);
     assert.match(res.body.message, /קטגוריה לא תקינה/);
@@ -119,6 +119,6 @@ test('Impact Analytics data is for editors only', async () => {
     const path = `/api/analytics/article/${article._id}`;
 
     assert.equal((await api('GET', path)).status, 401, 'a guest is refused');
-    assert.equal((await api('GET', path, { token: reporter.token })).status, 403, 'a reporter is refused');
-    assert.equal((await api('GET', path, { token: editor.token })).status, 200, 'an editor gets the graph data');
+    assert.equal((await api('GET', path, { cookie: reporter.cookie })).status, 403, 'a reporter is refused');
+    assert.equal((await api('GET', path, { cookie: editor.cookie })).status, 200, 'an editor gets the graph data');
 });

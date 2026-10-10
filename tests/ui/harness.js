@@ -41,24 +41,30 @@ async function startSite() {
     };
 }
 
+// Logs in from outside the browser and returns { user, cookie } (cookie: "daily.sid=...", for API calls)
 async function apiLogin(site, username, password = 'password123') {
     const res = await fetch(`${site.base}/api/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
     });
-    return res.json();
+    const data = await res.json();
+    return { ...data, cookie: (res.headers.get('set-cookie') || '').split(';')[0] };
 }
 
-// Puts the login where the site keeps it, as a real login does
-async function signIn(page, site, username) {
-    const login = await apiLogin(site, username);
-    await page.goto(`${site.base}/api/health`); // any page of the site, so its storage can be written
-    await page.run((token, user) => {
-        localStorage.setItem('token', token);
-        localStorage.setItem('user', JSON.stringify(user));
-    }, login.token, login.user);
-    return login;
+// Logs in from inside the page, as the login form does: the browser itself receives the session cookie
+async function signIn(page, site, username, password = 'password123') {
+    await page.goto(`${site.base}/api/health`); // any address of the site, so the cookie belongs to it
+    return page.run(async (name, secret) => {
+        const res = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: name, password: secret })
+        });
+        const data = await res.json();
+        localStorage.setItem('user', JSON.stringify(data.user));
+        return data;
+    }, username, password);
 }
 
 /**

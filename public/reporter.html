@@ -566,12 +566,9 @@
             // too big for a keepalive request: the browser would refuse it, so leave the changes to the regular save
             if (bodyBytes(payload) >= 60000) return;
 
-            const headers = { 'Content-Type': 'application/json' };
-            const token = getAuthToken();
-            if (token) headers.Authorization = `Bearer ${token}`;
             fetch(articleId ? `/api/articles/${articleId}/autosave` : '/api/articles/autosave', {
                 method: articleId ? 'PUT' : 'POST',
-                headers,
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(payload),
                 keepalive: true
             }).catch(() => {});

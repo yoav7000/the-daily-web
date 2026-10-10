@@ -1,7 +1,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const http = require('http');
+const mongoose = require('mongoose');
 const { connectTestDb, disconnectTestDb, createReporter } = require('./helpers/testEnv');
+
+const Session = { countDocuments: () => mongoose.connection.collection('sessions').countDocuments() };
 
 let server;
 let baseUrl;
@@ -64,7 +67,7 @@ test('Session login, restart persistence and logout', async (t) => {
         assert.ok(cookie.startsWith('daily.sid='));
     });
 
-    await t.test('/me works with the cookie only (no token)', async () => {
+    await t.test('/me knows the user from the cookie alone', async () => {
         const res = await request('GET', '/api/auth/me', null, { Cookie: cookie });
         assert.equal(res.status, 200);
         assert.equal(res.body.user.username, 'sessionuser');
@@ -78,17 +81,25 @@ test('Session login, restart persistence and logout', async (t) => {
         assert.equal(res.body.user.role, 'reporter');
     });
 
-    await t.test('logout kills the session', async () => {
+    await t.test('logout kills the session: the old cookie no longer works anywhere', async () => {
+        const sessionsBefore = await Session.countDocuments();
         const out = await request('POST', '/api/auth/logout', null, { Cookie: cookie });
         assert.equal(out.status, 200);
-        const res = await request('GET', '/api/auth/me', null, { Cookie: cookie });
-        assert.equal(res.status, 401);
+        assert.equal(await Session.countDocuments(), sessionsBefore - 1, 'the session document is deleted from MongoDB');
+
+        const me = await request('GET', '/api/auth/me', null, { Cookie: cookie });
+        assert.equal(me.body.user, null);
+        const reused = await request('GET', '/api/articles/my-articles', null, { Cookie: cookie });
+        assert.equal(reused.status, 401, 'a copy of the cookie taken before logout is refused');
     });
 });
 
 test('Unauthenticated users are rejected from protected routes', async () => {
-    const res = await request('GET', '/api/auth/me');
-    assert.equal(res.status, 401);
+    assert.equal((await request('GET', '/api/articles/my-articles')).status, 401);
+    // asking "who am I?" is not an error for a guest
+    const me = await request('GET', '/api/auth/me');
+    assert.equal(me.status, 200);
+    assert.equal(me.body.user, null);
 });
 
 test('Weather endpoint is cached for 15 minutes', async () => {

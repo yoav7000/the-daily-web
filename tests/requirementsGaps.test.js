@@ -12,15 +12,15 @@ const { connectTestDb, disconnectTestDb, createEditor, createReporter } = requir
 let server;
 let baseUrl;
 let editor;
-let reporterToken;
+let reporterCookie;
 let reporterId;
 
-const api = async (method, path, { body, token } = {}) => {
+const api = async (method, path, { body, cookie } = {}) => {
     const res = await fetch(`${baseUrl}${path}`, {
         method,
         headers: {
             'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
+            ...(cookie ? { Cookie: cookie } : {})
         },
         body: body ? JSON.stringify(body) : undefined
     });
@@ -31,7 +31,7 @@ const api = async (method, path, { body, token } = {}) => {
 
 const newArticle = async (overrides = {}) => {
     const res = await api('POST', '/api/articles', {
-        token: reporterToken,
+        cookie: reporterCookie,
         body: { title: 'כתבת בדיקה', summary: 'תקציר', content: '<p>תוכן</p>', category: 'טכנולוגיה', ...overrides }
     });
     return res.body.article._id;
@@ -48,7 +48,7 @@ test.before(async () => {
 
     editor = await createEditor('gap_editor', 'עורך ראשי');
     const reporter = await createReporter('gap_reporter', 'כתב בדיקות');
-    reporterToken = reporter.token;
+    reporterCookie = reporter.cookie;
     reporterId = reporter.user.id;
 });
 
@@ -61,30 +61,30 @@ test('An article waiting for the editor is locked for editing on the server', as
     const id = await newArticle();
 
     await t.test('draft can be edited', async () => {
-        const res = await api('PUT', `/api/articles/${id}/autosave`, { token: reporterToken, body: { title: 'כותרת חדשה' } });
+        const res = await api('PUT', `/api/articles/${id}/autosave`, { cookie: reporterCookie, body: { title: 'כותרת חדשה' } });
         assert.equal(res.status, 200);
     });
 
     await t.test('after submitting, edits are rejected', async () => {
-        await api('POST', `/api/articles/${id}/submit`, { token: reporterToken });
-        const res = await api('PUT', `/api/articles/${id}/autosave`, { token: reporterToken, body: { title: 'שינוי אחרי הגשה' } });
+        await api('POST', `/api/articles/${id}/submit`, { cookie: reporterCookie });
+        const res = await api('PUT', `/api/articles/${id}/autosave`, { cookie: reporterCookie, body: { title: 'שינוי אחרי הגשה' } });
         assert.equal(res.status, 409);
         assert.equal((await Article.findById(id)).title, 'כותרת חדשה');
     });
 
     await t.test('returned for revisions, it is editable again', async () => {
-        await api('POST', `/api/articles/${id}/reject`, { token: editor.token, body: { feedback: 'נא לתקן' } });
-        const res = await api('PUT', `/api/articles/${id}/autosave`, { token: reporterToken, body: { title: 'אחרי תיקון' } });
+        await api('POST', `/api/articles/${id}/reject`, { cookie: editor.cookie, body: { feedback: 'נא לתקן' } });
+        const res = await api('PUT', `/api/articles/${id}/autosave`, { cookie: reporterCookie, body: { title: 'אחרי תיקון' } });
         assert.equal(res.status, 200);
     });
 
     await t.test('an update to a published article is locked while it waits for approval', async () => {
-        await api('POST', `/api/articles/${id}/submit`, { token: reporterToken });
-        await api('POST', `/api/articles/${id}/approve`, { token: editor.token });
+        await api('POST', `/api/articles/${id}/submit`, { cookie: reporterCookie });
+        await api('POST', `/api/articles/${id}/approve`, { cookie: editor.cookie });
 
-        assert.equal((await api('PUT', `/api/articles/${id}/autosave`, { token: reporterToken, body: { title: 'עדכון ראשון' } })).status, 200);
-        await api('POST', `/api/articles/${id}/submit`, { token: reporterToken });
-        assert.equal((await api('PUT', `/api/articles/${id}/autosave`, { token: reporterToken, body: { title: 'עדכון נסתר' } })).status, 409);
+        assert.equal((await api('PUT', `/api/articles/${id}/autosave`, { cookie: reporterCookie, body: { title: 'עדכון ראשון' } })).status, 200);
+        await api('POST', `/api/articles/${id}/submit`, { cookie: reporterCookie });
+        assert.equal((await api('PUT', `/api/articles/${id}/autosave`, { cookie: reporterCookie, body: { title: 'עדכון נסתר' } })).status, 409);
 
         const stored = await Article.findById(id);
         assert.equal(stored.draftVersion.title, 'עדכון ראשון');
@@ -93,11 +93,11 @@ test('An article waiting for the editor is locked for editing on the server', as
 
 test('Impact analytics: one publish milestone, marked positions, continuous time axis', async (t) => {
     const id = await newArticle({ title: 'כתבה לאנליטיקה' });
-    await api('POST', `/api/articles/${id}/submit`, { token: reporterToken });
-    await api('POST', `/api/articles/${id}/approve`, { token: editor.token });
+    await api('POST', `/api/articles/${id}/submit`, { cookie: reporterCookie });
+    await api('POST', `/api/articles/${id}/approve`, { cookie: editor.cookie });
 
     await t.test('a normally published article has a single milestone and nothing to compare', async () => {
-        const res = await api('GET', `/api/analytics/article/${id}`, { token: editor.token });
+        const res = await api('GET', `/api/analytics/article/${id}`, { cookie: editor.cookie });
         assert.deepEqual(res.body.milestones.map((m) => m.type), ['INITIAL_PUBLISH']);
         assert.equal(res.body.impactAnalysis, null);
     });
@@ -118,7 +118,7 @@ test('Impact analytics: one publish milestone, marked positions, continuous time
             await ViewStat.create({ article: id, timeBucket: getTimeBucketKey(hoursAgo(h)), viewedAt: hoursAgo(h), viewCount: views });
         }
 
-        const res = await api('GET', `/api/analytics/article/${id}`, { token: editor.token });
+        const res = await api('GET', `/api/analytics/article/${id}`, { cookie: editor.cookie });
         const { milestones, timeline, impactAnalysis } = res.body;
 
         assert.deepEqual(milestones.map((m) => m.type), ['INITIAL_PUBLISH', 'REVISION_UPDATE']);
@@ -174,12 +174,12 @@ test('Users: full CRUD and search for editors', async (t) => {
 
     await t.test('only editors can manage users', async () => {
         assert.equal((await api('GET', '/api/users')).status, 401);
-        assert.equal((await api('GET', '/api/users', { token: reporterToken })).status, 403);
+        assert.equal((await api('GET', '/api/users', { cookie: reporterCookie })).status, 403);
     });
 
     await t.test('create', async () => {
         const res = await api('POST', '/api/users', {
-            token: editor.token,
+            cookie: editor.cookie,
             body: { username: 'dana_levi', password: 'secret123', fullName: 'דנה לוי', role: 'reporter' }
         });
         assert.equal(res.status, 201);
@@ -187,37 +187,37 @@ test('Users: full CRUD and search for editors', async (t) => {
         assert.equal('password' in res.body.user, false);
 
         const duplicate = await api('POST', '/api/users', {
-            token: editor.token,
+            cookie: editor.cookie,
             body: { username: 'dana_levi', password: 'secret123', fullName: 'אחרת' }
         });
         assert.equal(duplicate.status, 400);
     });
 
     await t.test('list and search by part of the name or username', async () => {
-        const all = await api('GET', '/api/users', { token: editor.token });
+        const all = await api('GET', '/api/users', { cookie: editor.cookie });
         assert.ok(all.body.users.length >= 3);
         assert.equal(all.body.users.some((u) => 'password' in u), false);
 
-        const byName = await api('GET', `/api/users?search=${encodeURIComponent('דנ')}`, { token: editor.token });
+        const byName = await api('GET', `/api/users?search=${encodeURIComponent('דנ')}`, { cookie: editor.cookie });
         assert.deepEqual(byName.body.users.map((u) => u.username), ['dana_levi']);
 
-        const byUsername = await api('GET', '/api/users?search=LEVI', { token: editor.token });
+        const byUsername = await api('GET', '/api/users?search=LEVI', { cookie: editor.cookie });
         assert.equal(byUsername.body.users.length, 1);
 
-        const editors = await api('GET', '/api/users?role=editor', { token: editor.token });
+        const editors = await api('GET', '/api/users?role=editor', { cookie: editor.cookie });
         assert.ok(editors.body.users.every((u) => u.role === 'editor'));
     });
 
     await t.test('read one', async () => {
-        const res = await api('GET', `/api/users/${userId}`, { token: editor.token });
+        const res = await api('GET', `/api/users/${userId}`, { cookie: editor.cookie });
         assert.equal(res.status, 200);
         assert.equal(res.body.user.fullName, 'דנה לוי');
-        assert.equal((await api('GET', '/api/users/507f1f77bcf86cd799439011', { token: editor.token })).status, 404);
+        assert.equal((await api('GET', '/api/users/507f1f77bcf86cd799439011', { cookie: editor.cookie })).status, 404);
     });
 
     await t.test('update name, role and password (new password works, old one does not)', async () => {
         const res = await api('PUT', `/api/users/${userId}`, {
-            token: editor.token,
+            cookie: editor.cookie,
             body: { fullName: 'דנה כהן', role: 'editor', password: 'newsecret456' }
         });
         assert.equal(res.status, 200);
@@ -228,33 +228,33 @@ test('Users: full CRUD and search for editors', async (t) => {
         const newLogin = await api('POST', '/api/auth/login', { body: { username: 'dana_levi', password: 'newsecret456' } });
         assert.equal(newLogin.status, 200);
 
-        const invalid = await api('PUT', `/api/users/${userId}`, { token: editor.token, body: { role: 'guest' } });
+        const invalid = await api('PUT', `/api/users/${userId}`, { cookie: editor.cookie, body: { role: 'guest' } });
         assert.equal(invalid.status, 400);
     });
 
     await t.test('a deactivated user can no longer log in', async () => {
-        await api('PUT', `/api/users/${userId}`, { token: editor.token, body: { isActive: false } });
+        await api('PUT', `/api/users/${userId}`, { cookie: editor.cookie, body: { isActive: false } });
         const login = await api('POST', '/api/auth/login', { body: { username: 'dana_levi', password: 'newsecret456' } });
         assert.equal(login.status, 401);
     });
 
     await t.test('the last active editor cannot be removed, demoted or deactivated', async () => {
-        await api('PUT', `/api/users/${userId}`, { token: editor.token, body: { role: 'reporter' } }); // dana is no longer an editor
-        const demote = await api('PUT', `/api/users/${editor.user.id}`, { token: editor.token, body: { role: 'reporter' } });
+        await api('PUT', `/api/users/${userId}`, { cookie: editor.cookie, body: { role: 'reporter' } }); // dana is no longer an editor
+        const demote = await api('PUT', `/api/users/${editor.user.id}`, { cookie: editor.cookie, body: { role: 'reporter' } });
         assert.equal(demote.status, 400);
-        const deactivate = await api('PUT', `/api/users/${editor.user.id}`, { token: editor.token, body: { isActive: false } });
+        const deactivate = await api('PUT', `/api/users/${editor.user.id}`, { cookie: editor.cookie, body: { isActive: false } });
         assert.equal(deactivate.status, 400);
-        const deleteSelf = await api('DELETE', `/api/users/${editor.user.id}`, { token: editor.token });
+        const deleteSelf = await api('DELETE', `/api/users/${editor.user.id}`, { cookie: editor.cookie });
         assert.equal(deleteSelf.status, 400);
     });
 
     await t.test('delete: blocked when the user wrote articles, allowed otherwise', async () => {
-        const withArticles = await api('DELETE', `/api/users/${reporterId}`, { token: editor.token });
+        const withArticles = await api('DELETE', `/api/users/${reporterId}`, { cookie: editor.cookie });
         assert.equal(withArticles.status, 409);
 
-        const res = await api('DELETE', `/api/users/${userId}`, { token: editor.token });
+        const res = await api('DELETE', `/api/users/${userId}`, { cookie: editor.cookie });
         assert.equal(res.status, 200);
-        assert.equal((await api('GET', `/api/users/${userId}`, { token: editor.token })).status, 404);
+        assert.equal((await api('GET', `/api/users/${userId}`, { cookie: editor.cookie })).status, 404);
     });
 });
 
@@ -269,10 +269,10 @@ test('Staff dashboards can load hundreds of articles at once, public lists stay 
         publishedAt: new Date(Date.now() - i * 1000)
     })));
 
-    const mine = await api('GET', '/api/articles/my-articles?limit=300', { token: reporterToken });
+    const mine = await api('GET', '/api/articles/my-articles?limit=300', { cookie: reporterCookie });
     assert.ok(mine.body.articles.length >= 150, 'the reporter dashboard asks for up to 300 and must get them all');
 
-    const all = await api('GET', '/api/articles/editor/all?limit=500', { token: editor.token });
+    const all = await api('GET', '/api/articles/editor/all?limit=500', { cookie: editor.cookie });
     assert.ok(all.body.articles.length >= 150);
 
     const publicList = await api('GET', '/api/articles/public?limit=300');

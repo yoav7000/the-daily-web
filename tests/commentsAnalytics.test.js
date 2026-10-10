@@ -12,8 +12,8 @@ const { recordViewInternal, getTimeBucketKey, getViewBucket } = require('../src/
 
 let server;
 let baseUrl;
-let editorToken;
-let reporterToken;
+let editorCookie;
+let reporterCookie;
 let testArticleId;
 
 test.before(async () => {
@@ -30,10 +30,10 @@ test.before(async () => {
 
     // יצירת משתמשי בדיקה וקבלת Tokens
     const repData = await createReporter(`tester_rep_${Date.now()}`, 'כתב בדיקה');
-    reporterToken = repData.token;
+    reporterCookie = repData.cookie;
 
     const edData = await createEditor(`tester_ed_${Date.now()}`, 'עורכת בדיקה');
-    editorToken = edData.token;
+    editorCookie = edData.cookie;
 
     // יצירת כתבה שפורסמה לבדיקות
     const article = await Article.create({
@@ -159,7 +159,7 @@ test('Comments & Anti-Spam Rate Limiter Test Suite', async (t) => {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${editorToken}`
+                Cookie: editorCookie
             },
             body: JSON.stringify({
                 content: 'תוכן מעודכן לאחר מודרציה ע"י עורך'
@@ -173,7 +173,7 @@ test('Comments & Anti-Spam Rate Limiter Test Suite', async (t) => {
         const deleteRes = await fetch(`${baseUrl}/api/comments/${commentId}`, {
             method: 'DELETE',
             headers: {
-                'Authorization': `Bearer ${editorToken}`
+                Cookie: editorCookie
             }
         });
         assert.equal(deleteRes.status, 200);
@@ -221,7 +221,7 @@ test('Scalable View Analytics & Impact Graph Test Suite', async (t) => {
         });
 
         const res = await fetch(`${baseUrl}/api/analytics/article/${testArticleId}`, {
-            headers: { 'Authorization': `Bearer ${editorToken}` }
+            headers: { Cookie: editorCookie }
         });
         assert.equal(res.status, 200);
         const data = await res.json();
@@ -245,7 +245,7 @@ test('Scalable View Analytics & Impact Graph Test Suite', async (t) => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${editorToken}`
+                Cookie: editorCookie
             },
             body: JSON.stringify({
                 articleId: testArticleId,
@@ -260,13 +260,13 @@ test('Scalable View Analytics & Impact Graph Test Suite', async (t) => {
 
         // Read Single
         const getRes = await fetch(`${baseUrl}/api/analytics/${statId}`, {
-            headers: { 'Authorization': `Bearer ${editorToken}` }
+            headers: { Cookie: editorCookie }
         });
         assert.equal(getRes.status, 200);
 
         // Search / List
         const listRes = await fetch(`${baseUrl}/api/analytics?search=בדיקה`, {
-            headers: { 'Authorization': `Bearer ${editorToken}` }
+            headers: { Cookie: editorCookie }
         });
         assert.equal(listRes.status, 200);
 
@@ -275,7 +275,7 @@ test('Scalable View Analytics & Impact Graph Test Suite', async (t) => {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${editorToken}`
+                Cookie: editorCookie
             },
             body: JSON.stringify({ viewCount: 50 })
         });
@@ -286,7 +286,7 @@ test('Scalable View Analytics & Impact Graph Test Suite', async (t) => {
         // Delete
         const deleteRes = await fetch(`${baseUrl}/api/analytics/${statId}`, {
             method: 'DELETE',
-            headers: { 'Authorization': `Bearer ${editorToken}` }
+            headers: { Cookie: editorCookie }
         });
         assert.equal(deleteRes.status, 200);
     });

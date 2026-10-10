@@ -14,26 +14,19 @@ function escapeHtml(value) {
 // Login state
 // ---------------------------------------------------------------------------------------------
 
-function getAuthToken() {
-    try { return localStorage.getItem('token'); } catch (e) { return null; }
-}
-
+// The login itself lives in an httpOnly session cookie that scripts cannot read; the server is the only
+// authority on who is logged in. The browser keeps a copy of the user's name and role only to paint the
+// header quickly, and never trusts it for permissions.
 function getCachedUser() {
     try { return JSON.parse(localStorage.getItem('user')); } catch (e) { return null; }
 }
 
-function saveLogin(token, user) {
-    try {
-        localStorage.setItem('token', token);
-        if (user) localStorage.setItem('user', JSON.stringify(user));
-    } catch (e) { /* storage unavailable: the server session cookie still works */ }
+function cacheUser(user) {
+    try { localStorage.setItem('user', JSON.stringify(user)); } catch (e) { /* cache only */ }
 }
 
 function clearLocalLogin() {
-    try {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-    } catch (e) { /* nothing to clear */ }
+    try { localStorage.removeItem('user'); } catch (e) { /* nothing to clear */ }
 }
 
 function redirectToLogin() {
@@ -61,9 +54,7 @@ async function api(method, url, body, options) {
     const keepSession = Boolean(options && options.keepSession);
     // keepalive: the request is completed even if the page is closed or refreshed meanwhile
     const keepalive = Boolean(options && options.keepalive);
-    const token = getAuthToken();
     const headers = {};
-    if (token) headers.Authorization = `Bearer ${token}`;
     const hasBody = body !== undefined && body !== null;
     if (hasBody) headers['Content-Type'] = 'application/json';
 
@@ -78,7 +69,7 @@ async function api(method, url, body, options) {
 
     const data = await res.json().catch(() => ({}));
 
-    if (res.status === 401 && token && !keepSession) {
+    if (res.status === 401 && !keepSession) {
         clearLocalLogin();
         redirectToLogin();
     }
@@ -103,14 +94,14 @@ let authCheck = null;
 function requireAuth(options) {
     if (!authCheck) {
         authCheck = (async () => {
-            if (!getAuthToken()) {
-                redirectToLogin();
-                return null;
-            }
             try {
-                const data = await api('GET', '/api/auth/me', null, { keepSession: true });
-                const user = data.user || data;
-                try { localStorage.setItem('user', JSON.stringify(user)); } catch (e) { /* cache only */ }
+                const { user } = await api('GET', '/api/auth/me', null, { keepSession: true });
+                if (!user) {
+                    clearLocalLogin();
+                    redirectToLogin();
+                    return null;
+                }
+                cacheUser(user);
                 return user;
             } catch (err) {
                 if (err.network) {

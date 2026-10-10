@@ -17,19 +17,20 @@ let server;
 let baseUrl;
 let editor;
 
-const api = async (method, urlPath, { body, token } = {}) => {
+const api = async (method, urlPath, { body, cookie } = {}) => {
     const res = await fetch(`${baseUrl}${urlPath}`, {
         method,
         headers: {
             'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
+            ...(cookie ? { Cookie: cookie } : {})
         },
         body: body ? JSON.stringify(body) : undefined
     });
     const text = await res.text();
     let json = null;
     try { json = JSON.parse(text); } catch (err) { /* not json */ }
-    return { status: res.status, body: json, text };
+    const setCookie = res.headers.get('set-cookie');
+    return { status: res.status, body: json, text, cookie: setCookie ? setCookie.split(';')[0] : null };
 };
 
 // What MongoDB really contains, bypassing the Mongoose model
@@ -69,7 +70,7 @@ test('Passwords are stored as bcrypt hashes on every way of writing a user', asy
 
     await t.test('creating a user through the API', async () => {
         const res = await api('POST', '/api/users', {
-            token: editor.token,
+            cookie: editor.cookie,
             body: { username: 'pw_api', password: 'api-secret-1', fullName: 'API User' }
         });
         assert.equal(res.status, 201);
@@ -80,7 +81,7 @@ test('Passwords are stored as bcrypt hashes on every way of writing a user', asy
         const created = await User.findOne({ username: 'pw_api' });
         const before = await storedPassword('pw_api');
 
-        const res = await api('PUT', `/api/users/${created._id}`, { token: editor.token, body: { password: 'changed-secret-2' } });
+        const res = await api('PUT', `/api/users/${created._id}`, { cookie: editor.cookie, body: { password: 'changed-secret-2' } });
         assert.equal(res.status, 200);
 
         await assertStoredAsHash('pw_api', 'changed-secret-2');
@@ -141,12 +142,12 @@ test('The server (not the browser) enforces the password rules', async (t) => {
     const tooLong = 'x'.repeat(73);
 
     // the seeder in the previous test replaced all users, so log in as a seeded editor
-    const { body: { token: editorToken } } = await api('POST', '/api/auth/login', { body: { username: 'sarah_editor', password: 'password123' } });
+    const { cookie: editorCookie } = await api('POST', '/api/auth/login', { body: { username: 'sarah_editor', password: 'password123' } });
 
     await t.test('create: too short, too long or not a string is rejected', async () => {
         for (const password of [tooShort, tooLong, 123456, null, ['abcdefg'], { $ne: '' }]) {
             const res = await api('POST', '/api/users', {
-                token: editorToken,
+                cookie: editorCookie,
                 body: { username: `rejected_${Math.random().toString(36).slice(2, 8)}`, password, fullName: 'Rejected' }
             });
             assert.equal(res.status, 400, `password ${JSON.stringify(password)} should be rejected`);
@@ -158,7 +159,7 @@ test('The server (not the browser) enforces the password rules', async (t) => {
         const before = await storedPassword('dan_reporter');
 
         for (const password of [tooShort, tooLong, 42]) {
-            const res = await api('PUT', `/api/users/${target._id}`, { token: editorToken, body: { password } });
+            const res = await api('PUT', `/api/users/${target._id}`, { cookie: editorCookie, body: { password } });
             assert.equal(res.status, 400, `password ${JSON.stringify(password)} should be rejected`);
         }
         assert.equal(await storedPassword('dan_reporter'), before);
@@ -183,20 +184,18 @@ test('The server (not the browser) enforces the password rules', async (t) => {
         assert.equal((await api('POST', '/api/auth/login', { body: { username: 'dan_reporter', password: hash } })).status, 401);
     });
 
-    await t.test('role, token and user id sent by the client cannot grant access', async () => {
+    await t.test('role, session cookie and user id sent by the client cannot grant access', async () => {
         const login = await api('POST', '/api/auth/login', { body: { username: 'dan_reporter', password: 'password123', role: 'editor' } });
         assert.equal(login.body.user.role, 'reporter');
+        assert.equal(login.body.token, undefined, 'no token is handed to the browser, only the httpOnly cookie');
 
-        // a forged token (signed with another secret) is refused
-        const jwt = require('jsonwebtoken');
-        const forged = jwt.sign({ id: login.body.user.id, role: 'editor' }, 'some-other-secret');
-        assert.equal((await api('GET', '/api/users', { token: forged })).status, 401);
+        // a made-up or tampered session cookie is refused (the signature does not match SESSION_SECRET)
+        assert.equal((await api('GET', '/api/users', { cookie: 'daily.sid=s%3Afake-session.forged-signature' })).status, 401);
+        const [name, value] = login.cookie.split('=');
+        assert.equal((await api('GET', '/api/users', { cookie: `${name}=${value.slice(0, -2)}xx` })).status, 401);
 
-        // a real reporter token whose claims were changed to "editor" still only has reporter rights
-        const reporterToken = login.body.token;
-        const claims = JSON.parse(Buffer.from(reporterToken.split('.')[1], 'base64url').toString());
-        assert.equal(claims.role, 'reporter');
-        assert.equal((await api('GET', '/api/users', { token: reporterToken })).status, 403);
+        // the real reporter session only has reporter rights: the role comes from the database, not the client
+        assert.equal((await api('GET', '/api/users', { cookie: login.cookie })).status, 403);
     });
 });
 
@@ -204,20 +203,20 @@ test('No API response ever contains a password or a hash', async () => {
     const dan = await User.findOne({ username: 'dan_reporter' });
     const article = await Article.findOne({ author: dan._id });
     const login = await api('POST', '/api/auth/login', { body: { username: 'sarah_editor', password: 'password123' } });
-    const token = login.body.token;
+    const { cookie } = login;
 
     const responses = {
         login: login.text,
-        me: (await api('GET', '/api/auth/me', { token })).text,
-        users: (await api('GET', '/api/users', { token })).text,
-        user: (await api('GET', `/api/users/${dan._id}`, { token })).text,
-        updated: (await api('PUT', `/api/users/${dan._id}`, { token, body: { fullName: 'דן שטרן' } })).text,
-        created: (await api('POST', '/api/users', { token, body: { username: 'pw_leak_check', password: 'leak-check-7', fullName: 'Leak Check' } })).text,
+        me: (await api('GET', '/api/auth/me', { cookie })).text,
+        users: (await api('GET', '/api/users', { cookie })).text,
+        user: (await api('GET', `/api/users/${dan._id}`, { cookie })).text,
+        updated: (await api('PUT', `/api/users/${dan._id}`, { cookie, body: { fullName: 'דן שטרן' } })).text,
+        created: (await api('POST', '/api/users', { cookie, body: { username: 'pw_leak_check', password: 'leak-check-7', fullName: 'Leak Check' } })).text,
         publicArticles: (await api('GET', '/api/articles/public?limit=50')).text,
-        editorArticles: (await api('GET', '/api/articles/editor/all?limit=100', { token })).text,
-        article: article ? (await api('GET', `/api/articles/editor/${article._id}/review`, { token })).text : '',
-        analytics: article ? (await api('GET', `/api/analytics/article/${article._id}`, { token })).text : '',
-        comments: (await api('GET', '/api/comments', { token })).text
+        editorArticles: (await api('GET', '/api/articles/editor/all?limit=100', { cookie })).text,
+        article: article ? (await api('GET', `/api/articles/editor/${article._id}/review`, { cookie })).text : '',
+        analytics: article ? (await api('GET', `/api/analytics/article/${article._id}`, { cookie })).text : '',
+        comments: (await api('GET', '/api/comments', { cookie })).text
     };
 
     for (const [name, text] of Object.entries(responses)) {

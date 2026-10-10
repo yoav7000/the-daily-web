@@ -120,7 +120,6 @@
         // Someone who is already logged in does not need this page
         document.addEventListener('DOMContentLoaded', async () => {
             usernameInput.focus();
-            if (!getAuthToken()) return;
             try {
                 const data = await api('GET', '/api/auth/me', null, { keepSession: true });
                 if (data.user) redirectAfterLogin(data.user);
@@ -155,7 +154,7 @@
             UI.busy(submitButton, true);
             try {
                 const data = await api('POST', '/api/auth/login', { username, password }, { keepSession: true });
-                saveLogin(data.token, data.user);
+                cacheUser(data.user);
                 showAlert('התחברתם בהצלחה, מעבירים אתכם...', 'ok');
                 setTimeout(() => redirectAfterLogin(data.user), 400);
             } catch (err) {

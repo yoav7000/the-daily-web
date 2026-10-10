@@ -70,7 +70,7 @@ async function openStaffPage(user, url, viewport = 'desktop') {
     return opened;
 }
 
-const authHeaders = async (username) => ({ Authorization: `Bearer ${(await apiLogin(site, username)).token}`, 'Content-Type': 'application/json' });
+const authHeaders = async (username) => ({ Cookie: (await apiLogin(site, username)).cookie, 'Content-Type': 'application/json' });
 const noPageProblems = (page) => {
     assert.deepEqual(page.errors, [], 'script errors in the page');
     assert.deepEqual(page.unexpectedFailures(), [], 'failed requests');
@@ -282,7 +282,7 @@ flow('Login: a wrong password is explained, a reporter lands in the reporter des
         await until(page, () => !document.getElementById('authAlert').hidden);
         assert.match(await visibleText(page, '#authAlert'), /שגויים/);
         assert.equal(await page.run(() => location.pathname), '/login.html');
-        assert.equal(await page.run(() => localStorage.getItem('token')), null);
+        assert.equal(await page.run(() => localStorage.getItem('user')), null);
 
         // the show / hide password button
         await page.click('#toggleLoginPassword');
@@ -301,7 +301,7 @@ flow('Login: a wrong password is explained, a reporter lands in the reporter des
         // logging out ends the session: the desk is closed again
         await page.click('.sidebar [data-action="logout"]');
         await page.waitForUrl(/\/login\.html/);
-        assert.equal(await page.run(() => localStorage.getItem('token')), null);
+        assert.equal(await page.run(() => localStorage.getItem('user')), null);
         await page.goto(`${site.base}/reporter.html`);
         await page.waitForUrl(/\/login\.html\?redirect=%2Freporter\.html/);
     } finally { await close(); }

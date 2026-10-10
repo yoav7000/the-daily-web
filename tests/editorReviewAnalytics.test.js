@@ -12,12 +12,12 @@ let baseUrl;
 let editor;
 let reporter;
 
-const api = async (method, path, { body, token } = {}) => {
+const api = async (method, path, { body, cookie } = {}) => {
     const res = await fetch(`${baseUrl}${path}`, {
         method,
         headers: {
             'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {})
+            ...(cookie ? { Cookie: cookie } : {})
         },
         body: body ? JSON.stringify(body) : undefined
     });
@@ -45,7 +45,7 @@ test.after(async () => {
 test('Category handling and filtering across roles', async (t) => {
     await t.test('Reporter creates and autosaves an article with non-default category (ספורט)', async () => {
         const createRes = await api('POST', '/api/articles/autosave', {
-            token: reporter.token,
+            cookie: reporter.cookie,
             body: {
                 title: 'כתבת ספורט חדשה',
                 category: '  ספורט  ',
@@ -58,7 +58,7 @@ test('Category handling and filtering across roles', async (t) => {
         assert.ok(createRes.body.articleId);
 
         const editRes = await api('GET', `/api/articles/${createRes.body.articleId}/edit`, {
-            token: reporter.token
+            cookie: reporter.cookie
         });
 
         assert.equal(editRes.status, 200);
@@ -95,7 +95,7 @@ test('Category handling and filtering across roles', async (t) => {
 
         // 2. Editor filter
         const edSport = await api('GET', `/api/articles/editor/all?category=${encodeURIComponent('ספורט')}`, {
-            token: editor.token
+            cookie: editor.cookie
         });
         assert.equal(edSport.status, 200);
         const edSportOnly = edSport.body.articles.every((a) => a.category === 'ספורט');
@@ -103,7 +103,7 @@ test('Category handling and filtering across roles', async (t) => {
 
         // 3. Reporter filter
         const repTech = await api('GET', `/api/articles/my-articles?category=${encodeURIComponent('טכנולוגיה')}`, {
-            token: reporter.token
+            cookie: reporter.cookie
         });
         assert.equal(repTech.status, 200);
         const repTechOnly = repTech.body.articles.every((a) => a.category === 'טכנולוגיה');
@@ -141,17 +141,17 @@ test('Editor review endpoint and impact analytics with revisions', async (t) => 
 
         // Reporter submits an update
         await api('PUT', `/api/articles/${articleId}/autosave`, {
-            token: reporter.token,
+            cookie: reporter.cookie,
             body: {
                 title: 'כתבת דגל מעודכנת עם גרסה חדשה',
                 content: '<p>תוכן מעודכן ומשופר</p>'
             }
         });
-        await api('POST', `/api/articles/${articleId}/submit`, { token: reporter.token });
+        await api('POST', `/api/articles/${articleId}/submit`, { cookie: reporter.cookie });
 
         // Review endpoint returns current published and pending version of the same article
         const reviewRes = await api('GET', `/api/articles/editor/${articleId}/review`, {
-            token: editor.token
+            cookie: editor.cookie
         });
         assert.equal(reviewRes.status, 200);
         assert.equal(reviewRes.body.article.isPublishedUpdate, true);
@@ -161,7 +161,7 @@ test('Editor review endpoint and impact analytics with revisions', async (t) => 
 
         // Editor approves update
         const approveRes = await api('POST', `/api/articles/${articleId}/approve`, {
-            token: editor.token
+            cookie: editor.cookie
         });
         assert.equal(approveRes.status, 200);
 
@@ -176,7 +176,7 @@ test('Editor review endpoint and impact analytics with revisions', async (t) => 
 
     await t.test('Impact analytics returns milestones and before/after update stats', async () => {
         const analyticsRes = await api('GET', `/api/analytics/article/${articleId}`, {
-            token: editor.token
+            cookie: editor.cookie
         });
         assert.equal(analyticsRes.status, 200);
         assert.ok(analyticsRes.body.milestones.length >= 2);

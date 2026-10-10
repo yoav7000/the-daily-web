@@ -15,22 +15,22 @@ let reporter;
 const MINUTE = 60 * 1000;
 const ISRAEL_SUMMER = -180; // Date#getTimezoneOffset of a browser in Israel (UTC+3)
 
-const api = async (method, path, { body, token } = {}) => {
+const api = async (method, path, { body, cookie } = {}) => {
     const res = await fetch(`${baseUrl}${path}`, {
         method,
-        headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+        headers: { 'Content-Type': 'application/json', ...(cookie ? { Cookie: cookie } : {}) },
         body: body ? JSON.stringify(body) : undefined
     });
     return { status: res.status, body: await res.json().catch(() => ({})) };
 };
 
-const analytics = async (id, tzOffset = ISRAEL_SUMMER) => (await api('GET', `/api/analytics/article/${id}?tzOffset=${tzOffset}`, { token: editor.token })).body;
+const analytics = async (id, tzOffset = ISRAEL_SUMMER) => (await api('GET', `/api/analytics/article/${id}?tzOffset=${tzOffset}`, { cookie: editor.cookie })).body;
 
 // The reporter writes and submits, the editor approves: the article is live
 const publishNewArticle = async (title) => {
-    const created = await api('POST', '/api/articles/autosave', { token: reporter.token, body: { title, content: '<p>גוף הכתבה</p>', category: 'חדשות' } });
-    await api('POST', `/api/articles/${created.body.articleId}/submit`, { token: reporter.token });
-    assert.equal((await api('POST', `/api/articles/${created.body.articleId}/approve`, { token: editor.token })).status, 200);
+    const created = await api('POST', '/api/articles/autosave', { cookie: reporter.cookie, body: { title, content: '<p>גוף הכתבה</p>', category: 'חדשות' } });
+    await api('POST', `/api/articles/${created.body.articleId}/submit`, { cookie: reporter.cookie });
+    assert.equal((await api('POST', `/api/articles/${created.body.articleId}/approve`, { cookie: editor.cookie })).status, 200);
     return created.body.articleId;
 };
 
@@ -51,7 +51,7 @@ test('a reporter edit of a published article is not an approved update until an 
     for (let i = 0; i < 3; i++) await recordViewInternal(id);
 
     await t.test('editing (autosave only): no update milestone, nothing to compare, the edit is listed as pending', async () => {
-        assert.equal((await api('PUT', `/api/articles/${id}/autosave`, { token: reporter.token, body: { title: 'כותרת חדשה שלא אושרה' } })).status, 200);
+        assert.equal((await api('PUT', `/api/articles/${id}/autosave`, { cookie: reporter.cookie, body: { title: 'כותרת חדשה שלא אושרה' } })).status, 200);
         const data = await analytics(id);
         assert.deepEqual(data.milestones.map((m) => m.type), ['INITIAL_PUBLISH']);
         assert.equal(data.impactAnalysis, null);
@@ -59,7 +59,7 @@ test('a reporter edit of a published article is not an approved update until an 
     });
 
     await t.test('submitted for approval: still no update milestone', async () => {
-        assert.equal((await api('POST', `/api/articles/${id}/submit`, { token: reporter.token })).status, 200);
+        assert.equal((await api('POST', `/api/articles/${id}/submit`, { cookie: reporter.cookie })).status, 200);
         const data = await analytics(id);
         assert.deepEqual(data.milestones.map((m) => m.type), ['INITIAL_PUBLISH']);
         assert.equal(data.impactAnalysis, null);
@@ -67,16 +67,16 @@ test('a reporter edit of a published article is not an approved update until an 
     });
 
     await t.test('returned for revisions: still no update milestone', async () => {
-        assert.equal((await api('POST', `/api/articles/${id}/reject`, { token: editor.token, body: { feedback: 'נא להוסיף מקור' } })).status, 200);
+        assert.equal((await api('POST', `/api/articles/${id}/reject`, { cookie: editor.cookie, body: { feedback: 'נא להוסיף מקור' } })).status, 200);
         const data = await analytics(id);
         assert.deepEqual(data.milestones.map((m) => m.type), ['INITIAL_PUBLISH']);
         assert.equal(data.pendingUpdate.status, 'revision_requested');
     });
 
     await t.test('only the editor approval creates the update milestone, at the moment of the approval', async () => {
-        await api('POST', `/api/articles/${id}/submit`, { token: reporter.token });
+        await api('POST', `/api/articles/${id}/submit`, { cookie: reporter.cookie });
         const before = Date.now();
-        assert.equal((await api('POST', `/api/articles/${id}/approve`, { token: editor.token })).status, 200);
+        assert.equal((await api('POST', `/api/articles/${id}/approve`, { cookie: editor.cookie })).status, 200);
         const data = await analytics(id);
         assert.deepEqual(data.milestones.map((m) => m.type), ['INITIAL_PUBLISH', 'REVISION_UPDATE']);
         assert.ok(Math.abs(new Date(data.milestones[1].timestamp).getTime() - before) < 5000);
@@ -86,7 +86,7 @@ test('a reporter edit of a published article is not an approved update until an 
     });
 
     await t.test('the analytics answer never exposes the unapproved text', async () => {
-        await api('PUT', `/api/articles/${id}/autosave`, { token: reporter.token, body: { title: 'טיוטה סודית' } });
+        await api('PUT', `/api/articles/${id}/autosave`, { cookie: reporter.cookie, body: { title: 'טיוטה סודית' } });
         const data = await analytics(id);
         assert.doesNotMatch(JSON.stringify(data), /טיוטה סודית/);
     });
@@ -167,7 +167,7 @@ test('long periods are grouped into days that start at the viewer\'s midnight', 
 
 test('a bad time zone value falls back to the server clock instead of failing', async () => {
     const id = await publishNewArticle('כתבה עם אזור זמן שגוי');
-    const res = await api('GET', `/api/analytics/article/${id}?tzOffset=banana`, { token: editor.token });
+    const res = await api('GET', `/api/analytics/article/${id}?tzOffset=banana`, { cookie: editor.cookie });
     assert.equal(res.status, 200);
     assert.equal(res.body.timeline.tzOffset, new Date().getTimezoneOffset());
 });

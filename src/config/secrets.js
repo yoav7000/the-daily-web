@@ -1,5 +1,4 @@
 const DEV_DEFAULTS = {
-    JWT_SECRET: 'daily_web_jwt_secret_default_2026',
     SESSION_SECRET: 'daily_web_session_secret_default_2026'
 };
 
