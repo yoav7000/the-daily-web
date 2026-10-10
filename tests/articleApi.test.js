@@ -74,18 +74,18 @@ test.after(async () => {
 });
 
 test('Complete Article RESTful API Flow', async (t) => {
-    let reporterToken = null;
-    let editorToken = null;
+    let reporterCookie = null;
+    let editorCookie = null;
     let articleId = null;
 
     await t.test('1. Create reporter and editor accounts', async () => {
         const reporter = await createReporter('reporter1', 'ישראל ישראלי');
-        reporterToken = reporter.token;
-        assert.ok(reporterToken);
+        reporterCookie = reporter.cookie;
+        assert.ok(reporterCookie);
 
         const editor = await createEditor('editor1', 'רונית העורכת');
-        editorToken = editor.token;
-        assert.ok(editorToken);
+        editorCookie = editor.cookie;
+        assert.ok(editorCookie);
     });
 
     await t.test('2. Reporter creates a new draft article via POST /api/articles', async () => {
@@ -95,7 +95,7 @@ test('Complete Article RESTful API Flow', async (t) => {
             content: '<p>פירוט מלא על הגילוי בחלל...</p>',
             category: 'טכנולוגיה'
         }, {
-            Authorization: `Bearer ${reporterToken}`
+            Cookie: reporterCookie
         });
 
         assert.equal(res.status, 201);
@@ -107,7 +107,7 @@ test('Complete Article RESTful API Flow', async (t) => {
         const res = await request('PUT', `/api/articles/${articleId}/autosave`, {
             content: '<p>פירוט מלא ומעודכן שנשמר אוטומטית...</p>'
         }, {
-            Authorization: `Bearer ${reporterToken}`
+            Cookie: reporterCookie
         });
 
         assert.equal(res.status, 200);
@@ -116,7 +116,7 @@ test('Complete Article RESTful API Flow', async (t) => {
 
     await t.test('4. Reporter submits article for editor review -> "pending_approval"', async () => {
         const res = await request('POST', `/api/articles/${articleId}/submit`, {}, {
-            Authorization: `Bearer ${reporterToken}`
+            Cookie: reporterCookie
         });
 
         assert.equal(res.status, 200);
@@ -125,7 +125,7 @@ test('Complete Article RESTful API Flow', async (t) => {
 
     await t.test('5. Unauthorized state jumps are blocked (Reporter cannot approve or publish)', async () => {
         const res = await request('POST', `/api/articles/${articleId}/approve`, {}, {
-            Authorization: `Bearer ${reporterToken}`
+            Cookie: reporterCookie
         });
 
         assert.equal(res.status, 403, 'Reporter must not be allowed to approve articles');
@@ -134,7 +134,7 @@ test('Complete Article RESTful API Flow', async (t) => {
     await t.test('6. Editor returning for revisions requires mandatory feedback note', async () => {
         // Missing feedback note -> 400
         const resFail = await request('POST', `/api/articles/${articleId}/reject`, {}, {
-            Authorization: `Bearer ${editorToken}`
+            Cookie: editorCookie
         });
         assert.equal(resFail.status, 400);
 
@@ -142,7 +142,7 @@ test('Complete Article RESTful API Flow', async (t) => {
         const resSuccess = await request('POST', `/api/articles/${articleId}/reject`, {
             feedback: 'יש לצרף צילומי לוויין באיכות גבוהה יותר'
         }, {
-            Authorization: `Bearer ${editorToken}`
+            Cookie: editorCookie
         });
         assert.equal(resSuccess.status, 200);
         assert.equal(resSuccess.body.status, 'revision_requested');
@@ -150,14 +150,14 @@ test('Complete Article RESTful API Flow', async (t) => {
 
     await t.test('7. Reporter retrieves returned article, sees feedback, edits and resubmits', async () => {
         const resGet = await request('GET', `/api/articles/${articleId}/edit`, null, {
-            Authorization: `Bearer ${reporterToken}`
+            Cookie: reporterCookie
         });
         assert.equal(resGet.status, 200);
         assert.equal(resGet.body.article.editorFeedback, 'יש לצרף צילומי לוויין באיכות גבוהה יותר');
 
         // Resubmit
         const resSubmit = await request('POST', `/api/articles/${articleId}/submit`, {}, {
-            Authorization: `Bearer ${reporterToken}`
+            Cookie: reporterCookie
         });
         assert.equal(resSubmit.status, 200);
         assert.equal(resSubmit.body.status, 'pending_approval');
@@ -165,7 +165,7 @@ test('Complete Article RESTful API Flow', async (t) => {
 
     await t.test('8. Editor approves article -> published publicly', async () => {
         const res = await request('POST', `/api/articles/${articleId}/approve`, {}, {
-            Authorization: `Bearer ${editorToken}`
+            Cookie: editorCookie
         });
         assert.equal(res.status, 200);
         assert.equal(res.body.article.status, 'published');
@@ -182,7 +182,7 @@ test('Complete Article RESTful API Flow', async (t) => {
             title: 'גילויים חדשים בחקר החלל: עדכון מרעיש מהטלסקופ!',
             content: '<p>התוכן החדש והמעודכן שטרם אושר לפרסום...</p>'
         }, {
-            Authorization: `Bearer ${reporterToken}`
+            Cookie: reporterCookie
         });
         assert.equal(resAutoSave.status, 200);
         assert.equal(resAutoSave.body.isPublished, true);
@@ -194,7 +194,7 @@ test('Complete Article RESTful API Flow', async (t) => {
 
         // Reporter submits the update for editor approval
         const resSubmit = await request('POST', `/api/articles/${articleId}/submit`, {}, {
-            Authorization: `Bearer ${reporterToken}`
+            Cookie: reporterCookie
         });
         assert.equal(resSubmit.status, 200);
 
@@ -204,7 +204,7 @@ test('Complete Article RESTful API Flow', async (t) => {
 
         // Editor reviews diff
         const resReview = await request('GET', `/api/articles/editor/${articleId}/review`, null, {
-            Authorization: `Bearer ${editorToken}`
+            Cookie: editorCookie
         });
         assert.equal(resReview.status, 200);
         assert.equal(resReview.body.article.currentPublished.title, 'גילויים חדשים בחקר החלל');
@@ -212,7 +212,7 @@ test('Complete Article RESTful API Flow', async (t) => {
 
         // Editor approves update
         const resApprove = await request('POST', `/api/articles/${articleId}/approve`, {}, {
-            Authorization: `Bearer ${editorToken}`
+            Cookie: editorCookie
         });
         assert.equal(resApprove.status, 200);
 

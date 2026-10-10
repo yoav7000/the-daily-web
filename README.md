@@ -19,7 +19,7 @@ docker compose logs -f app   # view logs
 docker compose down          # stop
 ```
 
-Docker uses the secrets from your shell environment (`JWT_SECRET`, `SESSION_SECRET`, `OPENWEATHER_API_KEY`) and falls back to placeholder values for development.
+Docker uses the secrets from your shell environment (`SESSION_SECRET`, `OPENWEATHER_API_KEY`) and falls back to placeholder values for development.
 
 ### Option B - Local Node.js
 
@@ -74,7 +74,6 @@ Every test file starts its own temporary in-memory MongoDB, so tests never touch
 | `PORT` | Server port (default `3000`) |
 | `MONGODB_URI` | MongoDB connection string |
 | `SESSION_SECRET` | Signs the session cookie. **Required in production** |
-| `JWT_SECRET` | Signs login tokens. **Required in production** |
 | `OPENWEATHER_API_KEY` | OpenWeatherMap key for the weather widget (new free keys can take up to 2 hours to activate). Without a working key the widget shows sample data and says so |
 | `TRUST_PROXY` | Number of reverse proxies in front of the server (e.g. `1`). Needed behind nginx or a load balancer so the comment limit sees the real visitor IP. Leave unset otherwise |
 | `WEATHER_CITY` | City for the weather widget (default `Tel Aviv,IL`) |
@@ -115,7 +114,7 @@ the-daily-web/
 │   ├── config/
 │   │   ├── db.js                # MongoDB connection (optional built-in dev database)
 │   │   ├── session.js           # express-session + connect-mongo (login survives restarts)
-│   │   └── secrets.js           # Reads JWT/session secrets, required in production
+│   │   └── secrets.js           # Reads the session secret, required in production
 │   ├── constants/               # Article statuses, categories, default image
 │   ├── models/                  # User, Article, Comment, ViewStat (Mongoose)
 │   ├── middleware/              # auth (roles), commentRateLimiter, errorHandler, requestLogger
@@ -158,7 +157,7 @@ One design system for every page: the same colours, type, spacing, buttons, dial
 ### Users, roles & security
 - Roles: **Guest** (not logged in), **Reporter**, **Editor**. Roles are enforced on the server (`requireRole`, `requireReporter`, `requireEditor`); reporters can only touch their own articles.
 - **Passwords are stored only as bcrypt hashes** and every rule about them runs on the server, never in the browser. The model hashes on every way of writing a user (`save`, `insertMany`, `updateOne` / `findOneAndUpdate`), a password must be 6 to 72 characters, and API responses never contain a password or hash. `tests/passwordStorage.test.js` reads the raw MongoDB documents to prove it, including users made by the seeder and by `npm run create-editor`.
-- Logins are kept in a server session stored in MongoDB (`connect-mongo`), so they survive a server restart. The dashboards authenticate with a signed token, and the server accepts the session cookie as well.
+- Logins are kept in a server session stored in MongoDB (`connect-mongo`), so they survive a server restart. The browser only holds a signed, httpOnly cookie with the session id; the user and role are read from the database on every request. Logout deletes the session, so the old cookie stops working immediately.
 - No public sign-up: only an editor can create accounts. The login page only follows `?redirect=` to paths on this site.
 - **Login throttling:** after 10 wrong passwords for the same username from the same address (or 50 from one address) logins are refused for 15 minutes with a `429`. Tune it with `LOGIN_MAX_ATTEMPTS` and `LOGIN_WINDOW_MINUTES`.
 - The server does not advertise its framework and sends basic protective headers (`X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`).

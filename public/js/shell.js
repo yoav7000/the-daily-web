@@ -129,14 +129,15 @@
 
         const authHost = document.getElementById('siteAuth');
         const paint = (user) => { authHost.innerHTML = publicAuthHtml(user); Shell.user = user; };
-        const cached = getAuthToken() ? getCachedUser() : null;
+        const cached = getCachedUser();
         paint(cached);
 
-        if (getAuthToken()) {
+        // Only someone who logged in on this browser asks the server; ordinary readers send no extra request
+        if (cached) {
             try {
-                const data = await api('GET', '/api/auth/me', null, { keepSession: true });
-                const user = data.user || data;
-                try { localStorage.setItem('user', JSON.stringify(user)); } catch (e) { /* cache only */ }
+                const { user } = await api('GET', '/api/auth/me', null, { keepSession: true });
+                if (user) cacheUser(user);
+                else clearLocalLogin(); // the session ended (logout elsewhere, expired): forget the old name
                 paint(user);
             } catch (err) {
                 if (!err.network) {
@@ -262,10 +263,6 @@
     }
 
     function startStaff() {
-        if (!getAuthToken()) {
-            redirectToLogin();
-            return;
-        }
         body.insertAdjacentHTML('afterbegin', sidebarHtml());
         UI.on('open-nav', () => setNav(true));
         UI.on('close-nav', () => setNav(false));

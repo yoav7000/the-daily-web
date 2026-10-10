@@ -10,15 +10,15 @@ const { connectTestDb, disconnectTestDb, createEditor, createReporter } = requir
 
 let server;
 let baseUrl;
-let editorToken;
-let reporterToken;
+let editorCookie;
+let reporterCookie;
 let articleId;
 
-const api = (method, path, { body, token } = {}) => fetch(`${baseUrl}${path}`, {
+const api = (method, path, { body, cookie } = {}) => fetch(`${baseUrl}${path}`, {
     method,
     headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {})
+        ...(cookie ? { Cookie: cookie } : {})
     },
     body: body ? JSON.stringify(body) : undefined
 });
@@ -32,10 +32,10 @@ test.before(async () => {
         });
     });
 
-    editorToken = (await createEditor('sec_editor')).token;
+    editorCookie = (await createEditor('sec_editor')).cookie;
 
     const reporter = (await createReporter('sec_reporter', 'כתב')).user;
-    reporterToken = (await createReporter('sec_reporter2', 'כתב נוסף')).token;
+    reporterCookie = (await createReporter('sec_reporter2', 'כתב נוסף')).cookie;
     const article = await Article.create({
         title: 'כתבה לבדיקות אבטחה',
         content: '<p>תוכן</p>',
@@ -62,7 +62,7 @@ test('There is no public sign-up: accounts are only created by editors', async (
 
 test('Only an editor can create accounts with a role', async () => {
     const asReporter = await api('POST', '/api/users', {
-        token: reporterToken,
+        cookie: reporterCookie,
         body: { username: 'x1', password: 'password123', fullName: 'X', role: 'editor' }
     });
     assert.equal(asReporter.status, 403);
@@ -73,7 +73,7 @@ test('Only an editor can create accounts with a role', async () => {
     assert.equal(asGuest.status, 401);
 
     const asEditor = await api('POST', '/api/users', {
-        token: editorToken,
+        cookie: editorCookie,
         body: { username: 'new_editor', password: 'password123', fullName: 'New Editor', role: 'editor' }
     });
     assert.equal(asEditor.status, 201);
@@ -98,7 +98,7 @@ test('Comments never expose the commenter IP, and the full list is editor only',
     assert.equal('clientIp' in comments[0], false);
 
     assert.equal((await api('GET', '/api/comments')).status, 401);
-    assert.equal((await api('GET', '/api/comments', { token: editorToken })).status, 200);
+    assert.equal((await api('GET', '/api/comments', { cookie: editorCookie })).status, 200);
 });
 
 test('Query operators in filters are ignored and bad input gives 400, not 500', async () => {
@@ -107,7 +107,7 @@ test('Query operators in filters are ignored and bad input gives 400, not 500', 
     assert.equal((await injected.json()).articles.length, 0);
 
     const badTitle = await api('POST', '/api/articles', {
-        token: reporterToken,
+        cookie: reporterCookie,
         body: { title: 123, content: 'x', category: 'טכנולוגיה' }
     });
     assert.equal(badTitle.status, 400);
@@ -137,13 +137,13 @@ test('Top articles only lists published articles', async () => {
 
 test('Role segregation: an editor cannot create articles or access the reporter desk API', async () => {
     const resCreate = await api('POST', '/api/articles', {
-        token: editorToken,
+        cookie: editorCookie,
         body: { title: 'כתבה מעורך', content: '<p>תוכן</p>', category: 'טכנולוגיה' }
     });
     assert.equal(resCreate.status, 403);
 
     const resMine = await api('GET', '/api/articles/my-articles', {
-        token: editorToken
+        cookie: editorCookie
     });
     assert.equal(resMine.status, 403);
 });

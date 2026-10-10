@@ -9,8 +9,8 @@ const { connectTestDb, disconnectTestDb, createEditor, createReporter } = requir
 
 let server;
 let baseUrl;
-let reporterToken;
-let editorToken;
+let reporterCookie;
+let editorCookie;
 let reporterUser;
 let editorUser;
 
@@ -27,11 +27,11 @@ test.before(async () => {
 
     // Reporter and editor accounts
     const repData = await createReporter('reporter_m4', 'רועי הכתב');
-    reporterToken = repData.token;
+    reporterCookie = repData.cookie;
     reporterUser = repData.user;
 
     const edData = await createEditor('editor_m4', 'מיכל העורכת');
-    editorToken = edData.token;
+    editorCookie = edData.cookie;
     editorUser = edData.user;
 });
 
@@ -71,7 +71,7 @@ test('Dashboards Frontend & Review Workflow Integration Suite', async (t) => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${reporterToken}`
+                Cookie: reporterCookie
             },
             body: JSON.stringify({
                 title: 'פיתוח בינה מלאכותית חדשה',
@@ -92,7 +92,7 @@ test('Dashboards Frontend & Review Workflow Integration Suite', async (t) => {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${reporterToken}`
+                Cookie: reporterCookie
             },
             body: JSON.stringify({
                 title: 'פיתוח בינה מלאכותית חדשה - עדכון מחקר',
@@ -108,7 +108,7 @@ test('Dashboards Frontend & Review Workflow Integration Suite', async (t) => {
 
         // Fetch for edit
         const editRes = await fetch(`${baseUrl}/api/articles/${testArticleId}/edit`, {
-            headers: { 'Authorization': `Bearer ${reporterToken}` }
+            headers: { Cookie: reporterCookie }
         });
         assert.equal(editRes.status, 200);
         const editData = await editRes.json();
@@ -119,7 +119,7 @@ test('Dashboards Frontend & Review Workflow Integration Suite', async (t) => {
     await t.test('3. Reporter submits article for editor approval', async () => {
         const submitRes = await fetch(`${baseUrl}/api/articles/${testArticleId}/submit`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${reporterToken}` }
+            headers: { Cookie: reporterCookie }
         });
 
         assert.equal(submitRes.status, 200);
@@ -134,7 +134,7 @@ test('Dashboards Frontend & Review Workflow Integration Suite', async (t) => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${editorToken}`
+                Cookie: editorCookie
             },
             body: JSON.stringify({ feedback: '' })
         });
@@ -145,7 +145,7 @@ test('Dashboards Frontend & Review Workflow Integration Suite', async (t) => {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${editorToken}`
+                Cookie: editorCookie
             },
             body: JSON.stringify({ feedback: 'נא להוסיף קישור למאמר המדעי המקורי בפסקה הראשונה.' })
         });
@@ -157,7 +157,7 @@ test('Dashboards Frontend & Review Workflow Integration Suite', async (t) => {
 
         // Reporter fetches article and sees the feedback
         const repCheckRes = await fetch(`${baseUrl}/api/articles/${testArticleId}/edit`, {
-            headers: { 'Authorization': `Bearer ${reporterToken}` }
+            headers: { Cookie: reporterCookie }
         });
         assert.equal(repCheckRes.status, 200);
         const repCheckData = await repCheckRes.json();
@@ -171,7 +171,7 @@ test('Dashboards Frontend & Review Workflow Integration Suite', async (t) => {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${reporterToken}`
+                Cookie: reporterCookie
             },
             body: JSON.stringify({
                 content: '<p>פסקה ראשונה מעודכנת עם נתונים חדשים וקישור למאמר המדעי.</p>'
@@ -181,14 +181,14 @@ test('Dashboards Frontend & Review Workflow Integration Suite', async (t) => {
         // Resubmit
         const resubmitRes = await fetch(`${baseUrl}/api/articles/${testArticleId}/submit`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${reporterToken}` }
+            headers: { Cookie: reporterCookie }
         });
         assert.equal(resubmitRes.status, 200);
 
         // Editor approves
         const approveRes = await fetch(`${baseUrl}/api/articles/${testArticleId}/approve`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${editorToken}` }
+            headers: { Cookie: editorCookie }
         });
         assert.equal(approveRes.status, 200);
         const approveData = await approveRes.json();
@@ -201,7 +201,7 @@ test('Dashboards Frontend & Review Workflow Integration Suite', async (t) => {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
-                'Authorization': `Bearer ${reporterToken}`
+                Cookie: reporterCookie
             },
             body: JSON.stringify({
                 title: 'פיתוח בינה מלאכותית חדשה - עדכון פורץ דרך!',
@@ -212,12 +212,12 @@ test('Dashboards Frontend & Review Workflow Integration Suite', async (t) => {
         // Reporter submits update
         await fetch(`${baseUrl}/api/articles/${testArticleId}/submit`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${reporterToken}` }
+            headers: { Cookie: reporterCookie }
         });
 
         // Editor fetches review details for Diff View
         const reviewRes = await fetch(`${baseUrl}/api/articles/editor/${testArticleId}/review`, {
-            headers: { 'Authorization': `Bearer ${editorToken}` }
+            headers: { Cookie: editorCookie }
         });
         assert.equal(reviewRes.status, 200);
         const reviewData = await reviewRes.json();
@@ -237,7 +237,7 @@ test('Dashboards Frontend & Review Workflow Integration Suite', async (t) => {
         // Editor approves update
         const approveUpdateRes = await fetch(`${baseUrl}/api/articles/${testArticleId}/approve`, {
             method: 'POST',
-            headers: { 'Authorization': `Bearer ${editorToken}` }
+            headers: { Cookie: editorCookie }
         });
         assert.equal(approveUpdateRes.status, 200);
 

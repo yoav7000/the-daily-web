@@ -5,6 +5,7 @@ const path = require('node:path');
 
 const app = require('../src/app');
 const Article = require('../src/models/Article');
+const User = require('../src/models/User');
 const { ARTICLE_STATUS, ARTICLE_CATEGORIES } = require('../src/constants/articleConstants');
 const { connectTestDb, disconnectTestDb, createEditor, createReporter } = require('./helpers/testEnv');
 
@@ -304,7 +305,7 @@ test('Every API address a page uses exists on the server', async (t) => {
         const [method, url] = call.split(' ');
         const res = await fetch(`${base}${url}`, {
             method,
-            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${editor.token}` },
+            headers: { 'Content-Type': 'application/json', Cookie: editor.cookie },
             body: ['POST', 'PUT'].includes(method) ? '{}' : undefined
         });
         const text = await res.text();
@@ -321,10 +322,11 @@ test('The article page and the error page are rendered in the same site frame as
     t.after(async () => { await new Promise((resolve) => server.close(resolve)); await disconnectTestDb(); });
     const base = `http://127.0.0.1:${server.address().port}`;
 
-    const reporter = await createReporter('page_reporter');
+    // only an author is needed here, no login (this test opens a second database, the session store belongs to the first)
+    const reporter = await User.create({ username: 'page_reporter', password: 'password123', fullName: 'כתב בדיקה', role: 'reporter' });
     const article = await Article.create({
         title: 'כותרת לבדיקת עמוד', summary: 'תקציר', content: '<p>תוכן מלא של הכתבה</p>', category: 'ספורט',
-        author: reporter.user.id, status: ARTICLE_STATUS.PUBLISHED, publishedAt: new Date()
+        author: reporter._id, status: ARTICLE_STATUS.PUBLISHED, publishedAt: new Date()
     });
 
     const res = await fetch(`${base}/article/${article._id}`);

@@ -14,12 +14,12 @@ let baseUrl;
 let editor;
 let reporter;
 
-const api = async (method, path, { body, token, headers } = {}) => {
+const api = async (method, path, { body, cookie, headers } = {}) => {
     const res = await fetch(`${baseUrl}${path}`, {
         method,
         headers: {
             'Content-Type': 'application/json',
-            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(cookie ? { Cookie: cookie } : {}),
             ...headers
         },
         body: body ? JSON.stringify(body) : undefined
@@ -71,7 +71,7 @@ test('QA 1: dashboards get exact counts and can page through every article (noth
     await Article.updateMany({ title: /^published 0$/ }, { draftVersion: { title: 'עדכון', status: ARTICLE_STATUS.PENDING_APPROVAL } });
 
     await t.test('editor counters match the database, however many articles there are', async () => {
-        const res = await api('GET', '/api/articles/editor/stats', { token: editor.token });
+        const res = await api('GET', '/api/articles/editor/stats', { cookie: editor.cookie });
         assert.equal(res.status, 200);
         assert.deepEqual(res.body.stats, {
             total: 536, published: 520, draft: 9, pending_approval: 4, revision_requested: 3, pendingUpdates: 1, revisionUpdates: 0
@@ -83,7 +83,7 @@ test('QA 1: dashboards get exact counts and can page through every article (noth
         let page = 1;
         let totalPages = 1;
         do {
-            const res = await api('GET', `/api/articles/editor/all?limit=100&page=${page}`, { token: editor.token });
+            const res = await api('GET', `/api/articles/editor/all?limit=100&page=${page}`, { cookie: editor.cookie });
             res.body.articles.forEach((a) => seen.add(a._id));
             totalPages = res.body.pagination.totalPages;
             page += 1;
@@ -92,28 +92,28 @@ test('QA 1: dashboards get exact counts and can page through every article (noth
     });
 
     await t.test('status filters count correctly on the server', async () => {
-        const drafts = await api('GET', '/api/articles/editor/all?status=draft&limit=1', { token: editor.token });
+        const drafts = await api('GET', '/api/articles/editor/all?status=draft&limit=1', { cookie: editor.cookie });
         assert.equal(drafts.body.pagination.totalCount, 9);
-        const updates = await api('GET', '/api/articles/editor/all?status=pending_update&limit=1', { token: editor.token });
+        const updates = await api('GET', '/api/articles/editor/all?status=pending_update&limit=1', { cookie: editor.cookie });
         assert.equal(updates.body.pagination.totalCount, 1);
     });
 
     await t.test('"waiting for review" covers new submissions and updates to published articles, with search on top', async () => {
-        const all = await api('GET', '/api/articles/editor/all?status=needs_review&limit=100', { token: editor.token });
+        const all = await api('GET', '/api/articles/editor/all?status=needs_review&limit=100', { cookie: editor.cookie });
         assert.equal(all.body.pagination.totalCount, 5, '4 submissions + 1 update to a published article');
-        const searched = await api('GET', `/api/articles/editor/all?status=needs_review&search=${encodeURIComponent('pending_approval 1')}`, { token: editor.token });
+        const searched = await api('GET', `/api/articles/editor/all?status=needs_review&search=${encodeURIComponent('pending_approval 1')}`, { cookie: editor.cookie });
         assert.equal(searched.body.pagination.totalCount, 1);
     });
 
     await t.test('reporter counters only count their own articles', async () => {
         const other = await createReporter('qa_other', 'כתב אחר');
         await Article.create({ title: 'של אחר', content: 'x', category: 'חדשות', author: other.user.id, status: ARTICLE_STATUS.DRAFT });
-        const res = await api('GET', '/api/articles/my-stats', { token: reporter.token });
+        const res = await api('GET', '/api/articles/my-stats', { cookie: reporter.cookie });
         assert.equal(res.body.stats.total, 536);
         assert.equal(res.body.stats.draft, 9);
-        assert.equal((await api('GET', '/api/articles/my-stats', { token: other.token })).body.stats.total, 1);
+        assert.equal((await api('GET', '/api/articles/my-stats', { cookie: other.cookie })).body.stats.total, 1);
         assert.equal((await api('GET', '/api/articles/my-stats')).status, 401);
-        assert.equal((await api('GET', '/api/articles/editor/stats', { token: reporter.token })).status, 403);
+        assert.equal((await api('GET', '/api/articles/editor/stats', { cookie: reporter.cookie })).status, 403);
     });
 });
 
@@ -159,7 +159,7 @@ test('QA 3: deleting an article also removes its comments and view statistics', 
     await ViewStat.create({ article: article._id, timeBucket: '2026-10-07-10', viewCount: 5 });
     await ViewStat.create({ article: survivor._id, timeBucket: '2026-10-07-10', viewCount: 7 });
 
-    const res = await api('DELETE', `/api/articles/${article._id}`, { token: editor.token });
+    const res = await api('DELETE', `/api/articles/${article._id}`, { cookie: editor.cookie });
     assert.equal(res.status, 200);
 
     assert.equal(await Comment.countDocuments({ article: article._id }), 0);
